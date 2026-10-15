@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <title>Connexion — Honoré Romane</title>
+    <style>
+        :root {
+            /* Thème clair (par défaut) */
+            --bg: #f5f3ef;
+            --card: #ffffff;
+            --field: #fafaf8;
+            --field-focus: #ffffff;
+            --border: #d8d5cf;
+            --text: #1a1a1a;
+            --text-muted: #6b6b6b;
+            --accent: #1a1a1a;
+            --accent-hover: #000000;
+            --accent-text: #ffffff;
+            --error: #c0392b;
+            --success: #1e7d4a;
+            --warning: #b45309;
+            --radius: 0.75rem;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0e0e0e;
+                --card: #1a1a1a;
+                --field: #232323;
+                --field-focus: #2b2b2b;
+                --border: #3a3a3a;
+                --text: #f2f2f2;
+                --text-muted: #9a9a9a;
+                --accent: #f2f2f2;
+                --accent-hover: #ffffff;
+                --accent-text: #0e0e0e;
+                --error: #ff6b5e;
+                --success: #4ade80;
+                --warning: #fbbf24;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: clamp(14px, 1vw + 12px, 17px);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+                     max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+            gap: 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 32rem;
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: clamp(1.25rem, 4vw, 2.25rem);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin: auto 0;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .container {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        h1 {
+            font-size: clamp(1.25rem, 2vw + 1rem, 1.65rem);
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 1.75rem;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        label {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input[type="email"],
+        input[type="password"],
+        button {
+            font-family: inherit;
+            font-size: 1em;
+            width: 100%;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            background: var(--field);
+            color: var(--text);
+            padding: 0.75rem 0.9rem;
+            transition: border-color .15s, background .15s, opacity .15s;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            background: var(--field-focus);
+        }
+
+        button {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--accent-text);
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .error {
+            color: var(--error);
+            font-size: 0.8em;
+            min-height: 1em;
+        }
+
+        .message {
+            font-size: 0.9em;
+            text-align: center;
+            min-height: 1.2em;
+            margin-bottom: 0.25rem;
+        }
+
+        .message.error {
+            color: var(--error);
+        }
+
+        .message.warning {
+            color: var(--warning);
+            padding: 0.75rem;
+            background: var(--field);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .links {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            text-align: center;
+            font-size: 0.85em;
+        }
+
+        .links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color .15s;
+        }
+
+        .links a:hover {
+            color: var(--text);
+        }
+
+        .links a.strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* Footer discret */
+        .footer {
+            width: 100%;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.72em;
+            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+            opacity: 0.7;
+            user-select: none;
+        }
+
+        /* Petits écrans très bas de plafond (paysage mobile) */
+        @media (max-height: 520px) and (orientation: landscape) {
+            body {
+                justify-content: flex-start;
+            }
+            .container {
+                max-width: 40rem;
+                margin: 0;
+            }
+            form {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+            .field-full, button, .message, .links {
+                grid-column: 1 / -1;
+            }
+            h1 { margin-bottom: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <main class="container" role="main">
+
+        <h1>Connexion</h1>
+
+        <div class="message warning" id="pending-message" style="display: none;">
+            Votre compte est en attente de validation par un administrateur. Vous serez prévenu(e) dès son activation.
+        </div>
+
+        <form id="login-form" novalidate>
+            <div class="field">
+                <label for="email">Adresse mail</label>
+                <input type="email" id="email" name="email" autocomplete="email" inputmode="email" required>
+                <span class="error" id="error-email"></span>
+            </div>
+
+            <div class="field">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required>
+                <span class="error" id="error-password"></span>
+            </div>
+
+            <div class="message error" id="form-message"></div>
+
+            <button type="submit" id="submit-btn">Se connecter</button>
+        </form>
+
+        <div class="links">
+            <a href="https://account.honore-romane.fr/signup/">Pas encore de compte ? Créer un compte</a>
+        </div>
+
+    </main>
+
+    <footer class="footer">
+        MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+        import {
+            getAuth,
+            signInWithEmailAndPassword,
+            signOut,
+            setPersistence,
+            browserLocalPersistence,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            getDoc
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+        // Configuration Firebase du projet "mdl-et-cvl-2027"
+        const firebaseConfig = {
+            apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
+            authDomain: "mdl-et-cvl-2027.firebaseapp.com",
+            projectId: "mdl-et-cvl-2027",
+            storageBucket: "mdl-et-cvl-2027.firebasestorage.app",
+            messagingSenderId: "142816093888",
+            appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
+            measurementId: "G-FBKEPBY0CQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Persistance locale : la connexion dure tant que l'utilisateur ne se déconnecte pas
+        await setPersistence(auth, browserLocalPersistence);
+
+        // --- Récupération du paramètre "redirect" ---
+        const params = new URLSearchParams(window.location.search);
+        const redirectParam = params.get('redirect');
+        // On n'accepte que des URLs du domaine honore-romane.fr (évite l'open redirect)
+        let redirectUrl = 'https://account.honore-romane.fr/account/';
+        if (redirectParam) {
+            try {
+                const parsed = new URL(redirectParam, window.location.origin);
+                if (parsed.hostname.endsWith('honore-romane.fr')) {
+                    redirectUrl = parsed.href;
+                }
+            } catch (_) { /* ignore */ }
+        }
+
+        const form = document.getElementById('login-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const formMessage = document.getElementById('form-message');
+        const pendingMessage = document.getElementById('pending-message');
+
+        // --- Vérification de l'utilisateur déjà connecté au chargement ---
+        // Si un utilisateur est déjà connecté (session persistante), on vérifie son statut
+        // et on redirige directement sans lui redemander ses identifiants.
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (!user) return;
+            unsubscribe();
+
+            try {
+                const snap = await getDoc(doc(db, 'users', user.uid));
+                if (snap.exists() && snap.data().status === 'active') {
+                    window.location.replace(redirectUrl);
+                } else {
+                    // Compte non actif : on déconnecte et on laisse le formulaire
+                    await signOut(auth);
+                    pendingMessage.style.display = 'block';
+                }
+            } catch (err) {
+                console.error(err);
+                await signOut(auth);
+            }
+        });
+
+        // --- Nettoyage des erreurs ---
+        function setError(id, msg) {
+            document.getElementById('error-' + id).textContent = msg || '';
+        }
+
+        function clearMessages() {
+            setError('email', '');
+            setError('password', '');
+            formMessage.textContent = '';
+            formMessage.className = 'message error';
+        }
+
+        // --- Soumission ---
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
+
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
+
+            let valid = true;
+            if (!email) {
+                setError('email', 'Adresse mail requise.');
+                valid = false;
+            }
+            if (!password) {
+                setError('password', 'Mot de passe requis.');
+                valid = false;
+            }
+            if (!valid) return;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Connexion…';
+
+            try {
+                // 1. Connexion Firebase Auth
+                const cred = await signInWithEmailAndPassword(auth, email, password);
+                const uid = cred.user.uid;
+
+                // 2. Vérifier le statut du compte dans Firestore
+                const snap = await getDoc(doc(db, 'users', uid));
+                if (!snap.exists()) {
+                    await signOut(auth);
+                    formMessage.textContent = 'Profil introuvable. Contactez un administrateur.';
+                    return;
+                }
+
+                const data = snap.data();
+                if (data.status !== 'active') {
+                    await signOut(auth);
+                    formMessage.textContent = 'Votre compte est en attente de validation par un administrateur.';
+                    return;
+                }
+
+                // 3. Redirection
+                window.location.replace(redirectUrl);
+
+            } catch (err) {
+                console.error(err);
+                const map = {
+                    'auth/invalid-credential': 'Adresse mail ou mot de passe incorrect.',
+                    'auth/wrong-password': 'Adresse mail ou mot de passe incorrect.',
+                    'auth/user-not-found': 'Adresse mail ou mot de passe incorrect.',
+                    'auth/invalid-email': 'Adresse mail invalide.',
+                    'auth/too-many-requests': 'Trop de tentatives. Réessayez plus tard.',
+                    'auth/network-request-failed': 'Erreur réseau. Réessayez.'
+                };
+                formMessage.textContent = map[err.code] || 'Une erreur est survenue. Réessayez.';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Se connecter';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <title>Mon espace — Honoré Romane</title>
+    <style>
+        :root {
+            --bg: #f5f3ef;
+            --card: #ffffff;
+            --field: #fafaf8;
+            --border: #d8d5cf;
+            --text: #1a1a1a;
+            --text-muted: #6b6b6b;
+            --accent: #1a1a1a;
+            --accent-hover: #000000;
+            --accent-text: #ffffff;
+            --error: #c0392b;
+            --radius: 0.75rem;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0e0e0e;
+                --card: #1a1a1a;
+                --field: #232323;
+                --border: #3a3a3a;
+                --text: #f2f2f2;
+                --text-muted: #9a9a9a;
+                --accent: #f2f2f2;
+                --accent-hover: #ffffff;
+                --accent-text: #0e0e0e;
+                --error: #ff6b5e;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: clamp(14px, 1vw + 12px, 17px);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+                     max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+            gap: 1rem;
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 42rem;
+            margin: auto 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Barre d'information */
+        .infobar {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: clamp(1rem, 3vw, 1.5rem);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .infobar, .menu {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .user-info .name {
+            font-weight: 600;
+            font-size: 1.05em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .user-info .meta {
+            color: var(--text-muted);
+            font-size: 0.82em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .logout-btn {
+            font-family: inherit;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: var(--field);
+            color: var(--text);
+            padding: 0.55rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background .15s, border-color .15s, opacity .15s;
+            flex-shrink: 0;
+        }
+
+        .logout-btn:hover:not(:disabled) {
+            background: var(--card);
+            border-color: var(--text);
+        }
+
+        .logout-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Menu */
+        .menu {
+            background: var(--card);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .menu-title {
+            font-size: 0.8em;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem clamp(1rem, 3vw, 1.5rem) 0.5rem;
+        }
+
+        .menu-list {
+            list-style: none;
+        }
+
+        .menu-list li + li {
+            border-top: 1px solid var(--border);
+        }
+
+        .menu-list a {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1rem clamp(1rem, 3vw, 1.5rem);
+            text-decoration: none;
+            color: var(--text);
+            font-weight: 500;
+            transition: background .15s;
+        }
+
+        .menu-list a:hover {
+            background: var(--field);
+        }
+
+        .menu-list a .arrow {
+            color: var(--text-muted);
+            font-size: 1.1em;
+            transition: transform .15s;
+        }
+
+        .menu-list a:hover .arrow {
+            transform: translateX(3px);
+        }
+
+        /* État de chargement */
+        .loading {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9em;
+            padding: 2rem 1rem;
+        }
+
+        /* Footer discret */
+        .footer {
+            width: 100%;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.72em;
+            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+            opacity: 0.7;
+            user-select: none;
+        }
+
+        /* Écrans très bas (paysage mobile) */
+        @media (max-height: 520px) and (orientation: landscape) {
+            body {
+                justify-content: flex-start;
+            }
+            .wrapper {
+                margin: 0;
+                max-width: 48rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+
+        <div class="infobar">
+            <div class="user-info">
+                <span class="name" id="user-name">Chargement…</span>
+                <span class="meta" id="user-meta"></span>
+            </div>
+            <button class="logout-btn" id="logout-btn">Déconnexion</button>
+        </div>
+
+        <div class="menu">
+            <div class="menu-title">Pages accessibles</div>
+            <ul class="menu-list" id="menu-list">
+                <li>
+                    <a href="https://account.honore-romane.fr/vote/">
+                        <span>Voter</span>
+                        <span class="arrow">→</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+    </div>
+
+    <footer class="footer">
+        MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+        import {
+            getAuth,
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            getDoc
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
+            authDomain: "mdl-et-cvl-2027.firebaseapp.com",
+            projectId: "mdl-et-cvl-2027",
+            storageBucket: "mdl-et-cvl-2027.firebasestorage.app",
+            messagingSenderId: "142816093888",
+            appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
+            measurementId: "G-FBKEPBY0CQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const LOGIN_URL = 'https://account.honore-romane.fr/login/';
+        const CURRENT_URL = 'https://account.honore-romane.fr/account/';
+
+        const nameEl = document.getElementById('user-name');
+        const metaEl = document.getElementById('user-meta');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // --- Garde d'accès ---
+        const goToLogin = () => {
+            window.location.replace(
+                LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL)
+            );
+        };
+
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            unsubscribe();
+
+            if (!user) {
+                goToLogin();
+                return;
+            }
+
+            try {
+                const snap = await getDoc(doc(db, 'users', user.uid));
+                if (!snap.exists() || snap.data().status !== 'active') {
+                    await signOut(auth);
+                    goToLogin();
+                    return;
+                }
+
+                // Remplir la barre d'information
+                const data = snap.data();
+                nameEl.textContent = data.name || user.email || 'Utilisateur';
+                metaEl.textContent = [data.classe, data.email].filter(Boolean).join(' · ');
+
+            } catch (err) {
+                console.error(err);
+                await signOut(auth).catch(() => {});
+                goToLogin();
+            }
+        });
+
+        // --- Déconnexion ---
+        logoutBtn.addEventListener('click', async () => {
+            logoutBtn.disabled = true;
+            logoutBtn.textContent = 'Déconnexion…';
+            try {
+                await signOut(auth);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                window.location.replace(LOGIN_URL);
+            }
+        });
+    </script>
+</body>
+</html>

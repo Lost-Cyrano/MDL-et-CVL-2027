@@ -290,7 +290,7 @@
                     </div>
                     <div>
                         <div class="card-title">Vérification des comptes</div>
-                        <div class="card-desc">Valider, suspendre ou supprimer les inscriptions.</div>
+                        <div class="card-desc">Valider, refuser ou suspendre les inscriptions.</div>
                     </div>
                 </a>
 
@@ -391,7 +391,6 @@
 
             </div>
         </section>
-
     </main>
 
     <footer class="footer">
@@ -469,7 +468,6 @@
                 metaEl.textContent = [data.classe, data.email].filter(Boolean).join(' · ');
                 avatarEl.textContent = initials(displayName);
 
-                // Afficher la section Administrateur uniquement pour les admins
                 if (data.isAdmin === true) {
                     adminSection.style.display = '';
                 }

@@ -9,15 +9,13 @@
         :root {
             --bg: #f5f3ef;
             --card: #ffffff;
-            --field: #fafaf8;
-            --border: #d8d5cf;
+            --card-hover: #fafaf8;
+            --border: #e5e2dc;
             --text: #1a1a1a;
             --text-muted: #6b6b6b;
             --accent: #1a1a1a;
-            --accent-hover: #000000;
             --accent-text: #ffffff;
-            --error: #c0392b;
-            --radius: 0.75rem;
+            --radius: 1rem;
             --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
@@ -25,14 +23,12 @@
             :root {
                 --bg: #0e0e0e;
                 --card: #1a1a1a;
-                --field: #232323;
-                --border: #3a3a3a;
+                --card-hover: #232323;
+                --border: #2e2e2e;
                 --text: #f2f2f2;
                 --text-muted: #9a9a9a;
                 --accent: #f2f2f2;
-                --accent-hover: #ffffff;
                 --accent-text: #0e0e0e;
-                --error: #ff6b5e;
             }
         }
 
@@ -57,59 +53,63 @@
         body {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-                     max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-            gap: 1rem;
+            min-height: 100dvh;
         }
 
-        .wrapper {
-            width: 100%;
-            max-width: 42rem;
-            margin: auto 0;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        /* Barre d'information */
-        .infobar {
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: clamp(1rem, 3vw, 1.5rem);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        /* --- En-tête --- */
+        header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 1rem;
-            flex-wrap: wrap;
+            padding: max(1rem, env(safe-area-inset-top)) clamp(1rem, 4vw, 2.5rem) 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
-        @media (prefers-color-scheme: dark) {
-            .infobar, .menu {
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            }
-        }
-
-        .user-info {
+        .user {
             display: flex;
-            flex-direction: column;
-            gap: 0.2rem;
+            align-items: center;
+            gap: 0.85rem;
             min-width: 0;
             flex: 1;
         }
 
-        .user-info .name {
+        .avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background: var(--accent);
+            color: var(--accent-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.95em;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        .user-text {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
             font-weight: 600;
-            font-size: 1.05em;
+            font-size: 0.95em;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        .user-info .meta {
+        .user-meta {
+            font-size: 0.78em;
             color: var(--text-muted);
-            font-size: 0.82em;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -117,20 +117,20 @@
 
         .logout-btn {
             font-family: inherit;
-            font-size: 0.9em;
-            font-weight: 600;
+            font-size: 0.82em;
+            font-weight: 500;
             border: 1px solid var(--border);
-            background: var(--field);
-            color: var(--text);
-            padding: 0.55rem 1rem;
+            background: transparent;
+            color: var(--text-muted);
+            padding: 0.5rem 0.9rem;
             border-radius: 0.5rem;
             cursor: pointer;
-            transition: background .15s, border-color .15s, opacity .15s;
+            transition: color .15s, border-color .15s, background .15s;
             flex-shrink: 0;
         }
 
         .logout-btn:hover:not(:disabled) {
-            background: var(--card);
+            color: var(--text);
             border-color: var(--text);
         }
 
@@ -139,112 +139,152 @@
             cursor: not-allowed;
         }
 
-        /* Menu */
-        .menu {
-            background: var(--card);
-            border-radius: var(--radius);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
+        /* --- Contenu principal --- */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 72rem;
+            margin: 0 auto;
+            padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 2.5rem);
         }
 
-        .menu-title {
-            font-size: 0.8em;
-            font-weight: 600;
+        h1 {
+            font-size: clamp(1.4rem, 2.5vw + 1rem, 2rem);
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            margin-bottom: 0.4rem;
+        }
+
+        .subtitle {
             color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 1rem clamp(1rem, 3vw, 1.5rem) 0.5rem;
+            font-size: 0.95em;
+            margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
         }
 
-        .menu-list {
-            list-style: none;
+        /* Grille de cartes */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+            gap: clamp(0.85rem, 2vw, 1.15rem);
         }
 
-        .menu-list li + li {
-            border-top: 1px solid var(--border);
-        }
-
-        .menu-list a {
+        .card {
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: space-between;
-            gap: 1rem;
-            padding: 1rem clamp(1rem, 3vw, 1.5rem);
+            gap: 1.5rem;
+            min-height: 9rem;
+            padding: 1.25rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
             text-decoration: none;
             color: var(--text);
-            font-weight: 500;
-            transition: background .15s;
+            transition: background .15s, border-color .15s, transform .15s;
+            position: relative;
         }
 
-        .menu-list a:hover {
-            background: var(--field);
+        .card:hover {
+            background: var(--card-hover);
+            border-color: var(--text-muted);
+            transform: translateY(-2px);
         }
 
-        .menu-list a .arrow {
-            color: var(--text-muted);
-            font-size: 1.1em;
-            transition: transform .15s;
+        .card:active {
+            transform: translateY(0);
         }
 
-        .menu-list a:hover .arrow {
-            transform: translateX(3px);
+        .card-icon {
+            width: 2.25rem;
+            height: 2.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
         }
 
-        /* État de chargement */
-        .loading {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.9em;
-            padding: 2rem 1rem;
-        }
-
-        /* Footer discret */
-        .footer {
+        .card-icon svg {
             width: 100%;
+            height: 100%;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.7;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 1em;
+            line-height: 1.3;
+        }
+
+        .card-desc {
+            font-size: 0.82em;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        /* --- Footer --- */
+        .footer {
             text-align: center;
             color: var(--text-muted);
             font-size: 0.72em;
-            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+            padding: 1.25rem 1rem max(1.25rem, env(safe-area-inset-bottom));
             opacity: 0.7;
             user-select: none;
         }
 
-        /* Écrans très bas (paysage mobile) */
+        /* --- Écrans très bas (paysage mobile) --- */
         @media (max-height: 520px) and (orientation: landscape) {
-            body {
-                justify-content: flex-start;
+            header {
+                padding-top: max(0.6rem, env(safe-area-inset-top));
+                padding-bottom: 0.6rem;
             }
-            .wrapper {
-                margin: 0;
-                max-width: 48rem;
+            main {
+                padding-top: 1rem;
+            }
+            .card {
+                min-height: 7rem;
+                padding: 1rem;
             }
         }
     </style>
 </head>
 <body>
-    <div class="wrapper">
 
-        <div class="infobar">
-            <div class="user-info">
-                <span class="name" id="user-name">Chargement…</span>
-                <span class="meta" id="user-meta"></span>
+    <header>
+        <div class="user">
+            <div class="avatar" id="avatar">…</div>
+            <div class="user-text">
+                <span class="user-name" id="user-name">Chargement…</span>
+                <span class="user-meta" id="user-meta"></span>
             </div>
-            <button class="logout-btn" id="logout-btn">Déconnexion</button>
         </div>
+        <button class="logout-btn" id="logout-btn">Déconnexion</button>
+    </header>
 
-        <div class="menu">
-            <div class="menu-title">Pages accessibles</div>
-            <ul class="menu-list" id="menu-list">
-                <li>
-                    <a href="https://account.honore-romane.fr/vote/">
-                        <span>Voter</span>
-                        <span class="arrow">→</span>
-                    </a>
-                </li>
-            </ul>
+    <main>
+        <h1>Bienvenue</h1>
+        <p class="subtitle">Sélectionnez une section pour continuer.</p>
+
+        <div class="grid">
+
+            <a class="card" href="https://account.honore-romane.fr/vote/">
+                <div class="card-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4"/>
+                        <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.66 0 3.22.45 4.56 1.24"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="card-title">Voter</div>
+                    <div class="card-desc">Accéder aux scrutins</div>
+                </div>
+            </a>
+
         </div>
-
-    </div>
+    </main>
 
     <footer class="footer">
         MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
@@ -280,6 +320,7 @@
         const LOGIN_URL = 'https://account.honore-romane.fr/login/';
         const CURRENT_URL = 'https://account.honore-romane.fr/account/';
 
+        const avatarEl = document.getElementById('avatar');
         const nameEl = document.getElementById('user-name');
         const metaEl = document.getElementById('user-meta');
         const logoutBtn = document.getElementById('logout-btn');
@@ -290,6 +331,15 @@
                 LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL)
             );
         };
+
+        // Initiales pour l'avatar (2 lettres max)
+        function initials(fullName) {
+            if (!fullName) return '?';
+            const parts = fullName.trim().split(/\s+/).filter(Boolean);
+            if (parts.length === 0) return '?';
+            if (parts.length === 1) return parts[0][0].toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
 
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             unsubscribe();
@@ -307,10 +357,12 @@
                     return;
                 }
 
-                // Remplir la barre d'information
                 const data = snap.data();
-                nameEl.textContent = data.name || user.email || 'Utilisateur';
+                const displayName = data.name || user.email || 'Utilisateur';
+
+                nameEl.textContent = displayName;
                 metaEl.textContent = [data.classe, data.email].filter(Boolean).join(' · ');
+                avatarEl.textContent = initials(displayName);
 
             } catch (err) {
                 console.error(err);

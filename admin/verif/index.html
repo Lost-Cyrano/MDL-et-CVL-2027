@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <title>Vérification des comptes — Honoré Romane</title>
+    <style>
+        :root {
+            --bg: #f5f3ef;
+            --card: #ffffff;
+            --card-hover: #fafaf8;
+            --border: #e5e2dc;
+            --text: #1a1a1a;
+            --text-muted: #6b6b6b;
+            --accent: #1a1a1a;
+            --accent-text: #ffffff;
+            --success: #1e7d4a;
+            --warning: #b45309;
+            --error: #c0392b;
+            --radius: 0.75rem;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0e0e0e;
+                --card: #1a1a1a;
+                --card-hover: #232323;
+                --border: #2e2e2e;
+                --text: #f2f2f2;
+                --text-muted: #9a9a9a;
+                --accent: #f2f2f2;
+                --accent-text: #0e0e0e;
+                --success: #4ade80;
+                --warning: #fbbf24;
+                --error: #ff6b5e;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: clamp(13px, 1vw + 11px, 15px);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+        }
+
+        /* --- En-tête --- */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: max(1rem, env(safe-area-inset-top)) clamp(1rem, 4vw, 2.5rem) 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .back-link {
+            font-family: inherit;
+            font-size: 0.85em;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 0.4rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            transition: color .15s, border-color .15s;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .back-link:hover {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .page-title {
+            font-weight: 600;
+            font-size: 0.95em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .user {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .user-name {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 12rem;
+        }
+
+        .logout-btn {
+            font-family: inherit;
+            font-size: 0.82em;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            padding: 0.5rem 0.9rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s;
+            flex-shrink: 0;
+        }
+
+        .logout-btn:hover:not(:disabled) {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .logout-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* --- Contenu --- */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 90rem;
+            margin: 0 auto;
+            padding: clamp(1.25rem, 3vw, 2.5rem) clamp(1rem, 4vw, 2.5rem);
+        }
+
+        /* --- Filtres / stats --- */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .filter-btn {
+            font-family: inherit;
+            font-size: 0.85em;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text-muted);
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s, background .15s;
+        }
+
+        .filter-btn:hover {
+            color: var(--text);
+            border-color: var(--text-muted);
+        }
+
+        .filter-btn.active {
+            background: var(--accent);
+            color: var(--accent-text);
+            border-color: var(--accent);
+        }
+
+        .filter-btn .count {
+            opacity: 0.7;
+            margin-left: 0.35rem;
+            font-weight: 400;
+        }
+
+        .search {
+            flex: 1;
+            min-width: 12rem;
+            font-family: inherit;
+            font-size: 0.9em;
+            padding: 0.55rem 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: 2rem;
+            background: var(--card);
+            color: var(--text);
+            outline: none;
+            transition: border-color .15s;
+        }
+
+        .search:focus {
+            border-color: var(--text);
+        }
+
+        /* --- Liste --- */
+        .list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 3rem 1rem;
+            font-size: 0.9em;
+        }
+
+        .user-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: clamp(1rem, 2vw, 1.25rem);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            transition: border-color .15s;
+        }
+
+        .user-card:hover {
+            border-color: var(--text-muted);
+        }
+
+        .user-card.pending {
+            border-left: 3px solid var(--warning);
+        }
+
+        .user-card.active {
+            border-left: 3px solid var(--success);
+        }
+
+        .user-card-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .user-card-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+
+        .user-card-title .name {
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        .badge {
+            font-size: 0.72em;
+            font-weight: 600;
+            padding: 0.2rem 0.55rem;
+            border-radius: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .badge.pending {
+            background: color-mix(in srgb, var(--warning) 18%, transparent);
+            color: var(--warning);
+        }
+
+        .badge.active {
+            background: color-mix(in srgb, var(--success) 18%, transparent);
+            color: var(--success);
+        }
+
+        .badge.role {
+            background: var(--card-hover);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        .badge.admin {
+            background: var(--accent);
+            color: var(--accent-text);
+        }
+
+        /* --- Grille d'informations --- */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+            gap: 0.6rem 1.25rem;
+            font-size: 0.88em;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .info-label {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.1rem;
+        }
+
+        .info-value {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            min-width: 0;
+        }
+
+        .info-value span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Bouton copier inline */
+        .copy-btn {
+            font-family: inherit;
+            font-size: 1em;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.15rem;
+            border-radius: 0.3rem;
+            line-height: 1;
+            transition: color .15s, background .15s;
+            flex-shrink: 0;
+        }
+
+        .copy-btn:hover {
+            color: var(--text);
+            background: var(--card-hover);
+        }
+
+        .copy-btn.copied {
+            color: var(--success);
+        }
+
+        /* --- Actions --- */
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            font-family: inherit;
+            font-size: 0.85em;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            transition: background .15s, border-color .15s, color .15s, opacity .15s;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            border-color: var(--text);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .action-btn.primary {
+            background: var(--accent);
+            color: var(--accent-text);
+            border-color: var(--accent);
+        }
+
+        .action-btn.primary:hover:not(:disabled) {
+            opacity: 0.85;
+        }
+
+        .action-btn.danger {
+            color: var(--error);
+            border-color: color-mix(in srgb, var(--error) 40%, transparent);
+        }
+
+        .action-btn.danger:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--error) 12%, transparent);
+            border-color: var(--error);
+        }
+
+        /* --- Footer --- */
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.72em;
+            padding: 1.25rem 1rem max(1.25rem, env(safe-area-inset-bottom));
+            opacity: 0.7;
+            user-select: none;
+        }
+
+        /* --- Loader --- */
+        .loading {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 3rem 1rem;
+            font-size: 0.9em;
+        }
+
+        /* --- Responsive : petits écrans --- */
+        @media (max-width: 640px) {
+            .user-card-head {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            .page-title {
+                display: none;
+            }
+        }
+
+        @media (max-height: 520px) and (orientation: landscape) {
+            header {
+                padding-top: max(0.6rem, env(safe-area-inset-top));
+                padding-bottom: 0.6rem;
+            }
+            main {
+                padding-top: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <a href="https://account.honore-romane.fr/account/" class="back-link">← Accueil</a>
+            <span class="page-title">Vérification des comptes</span>
+        </div>
+        <div class="user">
+            <span class="user-name" id="admin-name"></span>
+            <button class="logout-btn" id="logout-btn">Déconnexion</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="toolbar">
+            <button class="filter-btn active" data-filter="pending">
+                En attente <span class="count" id="count-pending">0</span>
+            </button>
+            <button class="filter-btn" data-filter="active">
+                Actifs <span class="count" id="count-active">0</span>
+            </button>
+            <button class="filter-btn" data-filter="all">
+                Tous <span class="count" id="count-all">0</span>
+            </button>
+            <input type="search" class="search" id="search" placeholder="Rechercher (nom, mail, classe…)" autocomplete="off">
+        </div>
+
+        <div class="list" id="list">
+            <div class="loading">Chargement des utilisateurs…</div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+        import {
+            getAuth,
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            getDoc,
+            updateDoc,
+            collection,
+            getDocs,
+            query,
+            orderBy,
+            deleteDoc,
+            deleteField
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
+            authDomain: "mdl-et-cvl-2027.firebaseapp.com",
+            projectId: "mdl-et-cvl-2027",
+            storageBucket: "mdl-et-cvl-2027.firebasestorage.app",
+            messagingSenderId: "142816093888",
+            appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
+            measurementId: "G-FBKEPBY0CQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const LOGIN_URL = 'https://account.honore-romane.fr/login/';
+        const HOME_URL = 'https://account.honore-romane.fr/account/';
+        const CURRENT_URL = 'https://account.honore-romane.fr/admin/verif/';
+
+        const adminNameEl = document.getElementById('admin-name');
+        const logoutBtn = document.getElementById('logout-btn');
+        const listEl = document.getElementById('list');
+        const searchEl = document.getElementById('search');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const counts = {
+            pending: document.getElementById('count-pending'),
+            active: document.getElementById('count-active'),
+            all: document.getElementById('count-all')
+        };
+
+        const ROLE_LABELS = {
+            cvl: 'CVL',
+            mdl: 'MDL',
+            eco_delegues: 'Éco Délégués',
+            commission: 'Commission',
+            utilisateur: 'Utilisateur'
+        };
+
+        let allUsers = [];
+        let currentFilter = 'pending';
+        let currentSearch = '';
+
+        // --- Garde d'accès ---
+        const goToLogin = () => {
+            window.location.replace(
+                LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL)
+            );
+        };
+
+        const goHome = () => {
+            window.location.replace(HOME_URL);
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                goToLogin();
+                return;
+            }
+
+            try {
+                const snap = await getDoc(doc(db, 'users', user.uid));
+                if (!snap.exists()) {
+                    await signOut(auth);
+                    goToLogin();
+                    return;
+                }
+
+                const me = snap.data();
+
+                // Statut actif obligatoire
+                if (me.status !== 'active') {
+                    await signOut(auth);
+                    goToLogin();
+                    return;
+                }
+
+                // Réservé aux administrateurs
+                if (me.isAdmin !== true) {
+                    goHome();
+                    return;
+                }
+
+                adminNameEl.textContent = me.name || user.email || 'Admin';
+
+                // Chargement de la liste
+                await loadUsers();
+
+            } catch (err) {
+                console.error(err);
+                await signOut(auth).catch(() => {});
+                goToLogin();
+            }
+        });
+
+        // --- Chargement des utilisateurs ---
+        async function loadUsers() {
+            try {
+                const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+                const snap = await getDocs(q);
+                allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                updateCounts();
+                render();
+            } catch (err) {
+                console.error(err);
+                listEl.innerHTML = '<div class="empty">Erreur lors du chargement.</div>';
+            }
+        }
+
+        function updateCounts() {
+            const pending = allUsers.filter(u => u.status === 'pending').length;
+            const active = allUsers.filter(u => u.status === 'active').length;
+            counts.pending.textContent = pending;
+            counts.active.textContent = active;
+            counts.all.textContent = allUsers.length;
+        }
+
+        // --- Échappement HTML ---
+        function esc(str) {
+            return String(str ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;',
+                '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        // --- Rendu ---
+        function render() {
+            let list = allUsers;
+
+            if (currentFilter !== 'all') {
+                list = list.filter(u => u.status === currentFilter);
+            }
+
+            if (currentSearch) {
+                const s = currentSearch.toLowerCase();
+                list = list.filter(u =>
+                    (u.name || '').toLowerCase().includes(s) ||
+                    (u.email || '').toLowerCase().includes(s) ||
+                    (u.classe || '').toLowerCase().includes(s) ||
+                    (u.phone || '').toLowerCase().includes(s)
+                );
+            }
+
+            if (list.length === 0) {
+                listEl.innerHTML = '<div class="empty">Aucun utilisateur à afficher.</div>';
+                return;
+            }
+
+            listEl.innerHTML = list.map(u => renderCard(u)).join('');
+            bindCardEvents();
+        }
+
+        function renderCard(u) {
+            const isPending = u.status === 'pending';
+            const isActive = u.status === 'active';
+            const isAdmin = u.isAdmin === true;
+
+            const roleLabel = ROLE_LABELS[u.role] || u.role || '—';
+            const statusBadge = isPending
+                ? '<span class="badge pending">En attente</span>'
+                : isActive
+                    ? '<span class="badge active">Actif</span>'
+                    : `<span class="badge">${esc(u.status || '—')}</span>`;
+
+            const adminBadge = isAdmin ? '<span class="badge admin">Admin</span>' : '';
+
+            const createdAt = u.createdAt?.toDate
+                ? u.createdAt.toDate().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                : '—';
+
+            return `
+                <article class="user-card ${isPending ? 'pending' : ''} ${isActive ? 'active' : ''}" data-uid="${esc(u.id)}">
+                    <div class="user-card-head">
+                        <div class="user-card-title">
+                            <span class="name">${esc(u.name || 'Sans nom')}</span>
+                            ${adminBadge}
+                            ${statusBadge}
+                            <span class="badge role">${esc(roleLabel)}</span>
+                        </div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Email</span>
+                            <div class="info-value">
+                                <span title="${esc(u.email || '')}">${esc(u.email || '—')}</span>
+                                ${u.email ? `<button class="copy-btn" data-copy="${esc(u.email)}" title="Copier">⧉</button>` : ''}
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Téléphone</span>
+                            <div class="info-value">
+                                <span title="${esc(u.phone || '')}">${esc(u.phone || '—')}</span>
+                                ${u.phone ? `<button class="copy-btn" data-copy="${esc(u.phone)}" title="Copier">⧉</button>` : ''}
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Classe</span>
+                            <div class="info-value"><span>${esc(u.classe || '—')}</span></div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Inscrit le</span>
+                            <div class="info-value"><span>${esc(createdAt)}</span></div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">UID</span>
+                            <div class="info-value">
+                                <span title="${esc(u.id)}" style="font-family: monospace; font-size: 0.85em;">${esc(u.id)}</span>
+                                <button class="copy-btn" data-copy="${esc(u.id)}" title="Copier">⧉</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        ${isPending ? `
+                            <button class="action-btn primary" data-action="activate">Valider le compte</button>
+                        ` : ''}
+                        ${isActive && !isAdmin ? `
+                            <button class="action-btn" data-action="deactivate">Remettre en attente</button>
+                        ` : ''}
+                        ${!isAdmin ? `
+                            <button class="action-btn danger" data-action="delete">Supprimer</button>
+                        ` : ''}
+                    </div>
+                </article>
+            `;
+        }
+
+        function bindCardEvents() {
+            // Copier / coller
+            listEl.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const value = btn.dataset.copy;
+                    try {
+                        await navigator.clipboard.writeText(value);
+                        const original = btn.textContent;
+                        btn.textContent = '✓';
+                        btn.classList.add('copied');
+                        setTimeout(() => {
+                            btn.textContent = original;
+                            btn.classList.remove('copied');
+                        }, 1000);
+                    } catch (_) {
+                        // Fallback pour navigateurs sans API clipboard
+                        const ta = document.createElement('textarea');
+                        ta.value = value;
+                        ta.style.position = 'fixed';
+                        ta.style.opacity = '0';
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                    }
+                });
+            });
+
+            // Actions
+            listEl.querySelectorAll('.action-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const card = btn.closest('.user-card');
+                    const uid = card.dataset.uid;
+                    const action = btn.dataset.action;
+                    const user = allUsers.find(u => u.id === uid);
+                    if (!user) return;
+
+                    // Sécurité : jamais toucher un admin
+                    if (user.isAdmin === true) {
+                        alert('Impossible de modifier un administrateur depuis cette interface.');
+                        return;
+                    }
+
+                    if (action === 'activate') {
+                        await changeStatus(uid, 'active', btn);
+                    } else if (action === 'deactivate') {
+                        await changeStatus(uid, 'pending', btn);
+                    } else if (action === 'delete') {
+                        const ok = confirm(`Supprimer définitivement le compte de ${user.name || user.email} ?\n\nCette action supprime uniquement la fiche Firestore. Le compte d'authentification Firebase devra être supprimé manuellement depuis la console Firebase.`);
+                        if (!ok) return;
+                        await deleteUser(uid, btn);
+                    }
+                });
+            });
+        }
+
+        async function changeStatus(uid, status, btn) {
+            btn.disabled = true;
+            const original = btn.textContent;
+            btn.textContent = '…';
+            try {
+                await updateDoc(doc(db, 'users', uid), { status });
+                // Mise à jour locale
+                const u = allUsers.find(x => x.id === uid);
+                if (u) u.status = status;
+                updateCounts();
+                render();
+            } catch (err) {
+                console.error(err);
+                alert('Erreur : ' + (err.message || 'action impossible.'));
+                btn.disabled = false;
+                btn.textContent = original;
+            }
+        }
+
+        async function deleteUser(uid, btn) {
+            btn.disabled = true;
+            const original = btn.textContent;
+            btn.textContent = '…';
+            try {
+                await deleteDoc(doc(db, 'users', uid));
+                allUsers = allUsers.filter(u => u.id !== uid);
+                updateCounts();
+                render();
+            } catch (err) {
+                console.error(err);
+                alert('Erreur : ' + (err.message || 'suppression impossible.'));
+                btn.disabled = false;
+                btn.textContent = original;
+            }
+        }
+
+        // --- Filtres ---
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                render();
+            });
+        });
+
+        // --- Recherche ---
+        searchEl.addEventListener('input', () => {
+            currentSearch = searchEl.value.trim();
+            render();
+        });
+
+        // --- Déconnexion ---
+        logoutBtn.addEventListener('click', async () => {
+            logoutBtn.disabled = true;
+            logoutBtn.textContent = 'Déconnexion…';
+            try {
+                await signOut(auth);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                window.location.replace(LOGIN_URL);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -370,6 +370,27 @@
 
             </div>
         </section>
+
+        <!-- Administration (visible uniquement pour les administrateurs) -->
+        <section class="section" id="admin-section" style="display: none;">
+            <div class="section-title">Administration</div>
+            <div class="grid">
+
+                <a class="card" href="https://account.honore-romane.fr/admin/verif/">
+                    <div class="card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M9 12l2 2 4-4"/>
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="card-title">Vérification des comptes</div>
+                        <div class="card-desc">Valider, suspendre ou supprimer les inscriptions.</div>
+                    </div>
+                </a>
+
+            </div>
+        </section>
     </main>
 
     <footer class="footer">
@@ -410,6 +431,7 @@
         const nameEl = document.getElementById('user-name');
         const metaEl = document.getElementById('user-meta');
         const logoutBtn = document.getElementById('logout-btn');
+        const adminSection = document.getElementById('admin-section');
 
         const goToLogin = () => {
             window.location.replace(
@@ -425,9 +447,7 @@
             return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
         }
 
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            unsubscribe();
-
+        onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 goToLogin();
                 return;
@@ -447,6 +467,11 @@
                 nameEl.textContent = displayName;
                 metaEl.textContent = [data.classe, data.email].filter(Boolean).join(' · ');
                 avatarEl.textContent = initials(displayName);
+
+                // Afficher la section Administrateur uniquement pour les admins
+                if (data.isAdmin === true) {
+                    adminSection.style.display = '';
+                }
 
             } catch (err) {
                 console.error(err);

@@ -56,7 +56,6 @@
             min-height: 100dvh;
         }
 
-        /* --- En-tête --- */
         header {
             display: flex;
             align-items: center;
@@ -139,7 +138,6 @@
             cursor: not-allowed;
         }
 
-        /* --- Contenu principal --- */
         main {
             flex: 1;
             width: 100%;
@@ -161,7 +159,6 @@
             margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
         }
 
-        /* Sections */
         .section {
             margin-bottom: clamp(1.75rem, 3vw, 2.5rem);
         }
@@ -175,7 +172,6 @@
             margin-bottom: 0.85rem;
         }
 
-        /* Grille de cartes */
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
@@ -239,7 +235,6 @@
             line-height: 1.4;
         }
 
-        /* --- Footer --- */
         .footer {
             text-align: center;
             color: var(--text-muted);
@@ -249,7 +244,6 @@
             user-select: none;
         }
 
-        /* --- Écrans très bas (paysage mobile) --- */
         @media (max-height: 520px) and (orientation: landscape) {
             header {
                 padding-top: max(0.6rem, env(safe-area-inset-top));
@@ -282,10 +276,22 @@
         <h1>Bienvenue</h1>
         <p class="subtitle">Sélectionnez une section pour continuer.</p>
 
-        <!-- Outils -->
         <section class="section">
             <div class="section-title">Outils</div>
             <div class="grid">
+
+                <a class="card" href="https://account.honore-romane.fr/project/vote/">
+                    <div class="card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M9 12l2 2 4-4"/>
+                            <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.66 0 3.22.45 4.56 1.24"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="card-title">Voter</div>
+                        <div class="card-desc">Accéder aux scrutins.</div>
+                    </div>
+                </a>
 
                 <a class="card" href="https://account.honore-romane.fr/tools/calendar/">
                     <div class="card-icon" aria-hidden="true">
@@ -344,23 +350,9 @@
             </div>
         </section>
 
-        <!-- Projets -->
         <section class="section">
             <div class="section-title">Projets</div>
             <div class="grid">
-
-                <a class="card" href="https://account.honore-romane.fr/project/vote/">
-                    <div class="card-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M9 12l2 2 4-4"/>
-                            <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.66 0 3.22.45 4.56 1.24"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="card-title">Voter</div>
-                        <div class="card-desc">Accéder aux scrutins.</div>
-                    </div>
-                </a>
 
                 <a class="card" href="https://account.honore-romane.fr/project/buvettes/caisses/">
                     <div class="card-icon" aria-hidden="true">

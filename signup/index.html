@@ -3,23 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="color-scheme" content="light dark">
     <title>Création de compte — Honoré Romane</title>
     <style>
         :root {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --field: #334155;
-            --field-focus: #475569;
-            --border: #475569;
-            --text: #f1f5f9;
-            --text-muted: #94a3b8;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --error: #ef4444;
-            --success: #10b981;
+            /* Thème clair (par défaut) */
+            --bg: #f5f3ef;           /* beige très clair */
+            --card: #ffffff;
+            --field: #fafaf8;
+            --field-focus: #ffffff;
+            --border: #d8d5cf;
+            --text: #1a1a1a;
+            --text-muted: #6b6b6b;
+            --accent: #1a1a1a;
+            --accent-hover: #000000;
+            --accent-text: #ffffff;
+            --error: #c0392b;
+            --success: #1e7d4a;
             --radius: 0.75rem;
             --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0e0e0e;
+                --card: #1a1a1a;
+                --field: #232323;
+                --field-focus: #2b2b2b;
+                --border: #3a3a3a;
+                --text: #f2f2f2;
+                --text-muted: #9a9a9a;
+                --accent: #f2f2f2;
+                --accent-hover: #ffffff;
+                --accent-text: #0e0e0e;
+                --error: #ff6b5e;
+                --success: #4ade80;
+            }
         }
 
         * {
@@ -54,7 +73,13 @@
             background: var(--card);
             border-radius: var(--radius);
             padding: clamp(1.25rem, 4vw, 2.25rem);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .container {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            }
         }
 
         h1 {
@@ -89,7 +114,12 @@
             font-weight: 500;
         }
 
-        input, select, button {
+        input[type="text"],
+        input[type="tel"],
+        input[type="email"],
+        input[type="password"],
+        select,
+        button {
             font-family: inherit;
             font-size: 1em;
             width: 100%;
@@ -109,7 +139,7 @@
 
         select {
             appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
             background-repeat: no-repeat;
             background-position: right 0.9rem center;
             background-size: 1em;
@@ -124,7 +154,7 @@
         button {
             background: var(--accent);
             border-color: var(--accent);
-            color: #fff;
+            color: var(--accent-text);
             font-weight: 600;
             cursor: pointer;
             padding: 0.85rem;
@@ -137,7 +167,7 @@
         }
 
         button:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
         }
 
@@ -152,6 +182,41 @@
             font-size: 0.9em;
             text-align: center;
             min-height: 1.2em;
+        }
+
+        /* Case RGPD */
+        .rgpd {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            padding: 0.85rem;
+            background: var(--field);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.85em;
+            line-height: 1.45;
+            color: var(--text-muted);
+            transition: border-color .15s;
+        }
+
+        .rgpd:hover {
+            border-color: var(--accent);
+        }
+
+        .rgpd input[type="checkbox"] {
+            flex-shrink: 0;
+            width: 1.15em;
+            height: 1.15em;
+            margin-top: 0.15em;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .rgpd a {
+            color: var(--text);
+            text-decoration: underline;
+            text-underline-offset: 2px;
         }
 
         /* Écran de confirmation */
@@ -189,7 +254,7 @@
             text-align: center;
             text-decoration: none;
             background: var(--accent);
-            color: #fff;
+            color: var(--accent-text);
             font-weight: 600;
             padding: 0.85rem;
             border-radius: 0.5rem;
@@ -213,7 +278,7 @@
                 grid-template-columns: 1fr 1fr;
                 gap: 0.75rem;
             }
-            .field-full, button, .form-error {
+            .field-full, button, .form-error, .rgpd {
                 grid-column: 1 / -1;
             }
             h1 { margin-bottom: 0.25rem; }
@@ -273,6 +338,14 @@
                     <span class="error" id="error-password"></span>
                 </div>
 
+                <label class="rgpd" for="rgpd">
+                    <input type="checkbox" id="rgpd" name="rgpd" required>
+                    <span>
+                        J'accepte que mes informations soient conservées pour vérifier mon identité avant l'activation de mon compte. Elles ne seront pas publiées et seront traitées dans le respect des normes RGPD européennes.
+                    </span>
+                </label>
+                <span class="error" id="error-rgpd"></span>
+
                 <div class="form-error" id="form-error"></div>
 
                 <button type="submit" id="submit-btn">Créer mon compte</button>
@@ -285,7 +358,7 @@
 
             <p>Vos informations ne seront pas publiées et vos données sont traitées dans le respect des normes RGPD européennes.</p>
             <p>Elles serviront à vérifier votre identité avant l'activation réelle de votre compte.</p>
-            <p>Vous serez prévenu(e) par mail (ou ajouté(e) à la communauté WhatsApp) dès l'activation de votre compte, ainsi que des prochaines réunions, modalités et usages de l'application.</p>
+            <p>Vous serez prévenu(e) par mail (et possiblement ajouté(e) à la communauté WhatsApp) dès l'activation de votre compte. Les fonctionnalités, modalités et usages de l'application vous seront décrits lors des prochaines réunions.</p>
 
             <p class="thanks">Merci pour votre temps et votre confiance.</p>
 
@@ -341,7 +414,7 @@
         }
 
         function clearErrors() {
-            ['name','classe','phone','email','role','password'].forEach(id => setError(id, ''));
+            ['name','classe','phone','email','role','password','rgpd'].forEach(id => setError(id, ''));
             formError.textContent = '';
         }
 
@@ -372,6 +445,10 @@
                 setError('password', '8 caractères minimum.');
                 ok = false;
             }
+            if (!values.rgpd) {
+                setError('rgpd', 'Vous devez accepter la clause de confidentialité.');
+                ok = false;
+            }
 
             return ok;
         }
@@ -388,7 +465,8 @@
                 phone: document.getElementById('phone').value.trim(),
                 email: document.getElementById('email').value.trim().toLowerCase(),
                 role: document.getElementById('role').value,
-                password: document.getElementById('password').value
+                password: document.getElementById('password').value,
+                rgpd: document.getElementById('rgpd').checked
             };
 
             if (!validate(values)) return;
@@ -413,6 +491,8 @@
                     email: values.email,
                     role: values.role,
                     status: 'pending',
+                    rgpdAccepted: true,
+                    rgpdAcceptedAt: serverTimestamp(),
                     createdAt: serverTimestamp()
                 });
 

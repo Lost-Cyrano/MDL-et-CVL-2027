@@ -62,7 +62,6 @@
             min-height: 100dvh;
         }
 
-        /* --- En-tête --- */
         header {
             display: flex;
             align-items: center;
@@ -150,7 +149,6 @@
             cursor: not-allowed;
         }
 
-        /* --- Contenu --- */
         main {
             flex: 1;
             width: 100%;
@@ -159,7 +157,6 @@
             padding: clamp(1.25rem, 3vw, 2.5rem) clamp(1rem, 4vw, 2.5rem);
         }
 
-        /* --- Filtres / stats --- */
         .toolbar {
             display: flex;
             flex-wrap: wrap;
@@ -216,7 +213,6 @@
             border-color: var(--text);
         }
 
-        /* --- Liste --- */
         .list {
             display: flex;
             flex-direction: column;
@@ -251,6 +247,10 @@
 
         .user-card.active {
             border-left: 3px solid var(--success);
+        }
+
+        .user-card.rejected {
+            border-left: 3px solid var(--error);
         }
 
         .user-card-head {
@@ -293,6 +293,11 @@
             color: var(--success);
         }
 
+        .badge.rejected {
+            background: color-mix(in srgb, var(--error) 18%, transparent);
+            color: var(--error);
+        }
+
         .badge.role {
             background: var(--card-hover);
             color: var(--text-muted);
@@ -304,7 +309,6 @@
             color: var(--accent-text);
         }
 
-        /* --- Grille d'informations --- */
         .info-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
@@ -339,7 +343,6 @@
             white-space: nowrap;
         }
 
-        /* Bouton copier inline */
         .copy-btn {
             font-family: inherit;
             font-size: 1em;
@@ -363,7 +366,6 @@
             color: var(--success);
         }
 
-        /* --- Actions --- */
         .actions {
             display: flex;
             gap: 0.5rem;
@@ -412,7 +414,6 @@
             border-color: var(--error);
         }
 
-        /* --- Footer --- */
         .footer {
             text-align: center;
             color: var(--text-muted);
@@ -422,7 +423,6 @@
             user-select: none;
         }
 
-        /* --- Loader --- */
         .loading {
             text-align: center;
             color: var(--text-muted);
@@ -430,7 +430,6 @@
             font-size: 0.9em;
         }
 
-        /* --- Responsive : petits écrans --- */
         @media (max-width: 640px) {
             .user-card-head {
                 flex-direction: column;
@@ -476,6 +475,9 @@
             <button class="filter-btn" data-filter="active">
                 Actifs <span class="count" id="count-active">0</span>
             </button>
+            <button class="filter-btn" data-filter="rejected">
+                Refusés <span class="count" id="count-rejected">0</span>
+            </button>
             <button class="filter-btn" data-filter="all">
                 Tous <span class="count" id="count-all">0</span>
             </button>
@@ -506,9 +508,7 @@
             collection,
             getDocs,
             query,
-            orderBy,
-            deleteDoc,
-            deleteField
+            orderBy
         } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -537,6 +537,7 @@
         const counts = {
             pending: document.getElementById('count-pending'),
             active: document.getElementById('count-active'),
+            rejected: document.getElementById('count-rejected'),
             all: document.getElementById('count-all')
         };
 
@@ -548,11 +549,16 @@
             utilisateur: 'Utilisateur'
         };
 
+        const STATUS_LABELS = {
+            pending: 'En attente',
+            active: 'Actif',
+            rejected: 'Refusé'
+        };
+
         let allUsers = [];
         let currentFilter = 'pending';
         let currentSearch = '';
 
-        // --- Garde d'accès ---
         const goToLogin = () => {
             window.location.replace(
                 LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL)
@@ -579,14 +585,12 @@
 
                 const me = snap.data();
 
-                // Statut actif obligatoire
                 if (me.status !== 'active') {
                     await signOut(auth);
                     goToLogin();
                     return;
                 }
 
-                // Réservé aux administrateurs
                 if (me.isAdmin !== true) {
                     goHome();
                     return;
@@ -594,7 +598,6 @@
 
                 adminNameEl.textContent = me.name || user.email || 'Admin';
 
-                // Chargement de la liste
                 await loadUsers();
 
             } catch (err) {
@@ -604,7 +607,6 @@
             }
         });
 
-        // --- Chargement des utilisateurs ---
         async function loadUsers() {
             try {
                 const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
@@ -619,14 +621,12 @@
         }
 
         function updateCounts() {
-            const pending = allUsers.filter(u => u.status === 'pending').length;
-            const active = allUsers.filter(u => u.status === 'active').length;
-            counts.pending.textContent = pending;
-            counts.active.textContent = active;
+            counts.pending.textContent = allUsers.filter(u => u.status === 'pending').length;
+            counts.active.textContent = allUsers.filter(u => u.status === 'active').length;
+            counts.rejected.textContent = allUsers.filter(u => u.status === 'rejected').length;
             counts.all.textContent = allUsers.length;
         }
 
-        // --- Échappement HTML ---
         function esc(str) {
             return String(str ?? '').replace(/[&<>"']/g, c => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;',
@@ -634,7 +634,6 @@
             }[c]));
         }
 
-        // --- Rendu ---
         function render() {
             let list = allUsers;
 
@@ -664,14 +663,12 @@
         function renderCard(u) {
             const isPending = u.status === 'pending';
             const isActive = u.status === 'active';
+            const isRejected = u.status === 'rejected';
             const isAdmin = u.isAdmin === true;
 
             const roleLabel = ROLE_LABELS[u.role] || u.role || '—';
-            const statusBadge = isPending
-                ? '<span class="badge pending">En attente</span>'
-                : isActive
-                    ? '<span class="badge active">Actif</span>'
-                    : `<span class="badge">${esc(u.status || '—')}</span>`;
+            const statusClass = isPending ? 'pending' : isActive ? 'active' : isRejected ? 'rejected' : '';
+            const statusLabel = STATUS_LABELS[u.status] || u.status || '—';
 
             const adminBadge = isAdmin ? '<span class="badge admin">Admin</span>' : '';
 
@@ -679,13 +676,34 @@
                 ? u.createdAt.toDate().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
                 : '—';
 
+            // Actions selon statut (jamais sur un admin)
+            let actionsHtml = '';
+            if (!isAdmin) {
+                if (isPending) {
+                    actionsHtml = `
+                        <button class="action-btn primary" data-action="activate">Valider</button>
+                        <button class="action-btn danger" data-action="reject">Refuser</button>
+                    `;
+                } else if (isActive) {
+                    actionsHtml = `
+                        <button class="action-btn" data-action="deactivate">Remettre en attente</button>
+                        <button class="action-btn danger" data-action="reject">Refuser</button>
+                    `;
+                } else if (isRejected) {
+                    actionsHtml = `
+                        <button class="action-btn primary" data-action="activate">Valider</button>
+                        <button class="action-btn" data-action="deactivate">Remettre en attente</button>
+                    `;
+                }
+            }
+
             return `
-                <article class="user-card ${isPending ? 'pending' : ''} ${isActive ? 'active' : ''}" data-uid="${esc(u.id)}">
+                <article class="user-card ${statusClass}" data-uid="${esc(u.id)}">
                     <div class="user-card-head">
                         <div class="user-card-title">
                             <span class="name">${esc(u.name || 'Sans nom')}</span>
                             ${adminBadge}
-                            ${statusBadge}
+                            <span class="badge ${statusClass}">${esc(statusLabel)}</span>
                             <span class="badge role">${esc(roleLabel)}</span>
                         </div>
                     </div>
@@ -722,23 +740,12 @@
                         </div>
                     </div>
 
-                    <div class="actions">
-                        ${isPending ? `
-                            <button class="action-btn primary" data-action="activate">Valider le compte</button>
-                        ` : ''}
-                        ${isActive && !isAdmin ? `
-                            <button class="action-btn" data-action="deactivate">Remettre en attente</button>
-                        ` : ''}
-                        ${!isAdmin ? `
-                            <button class="action-btn danger" data-action="delete">Supprimer</button>
-                        ` : ''}
-                    </div>
+                    ${actionsHtml ? `<div class="actions">${actionsHtml}</div>` : ''}
                 </article>
             `;
         }
 
         function bindCardEvents() {
-            // Copier / coller
             listEl.querySelectorAll('.copy-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const value = btn.dataset.copy;
@@ -752,7 +759,6 @@
                             btn.classList.remove('copied');
                         }, 1000);
                     } catch (_) {
-                        // Fallback pour navigateurs sans API clipboard
                         const ta = document.createElement('textarea');
                         ta.value = value;
                         ta.style.position = 'fixed';
@@ -765,7 +771,6 @@
                 });
             });
 
-            // Actions
             listEl.querySelectorAll('.action-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const card = btn.closest('.user-card');
@@ -774,7 +779,6 @@
                     const user = allUsers.find(u => u.id === uid);
                     if (!user) return;
 
-                    // Sécurité : jamais toucher un admin
                     if (user.isAdmin === true) {
                         alert('Impossible de modifier un administrateur depuis cette interface.');
                         return;
@@ -784,10 +788,10 @@
                         await changeStatus(uid, 'active', btn);
                     } else if (action === 'deactivate') {
                         await changeStatus(uid, 'pending', btn);
-                    } else if (action === 'delete') {
-                        const ok = confirm(`Supprimer définitivement le compte de ${user.name || user.email} ?\n\nCette action supprime uniquement la fiche Firestore. Le compte d'authentification Firebase devra être supprimé manuellement depuis la console Firebase.`);
+                    } else if (action === 'reject') {
+                        const ok = confirm(`Refuser définitivement le compte de ${user.name || user.email} ?\n\nLe compte sera marqué comme "refusé" et l'utilisateur ne pourra pas se connecter.`);
                         if (!ok) return;
-                        await deleteUser(uid, btn);
+                        await changeStatus(uid, 'rejected', btn);
                     }
                 });
             });
@@ -799,7 +803,6 @@
             btn.textContent = '…';
             try {
                 await updateDoc(doc(db, 'users', uid), { status });
-                // Mise à jour locale
                 const u = allUsers.find(x => x.id === uid);
                 if (u) u.status = status;
                 updateCounts();
@@ -812,24 +815,6 @@
             }
         }
 
-        async function deleteUser(uid, btn) {
-            btn.disabled = true;
-            const original = btn.textContent;
-            btn.textContent = '…';
-            try {
-                await deleteDoc(doc(db, 'users', uid));
-                allUsers = allUsers.filter(u => u.id !== uid);
-                updateCounts();
-                render();
-            } catch (err) {
-                console.error(err);
-                alert('Erreur : ' + (err.message || 'suppression impossible.'));
-                btn.disabled = false;
-                btn.textContent = original;
-            }
-        }
-
-        // --- Filtres ---
         filterBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 filterBtns.forEach(b => b.classList.remove('active'));
@@ -839,13 +824,11 @@
             });
         });
 
-        // --- Recherche ---
         searchEl.addEventListener('input', () => {
             currentSearch = searchEl.value.trim();
             render();
         });
 
-        // --- Déconnexion ---
         logoutBtn.addEventListener('click', async () => {
             logoutBtn.disabled = true;
             logoutBtn.textContent = 'Déconnexion…';

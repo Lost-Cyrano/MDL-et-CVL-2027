@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <title>Calendrier — Honoré Romane</title>
+    <style>
+        :root {
+            --bg: #f5f3ef;
+            --card: #ffffff;
+            --card-hover: #fafaf8;
+            --field: #fafaf8;
+            --border: #e5e2dc;
+            --text: #1a1a1a;
+            --text-muted: #6b6b6b;
+            --accent: #1a1a1a;
+            --accent-hover: #000000;
+            --accent-text: #ffffff;
+            --success: #1e7d4a;
+            --warning: #b45309;
+            --error: #c0392b;
+            --radius: 0.75rem;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0e0e0e;
+                --card: #1a1a1a;
+                --card-hover: #232323;
+                --field: #232323;
+                --border: #2e2e2e;
+                --text: #f2f2f2;
+                --text-muted: #9a9a9a;
+                --accent: #f2f2f2;
+                --accent-hover: #ffffff;
+                --accent-text: #0e0e0e;
+                --success: #4ade80;
+                --warning: #fbbf24;
+                --error: #ff6b5e;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: clamp(13px, 1vw + 11px, 15px);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+        }
+
+        /* --- Header --- */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: max(1rem, env(safe-area-inset-top)) clamp(1rem, 4vw, 2.5rem) 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            flex-wrap: wrap;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .back-link {
+            font-family: inherit;
+            font-size: 0.85em;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 0.4rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            transition: color .15s, border-color .15s;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .back-link:hover {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .page-title {
+            font-weight: 600;
+            font-size: 0.95em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .icon-btn, .text-btn {
+            font-family: inherit;
+            font-size: 0.82em;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            padding: 0.5rem 0.85rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s, background .15s;
+            white-space: nowrap;
+        }
+
+        .icon-btn:hover, .text-btn:hover:not(:disabled) {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .text-btn.primary {
+            background: var(--accent);
+            color: var(--accent-text);
+            border-color: var(--accent);
+        }
+
+        .text-btn.primary:hover {
+            opacity: 0.85;
+        }
+
+        .text-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* --- Main --- */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 90rem;
+            margin: 0 auto;
+            padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 4vw, 2.5rem);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* --- Barre de navigation de mois --- */
+        .month-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .month-title {
+            font-size: clamp(1.05rem, 1.5vw + 0.8rem, 1.4rem);
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            text-transform: capitalize;
+        }
+
+        .month-nav {
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        .month-nav button {
+            font-family: inherit;
+            font-size: 1em;
+            width: 2.25rem;
+            height: 2.25rem;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background .15s, border-color .15s;
+        }
+
+        .month-nav button:hover {
+            background: var(--card-hover);
+            border-color: var(--text-muted);
+        }
+
+        /* --- Grille calendrier --- */
+        .calendar {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background: var(--card-hover);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .weekdays span {
+            padding: 0.6rem 0.5rem;
+            text-align: center;
+            font-size: 0.72em;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+        }
+
+        .day {
+            min-height: clamp(4.5rem, 12vw, 7rem);
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 0.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            cursor: pointer;
+            transition: background .15s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .day:nth-child(7n) { border-right: none; }
+        .days .day:last-child { border-bottom: none; }
+
+        .day.other-month {
+            background: color-mix(in srgb, var(--bg) 60%, transparent);
+        }
+
+        .day.other-month .day-number {
+            color: var(--text-muted);
+            opacity: 0.5;
+        }
+
+        .day:hover {
+            background: var(--card-hover);
+        }
+
+        .day-number {
+            font-size: 0.78em;
+            font-weight: 600;
+            color: var(--text);
+            width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .day.today .day-number {
+            background: var(--accent);
+            color: var(--accent-text);
+        }
+
+        .day-events {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            min-width: 0;
+        }
+
+        .day-event {
+            font-size: 0.68em;
+            padding: 0.1rem 0.35rem;
+            background: color-mix(in srgb, var(--accent) 15%, transparent);
+            color: var(--text);
+            border-left: 2px solid var(--accent);
+            border-radius: 0.2rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .day-event.role-cvl { border-left-color: #c0392b; background: color-mix(in srgb, #c0392b 15%, transparent); }
+        .day-event.role-mdl { border-left-color: #2563eb; background: color-mix(in srgb, #2563eb 15%, transparent); }
+        .day-event.role-eco_delegues { border-left-color: #1e7d4a; background: color-mix(in srgb, #1e7d4a 15%, transparent); }
+        .day-event.role-commission { border-left-color: #b45309; background: color-mix(in srgb, #b45309 15%, transparent); }
+        .day-event.role-tous { border-left-color: #6b6b6b; background: color-mix(in srgb, #6b6b6b 15%, transparent); }
+
+        .day-more {
+            font-size: 0.68em;
+            color: var(--text-muted);
+            padding-left: 0.4rem;
+            cursor: pointer;
+        }
+
+        /* --- Modal --- */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 100;
+            overflow-y: auto;
+        }
+
+        .modal-backdrop.visible {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: clamp(1.25rem, 3vw, 1.75rem);
+            width: 100%;
+            max-width: 32rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+            margin: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .modal-title {
+            font-size: 1.1em;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            font-family: inherit;
+            font-size: 1.2em;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.35rem;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+            background: var(--card-hover);
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .form-field label {
+            font-size: 0.82em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .form-field input,
+        .form-field select,
+        .form-field textarea {
+            font-family: inherit;
+            font-size: 1em;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--field);
+            color: var(--text);
+            outline: none;
+            transition: border-color .15s;
+            width: 100%;
+        }
+
+        .form-field textarea {
+            min-height: 4.5rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus,
+        .form-field textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-size: 0.9em;
+            font-weight: 600;
+            padding: 0.6rem 1.1rem;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: opacity .15s, border-color .15s, color .15s, background .15s;
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            color: var(--accent-text);
+        }
+
+        .btn.primary:hover:not(:disabled) { opacity: 0.85; }
+
+        .btn.secondary {
+            background: transparent;
+            color: var(--text);
+            border-color: var(--border);
+        }
+
+        .btn.secondary:hover:not(:disabled) {
+            border-color: var(--text);
+        }
+
+        .btn.danger {
+            background: transparent;
+            color: var(--error);
+            border-color: color-mix(in srgb, var(--error) 40%, transparent);
+        }
+
+        .btn.danger:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--error) 12%, transparent);
+            border-color: var(--error);
+        }
+
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* --- Liste événements dans le modal détail --- */
+        .detail-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .detail-item {
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.75rem 0.9rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            border-left-width: 3px;
+        }
+
+        .detail-item.role-cvl { border-left-color: #c0392b; }
+        .detail-item.role-mdl { border-left-color: #2563eb; }
+        .detail-item.role-eco_delegues { border-left-color: #1e7d4a; }
+        .detail-item.role-commission { border-left-color: #b45309; }
+        .detail-item.role-tous { border-left-color: #6b6b6b; }
+
+        .detail-item-title {
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        .detail-item-meta {
+            font-size: 0.82em;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .detail-item-actions {
+            display: flex;
+            gap: 0.4rem;
+            margin-top: 0.35rem;
+            flex-wrap: wrap;
+        }
+
+        .detail-item-actions button {
+            font-family: inherit;
+            font-size: 0.78em;
+            padding: 0.35rem 0.7rem;
+            border-radius: 0.4rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color .15s, border-color .15s;
+        }
+
+        .detail-item-actions button:hover {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        /* --- Empty state --- */
+        .empty {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9em;
+            padding: 1.5rem 1rem;
+        }
+
+        /* --- Footer --- */
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.72em;
+            padding: 1.25rem 1rem max(1.25rem, env(safe-area-inset-bottom));
+            opacity: 0.7;
+            user-select: none;
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 640px) {
+            .weekdays span {
+                font-size: 0.65em;
+                padding: 0.5rem 0.2rem;
+            }
+            .day {
+                padding: 0.25rem;
+                min-height: 4rem;
+            }
+            .day-number {
+                font-size: 0.7em;
+                width: 1.3rem;
+                height: 1.3rem;
+            }
+            .day-event {
+                font-size: 0.62em;
+            }
+            .page-title {
+                display: none;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-height: 520px) and (orientation: landscape) {
+            header {
+                padding-top: max(0.6rem, env(safe-area-inset-top));
+                padding-bottom: 0.6rem;
+            }
+            main {
+                padding-top: 1rem;
+            }
+            .day {
+                min-height: 3.5rem;
+            }
+        }
+
+        /* --- Loader --- */
+        .loader {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 3rem 1rem;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <a href="https://account.honore-romane.fr/account/" class="back-link">← Accueil</a>
+            <span class="page-title">Calendrier</span>
+        </div>
+        <div class="header-actions">
+            <button class="text-btn" id="btn-today">Aujourd'hui</button>
+            <button class="text-btn" id="btn-export-ics">Exporter (.ics)</button>
+            <button class="text-btn primary" id="btn-new" style="display:none;">+ Événement</button>
+            <button class="text-btn" id="logout-btn">Déconnexion</button>
+        </div>
+    </header>
+
+    <main>
+
+        <div class="month-bar">
+            <div class="month-title" id="month-title">—</div>
+            <div class="month-nav">
+                <button id="prev-month" aria-label="Mois précédent">‹</button>
+                <button id="next-month" aria-label="Mois suivant">›</button>
+            </div>
+        </div>
+
+        <div class="calendar">
+            <div class="weekdays">
+                <span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span>
+            </div>
+            <div class="days" id="days">
+                <div class="loader">Chargement…</div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="footer">
+        MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
+    </footer>
+
+    <!-- Modal détail d'un jour -->
+    <div class="modal-backdrop" id="day-modal">
+        <div class="modal" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <div class="modal-title" id="day-modal-title">Événements</div>
+                <button class="modal-close" data-close>✕</button>
+            </div>
+            <div class="detail-list" id="day-modal-list"></div>
+        </div>
+    </div>
+
+    <!-- Modal ajout / édition -->
+    <div class="modal-backdrop" id="edit-modal">
+        <div class="modal" role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <div class="modal-title" id="edit-modal-title">Nouvel événement</div>
+                <button class="modal-close" data-close>✕</button>
+            </div>
+            <form id="edit-form">
+                <div class="form-field">
+                    <label for="ev-title">Titre</label>
+                    <input type="text" id="ev-title" required maxlength="120">
+                </div>
+                <div class="form-field">
+                    <label for="ev-desc">Description</label>
+                    <textarea id="ev-desc" maxlength="1000"></textarea>
+                </div>
+                <div class="form-field">
+                    <label for="ev-location">Lieu</label>
+                    <input type="text" id="ev-location" maxlength="200">
+                </div>
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="ev-date">Date</label>
+                        <input type="date" id="ev-date" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="ev-time">Heure</label>
+                        <input type="time" id="ev-time">
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label for="ev-role">Public visé</label>
+                    <select id="ev-role" required>
+                        <option value="tous">Tous les membres</option>
+                        <option value="cvl">CVL</option>
+                        <option value="mdl">MDL</option>
+                        <option value="eco_delegues">Éco Délégués</option>
+                        <option value="commission">Commission</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn danger" id="btn-delete" style="display:none;">Supprimer</button>
+                    <button type="button" class="btn secondary" data-close>Annuler</button>
+                    <button type="submit" class="btn primary" id="btn-save">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+        import {
+            getAuth,
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            getDoc,
+            collection,
+            getDocs,
+            addDoc,
+            updateDoc,
+            deleteDoc,
+            query,
+            orderBy,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
+            authDomain: "mdl-et-cvl-2027.firebaseapp.com",
+            projectId: "mdl-et-cvl-2027",
+            storageBucket: "mdl-et-cvl-2027.firebasestorage.app",
+            messagingSenderId: "142816093888",
+            appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
+            measurementId: "G-FBKEPBY0CQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const LOGIN_URL = 'https://account.honore-romane.fr/login/';
+        const CURRENT_URL = 'https://account.honore-romane.fr/tools/calendar/';
+
+        const ROLE_LABELS = {
+            cvl: 'CVL',
+            mdl: 'MDL',
+            eco_delegues: 'Éco Délégués',
+            commission: 'Commission',
+            utilisateur: 'Utilisateur'
+        };
+
+        // --- État global ---
+        let me = null;           // doc Firestore de l'utilisateur courant
+        let isAdmin = false;
+        let allEvents = [];      // tous les événements lus depuis Firestore
+        let visibleEvents = [];  // filtrés selon mes droits
+        let currentMonth = new Date();
+        currentMonth.setDate(1);
+        let editingId = null;
+
+        const daysEl = document.getElementById('days');
+        const monthTitleEl = document.getElementById('month-title');
+        const btnNew = document.getElementById('btn-new');
+        const btnPrev = document.getElementById('prev-month');
+        const btnNext = document.getElementById('next-month');
+        const btnToday = document.getElementById('btn-today');
+        const btnExportIcs = document.getElementById('btn-export-ics');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        const dayModal = document.getElementById('day-modal');
+        const dayModalTitle = document.getElementById('day-modal-title');
+        const dayModalList = document.getElementById('day-modal-list');
+
+        const editModal = document.getElementById('edit-modal');
+        const editModalTitle = document.getElementById('edit-modal-title');
+        const editForm = document.getElementById('edit-form');
+        const btnDelete = document.getElementById('btn-delete');
+        const evTitle = document.getElementById('ev-title');
+        const evDesc = document.getElementById('ev-desc');
+        const evLocation = document.getElementById('ev-location');
+        const evDate = document.getElementById('ev-date');
+        const evTime = document.getElementById('ev-time');
+        const evRole = document.getElementById('ev-role');
+
+        // --- Garde d'accès ---
+        const goToLogin = () => {
+            window.location.replace(
+                LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL)
+            );
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                goToLogin();
+                return;
+            }
+
+            try {
+                const snap = await getDoc(doc(db, 'users', user.uid));
+                if (!snap.exists() || snap.data().status !== 'active') {
+                    await signOut(auth);
+                    goToLogin();
+                    return;
+                }
+
+                me = snap.data();
+                isAdmin = me.isAdmin === true;
+
+                if (isAdmin) {
+                    btnNew.style.display = '';
+                }
+
+                await loadEvents();
+                render();
+
+            } catch (err) {
+                console.error(err);
+                await signOut(auth).catch(() => {});
+                goToLogin();
+            }
+        });
+
+        // --- Chargement des événements ---
+        async function loadEvents() {
+            try {
+                const q = query(collection(db, 'events'), orderBy('date', 'asc'));
+                const snap = await getDocs(q);
+                allEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+                // Filtrage selon les droits
+                if (isAdmin) {
+                    visibleEvents = allEvents;
+                } else if (me.role === 'cvl') {
+                    // CVL voit tout
+                    visibleEvents = allEvents;
+                } else {
+                    // Sinon : événements visant son rôle + ceux visant "tous"
+                    visibleEvents = allEvents.filter(ev =>
+                        ev.role === 'tous' || ev.role === me.role
+                    );
+                }
+            } catch (err) {
+                console.error(err);
+                daysEl.innerHTML = '<div class="loader">Erreur de chargement.</div>';
+            }
+        }
+
+        // --- Utilitaires dates ---
+        function pad(n) { return String(n).padStart(2, '0'); }
+        function toDateKey(d) {
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
+        function eventsForDay(key) {
+            return visibleEvents
+                .filter(ev => ev.date === key)
+                .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+        }
+
+        // --- Rendu grille ---
+        function render() {
+            const y = currentMonth.getFullYear();
+            const m = currentMonth.getMonth();
+
+            monthTitleEl.textContent = currentMonth.toLocaleDateString('fr-FR', {
+                month: 'long', year: 'numeric'
+            });
+
+            const firstOfMonth = new Date(y, m, 1);
+            const startOffset = (firstOfMonth.getDay() + 6) % 7; // lundi = 0
+            const gridStart = new Date(y, m, 1 - startOffset);
+
+            const today = new Date();
+            const todayKey = toDateKey(today);
+
+            let html = '';
+            for (let i = 0; i < 42; i++) {
+                const d = new Date(gridStart);
+                d.setDate(gridStart.getDate() + i);
+                const key = toDateKey(d);
+                const isOther = d.getMonth() !== m;
+                const isToday = key === todayKey;
+
+                const evts = eventsForDay(key);
+                const maxShow = 3;
+                const shown = evts.slice(0, maxShow);
+                const rest = evts.length - shown.length;
+
+                html += `<div class="day${isOther ? ' other-month' : ''}${isToday ? ' today' : ''}" data-key="${key}">`;
+                html += `<div class="day-number">${d.getDate()}</div>`;
+                if (shown.length) {
+                    html += '<div class="day-events">';
+                    for (const ev of shown) {
+                        html += `<div class="day-event role-${esc(ev.role || 'tous')}" title="${esc(ev.title)}">${esc(ev.title)}</div>`;
+                    }
+                    if (rest > 0) {
+                        html += `<div class="day-more">+${rest} autre${rest > 1 ? 's' : ''}</div>`;
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+
+            daysEl.innerHTML = html;
+
+            daysEl.querySelectorAll('.day').forEach(el => {
+                el.addEventListener('click', () => openDayModal(el.dataset.key));
+            });
+        }
+
+        // --- Modal détail d'un jour ---
+        function openDayModal(key) {
+            const evts = eventsForDay(key);
+            const dateObj = new Date(key + 'T00:00:00');
+            dayModalTitle.textContent = dateObj.toLocaleDateString('fr-FR', {
+                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+            });
+
+            if (!evts.length) {
+                dayModalList.innerHTML = '<div class="empty">Aucun événement ce jour.</div>';
+            } else {
+                dayModalList.innerHTML = evts.map(ev => renderDetailItem(ev)).join('');
+                bindDetailActions();
+            }
+
+            dayModal.classList.add('visible');
+        }
+
+        function renderDetailItem(ev) {
+            const parts = [];
+            if (ev.time) parts.push(`🕐 ${esc(ev.time)}`);
+            if (ev.location) parts.push(`📍 ${esc(ev.location)}`);
+            parts.push(`👥 ${esc(ROLE_LABELS[ev.role] || ev.role || 'Tous')}`);
+
+            return `
+                <div class="detail-item role-${esc(ev.role || 'tous')}">
+                    <div class="detail-item-title">${esc(ev.title)}</div>
+                    <div class="detail-item-meta">
+                        ${parts.map(p => `<span>${p}</span>`).join('')}
+                        ${ev.description ? `<span>${esc(ev.description)}</span>` : ''}
+                    </div>
+                    <div class="detail-item-actions">
+                        <button data-ics="${esc(ev.id)}">Ajouter à mon calendrier (.ics)</button>
+                        ${isAdmin ? `<button data-edit="${esc(ev.id)}">Modifier</button>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function bindDetailActions() {
+            dayModalList.querySelectorAll('[data-ics]').forEach(btn => {
+                btn.addEventListener('click', () => downloadIcs([btn.dataset.ics]));
+            });
+            dayModalList.querySelectorAll('[data-edit]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    closeAllModals();
+                    openEditModal(btn.dataset.edit);
+                });
+            });
+        }
+
+        // --- Export ICS ---
+        function icsEscape(str) {
+            return String(str || '')
+                .replace(/\\/g, '\\\\')
+                .replace(/;/g, '\\;')
+                .replace(/,/g, '\\,')
+                .replace(/\n/g, '\\n');
+        }
+
+        function buildIcsEvent(ev) {
+            const dt = (ev.date || '').replace(/-/g, '');
+            let dtStart = `${dt}T090000`;
+            let dtEnd = `${dt}T100000`;
+            if (ev.time) {
+                const [h, m] = ev.time.split(':');
+                const startH = parseInt(h, 10);
+                const startM = parseInt(m, 10);
+                const endH = String(Math.min(startH + 1, 23)).padStart(2, '0');
+                dtStart = `${dt}T${pad(startH)}${pad(startM)}00`;
+                dtEnd = `${dt}T${endH}${pad(startM)}00`;
+            }
+            const uid = `${ev.id}@account.honore-romane.fr`;
+            const now = new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z';
+
+            return [
+                'BEGIN:VEVENT',
+                `UID:${uid}`,
+                `DTSTAMP:${now}`,
+                `DTSTART:${dtStart}`,
+                `DTEND:${dtEnd}`,
+                `SUMMARY:${icsEscape(ev.title)}`,
+                ev.description ? `DESCRIPTION:${icsEscape(ev.description)}` : '',
+                ev.location ? `LOCATION:${icsEscape(ev.location)}` : '',
+                'END:VEVENT'
+            ].filter(Boolean).join('\r\n');
+        }
+
+        function downloadIcs(ids) {
+            const events = ids
+                .map(id => allEvents.find(e => e.id === id))
+                .filter(Boolean);
+            if (!events.length) return;
+
+            const body = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//Honore Romane//Calendrier//FR',
+                'CALSCALE:GREGORIAN',
+                ...events.map(buildIcsEvent),
+                'END:VCALENDAR'
+            ].join('\r\n');
+
+            const blob = new Blob([body], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = events.length === 1
+                ? `evenement-${events[0].date}.ics`
+                : 'calendrier-honore-romane.ics';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // --- Modal édition ---
+        function openEditModal(id = null) {
+            editingId = id;
+
+            if (id) {
+                const ev = allEvents.find(e => e.id === id);
+                if (!ev) return;
+                editModalTitle.textContent = 'Modifier l\'événement';
+                evTitle.value = ev.title || '';
+                evDesc.value = ev.description || '';
+                evLocation.value = ev.location || '';
+                evDate.value = ev.date || '';
+                evTime.value = ev.time || '';
+                evRole.value = ev.role || 'tous';
+                btnDelete.style.display = '';
+            } else {
+                editModalTitle.textContent = 'Nouvel événement';
+                editForm.reset();
+                evDate.value = toDateKey(new Date());
+                evRole.value = 'tous';
+                btnDelete.style.display = 'none';
+            }
+
+            editModal.classList.add('visible');
+        }
+
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isAdmin) return;
+
+            const payload = {
+                title: evTitle.value.trim(),
+                description: evDesc.value.trim(),
+                location: evLocation.value.trim(),
+                date: evDate.value,
+                time: evTime.value || '',
+                role: evRole.value,
+                updatedAt: serverTimestamp()
+            };
+
+            if (!payload.title || !payload.date) return;
+
+            const saveBtn = document.getElementById('btn-save');
+            saveBtn.disabled = true;
+            const original = saveBtn.textContent;
+            saveBtn.textContent = 'Enregistrement…';
+
+            try {
+                if (editingId) {
+                    await updateDoc(doc(db, 'events', editingId), payload);
+                } else {
+                    payload.createdAt = serverTimestamp();
+                    payload.createdBy = auth.currentUser.uid;
+                    await addDoc(collection(db, 'events'), payload);
+                }
+                closeAllModals();
+                await loadEvents();
+                render();
+            } catch (err) {
+                console.error(err);
+                alert('Erreur : ' + (err.message || 'enregistrement impossible.'));
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = original;
+            }
+        });
+
+        btnDelete.addEventListener('click', async () => {
+            if (!isAdmin || !editingId) return;
+            btnDelete.disabled = true;
+            try {
+                await deleteDoc(doc(db, 'events', editingId));
+                closeAllModals();
+                await loadEvents();
+                render();
+            } catch (err) {
+                console.error(err);
+                alert('Erreur : ' + (err.message || 'suppression impossible.'));
+            } finally {
+                btnDelete.disabled = false;
+            }
+        });
+
+        // --- Fermeture des modals ---
+        function closeAllModals() {
+            dayModal.classList.remove('visible');
+            editModal.classList.remove('visible');
+        }
+
+        document.querySelectorAll('[data-close]').forEach(btn => {
+            btn.addEventListener('click', closeAllModals);
+        });
+
+        [dayModal, editModal].forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeAllModals();
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeAllModals();
+        });
+
+        // --- Navigation ---
+        btnPrev.addEventListener('click', () => {
+            currentMonth.setMonth(currentMonth.getMonth() - 1);
+            render();
+        });
+
+        btnNext.addEventListener('click', () => {
+            currentMonth.setMonth(currentMonth.getMonth() + 1);
+            render();
+        });
+
+        btnToday.addEventListener('click', () => {
+            currentMonth = new Date();
+            currentMonth.setDate(1);
+            render();
+        });
+
+        btnExportIcs.addEventListener('click', () => {
+            if (!visibleEvents.length) {
+                alert('Aucun événement à exporter.');
+                return;
+            }
+            downloadIcs(visibleEvents.map(e => e.id));
+        });
+
+        btnNew.addEventListener('click', () => {
+            if (isAdmin) openEditModal();
+        });
+
+        // --- Déconnexion ---
+        logoutBtn.addEventListener('click', async () => {
+            logoutBtn.disabled = true;
+            logoutBtn.textContent = 'Déconnexion…';
+            try {
+                await signOut(auth);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                window.location.replace(LOGIN_URL);
+            }
+        });
+
+        function esc(str) {
+            return String(str ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;',
+                '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+    </script>
+</body>
+</html>

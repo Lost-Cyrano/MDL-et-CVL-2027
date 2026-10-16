@@ -241,17 +241,9 @@
             border-color: var(--text-muted);
         }
 
-        .user-card.pending {
-            border-left: 3px solid var(--warning);
-        }
-
-        .user-card.active {
-            border-left: 3px solid var(--success);
-        }
-
-        .user-card.rejected {
-            border-left: 3px solid var(--error);
-        }
+        .user-card.pending { border-left: 3px solid var(--warning); }
+        .user-card.active { border-left: 3px solid var(--success); }
+        .user-card.rejected { border-left: 3px solid var(--error); }
 
         .user-card-head {
             display: flex;
@@ -362,9 +354,7 @@
             background: var(--card-hover);
         }
 
-        .copy-btn.copied {
-            color: var(--success);
-        }
+        .copy-btn.copied { color: var(--success); }
 
         .actions {
             display: flex;
@@ -385,30 +375,20 @@
             transition: background .15s, border-color .15s, color .15s, opacity .15s;
         }
 
-        .action-btn:hover:not(:disabled) {
-            border-color: var(--text);
-        }
-
-        .action-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .action-btn:hover:not(:disabled) { border-color: var(--text); }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .action-btn.primary {
             background: var(--accent);
             color: var(--accent-text);
             border-color: var(--accent);
         }
-
-        .action-btn.primary:hover:not(:disabled) {
-            opacity: 0.85;
-        }
+        .action-btn.primary:hover:not(:disabled) { opacity: 0.85; }
 
         .action-btn.danger {
             color: var(--error);
             border-color: color-mix(in srgb, var(--error) 40%, transparent);
         }
-
         .action-btn.danger:hover:not(:disabled) {
             background: color-mix(in srgb, var(--error) 12%, transparent);
             border-color: var(--error);
@@ -430,17 +410,44 @@
             font-size: 0.9em;
         }
 
+        /* Toast de feedback */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(2rem);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 0.6rem;
+            padding: 0.75rem 1.1rem;
+            font-size: 0.88em;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s, transform .2s;
+            z-index: 1000;
+            max-width: 90vw;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success {
+            border-left: 3px solid var(--success);
+            color: var(--success);
+        }
+
+        .toast.error {
+            border-left: 3px solid var(--error);
+            color: var(--error);
+        }
+
         @media (max-width: 640px) {
-            .user-card-head {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-            .page-title {
-                display: none;
-            }
+            .user-card-head { flex-direction: column; align-items: stretch; }
+            .info-grid { grid-template-columns: 1fr; }
+            .page-title { display: none; }
         }
 
         @media (max-height: 520px) and (orientation: landscape) {
@@ -448,9 +455,7 @@
                 padding-top: max(0.6rem, env(safe-area-inset-top));
                 padding-bottom: 0.6rem;
             }
-            main {
-                padding-top: 1rem;
-            }
+            main { padding-top: 1rem; }
         }
     </style>
 </head>
@@ -493,6 +498,8 @@
         MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
     </footer>
 
+    <div class="toast" id="toast"></div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
         import {
@@ -521,6 +528,10 @@
             measurementId: "G-FBKEPBY0CQ"
         };
 
+        const BREVO_WORKER_URL = 'https://honore-romane-mail.anaelmaire-pro.workers.dev/';
+        const SENDER_EMAIL = 'anaelmaire.pro@gmail.com';
+        const SENDER_NAME = 'Honoré Romane';
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -534,6 +545,7 @@
         const listEl = document.getElementById('list');
         const searchEl = document.getElementById('search');
         const filterBtns = document.querySelectorAll('.filter-btn');
+        const toastEl = document.getElementById('toast');
         const counts = {
             pending: document.getElementById('count-pending'),
             active: document.getElementById('count-active'),
@@ -564,17 +576,10 @@
                 LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL)
             );
         };
-
-        const goHome = () => {
-            window.location.replace(HOME_URL);
-        };
+        const goHome = () => window.location.replace(HOME_URL);
 
         onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                goToLogin();
-                return;
-            }
-
+            if (!user) { goToLogin(); return; }
             try {
                 const snap = await getDoc(doc(db, 'users', user.uid));
                 if (!snap.exists()) {
@@ -582,24 +587,18 @@
                     goToLogin();
                     return;
                 }
-
-                const me = snap.data();
-
-                if (me.status !== 'active') {
+                const meData = snap.data();
+                if (meData.status !== 'active') {
                     await signOut(auth);
                     goToLogin();
                     return;
                 }
-
-                if (me.isAdmin !== true) {
+                if (meData.isAdmin !== true) {
                     goHome();
                     return;
                 }
-
-                adminNameEl.textContent = me.name || user.email || 'Admin';
-
+                adminNameEl.textContent = meData.name || user.email || 'Admin';
                 await loadUsers();
-
             } catch (err) {
                 console.error(err);
                 await signOut(auth).catch(() => {});
@@ -636,11 +635,9 @@
 
         function render() {
             let list = allUsers;
-
             if (currentFilter !== 'all') {
                 list = list.filter(u => u.status === currentFilter);
             }
-
             if (currentSearch) {
                 const s = currentSearch.toLowerCase();
                 list = list.filter(u =>
@@ -669,7 +666,6 @@
             const roleLabel = ROLE_LABELS[u.role] || u.role || '—';
             const statusClass = isPending ? 'pending' : isActive ? 'active' : isRejected ? 'rejected' : '';
             const statusLabel = STATUS_LABELS[u.status] || u.status || '—';
-
             const adminBadge = isAdmin ? '<span class="badge admin">Admin</span>' : '';
 
             const createdAt = u.createdAt?.toDate
@@ -779,7 +775,7 @@
                     if (!user) return;
 
                     if (user.isAdmin === true) {
-                        alert('Impossible de modifier un administrateur depuis cette interface.');
+                        showToast('Impossible de modifier un administrateur.', 'error');
                         return;
                     }
 
@@ -798,18 +794,155 @@
             btn.disabled = true;
             const original = btn.textContent;
             btn.textContent = '…';
+
+            const user = allUsers.find(x => x.id === uid);
+
             try {
                 await updateDoc(doc(db, 'users', uid), { status });
-                const u = allUsers.find(x => x.id === uid);
-                if (u) u.status = status;
+                if (user) user.status = status;
                 updateCounts();
                 render();
+
+                // Envoi du mail uniquement lors d'une validation (pending/refusé → active)
+                if (status === 'active' && user) {
+                    const mailOk = await sendValidationEmail(user);
+                    if (mailOk) {
+                        showToast(`Compte validé et mail envoyé à ${user.email}.`, 'success');
+                    } else {
+                        showToast(`Compte validé, mais échec de l'envoi du mail.`, 'error');
+                    }
+                } else if (status === 'rejected') {
+                    showToast('Compte refusé.', 'success');
+                } else if (status === 'pending') {
+                    showToast('Compte remis en attente.', 'success');
+                }
             } catch (err) {
                 console.error(err);
-                alert('Erreur : ' + (err.message || 'action impossible.'));
+                showToast('Erreur : ' + (err.message || 'action impossible.'), 'error');
                 btn.disabled = false;
                 btn.textContent = original;
             }
+        }
+
+        // --- Envoi du mail de validation ---
+        async function sendValidationEmail(user) {
+            try {
+                const html = buildValidationEmailHtml(user);
+                const text = buildValidationEmailText(user);
+
+                const response = await fetch(BREVO_WORKER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: user.email,
+                        subject: 'Validation',
+                        htmlContent: html,
+                        textContent: text,
+                        sender: { name: SENDER_NAME, email: SENDER_EMAIL }
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    console.error('Erreur Worker:', err);
+                    return false;
+                }
+                return true;
+            } catch (err) {
+                console.error('Erreur envoi mail:', err);
+                return false;
+            }
+        }
+
+        function buildValidationEmailText(user) {
+            return `Bonjour ${user.name || ''} !
+
+Pour votre parfaite information, votre compte a été validé avec succès au sein des services informatiques des institutions lycéennes d'Honoré Romane avec les informations suivantes :
+- Identité : ${user.name || ''}
+- Classe : ${user.classe || ''}
+- e-mail : ${user.email || ''}
+
+Au plaisir de vous compter parmi nous !
+
+--
+MAIRE Anael
+
+1. Responsable Parc Informatique
+2. Secrétaire Général Élèves
+3. Membre du Conseil d'Administration
+4. Élu au Conseil à la Vie Lycéenne
+5. Membre du Bureau de la Maison Des Lycéens
+
+Lycée Honoré Romane – Rte de Caleyère – 05200 EMBRUN
+07 81 45 08 56
+anaelmaire.pro@gmail.com`;
+        }
+
+        function buildValidationEmailHtml(user) {
+            const safeName = escapeHtml(user.name || '');
+            const safeClasse = escapeHtml(user.classe || '');
+            const safeEmail = escapeHtml(user.email || '');
+
+            return `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:640px;margin:0 auto;padding:24px 16px;">
+
+    <div style="background:#ffffff;padding:28px 24px;border-radius:8px;color:#222222;font-size:14px;line-height:1.6;">
+      <p style="margin:0 0 14px 0;">Bonjour ${safeName} !</p>
+
+      <p style="margin:0 0 14px 0;">Pour votre parfaite information, votre compte a été validé avec succès au sein des <a href="https://account.honore-romane.fr/" style="color:#0b7b9e;text-decoration:underline;">services informatiques des institutions lycéennes d'Honoré Romane</a> avec les informations suivantes :</p>
+
+      <p style="margin:0 0 6px 0;"><i>- Identité : ${safeName}</i></p>
+      <p style="margin:0 0 6px 0;"><i>- Classe : ${safeClasse}</i></p>
+      <p style="margin:0 0 14px 0;"><i>- e-mail : <a href="mailto:${safeEmail}" style="color:#0b7b9e;text-decoration:underline;">${safeEmail}</a></i></p>
+
+      <p style="margin:0 0 14px 0;"><b>Au plaisir de vous compter parmi nous !</b></p>
+    </div>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:18px;border-collapse:collapse;">
+      <tr>
+        <td style="border-top:1.5pt solid #0b7b9e;border-bottom:1.5pt solid #0b7b9e;padding:10px 8px;vertical-align:top;width:50%;">
+          <p style="margin:0;font-size:10pt;font-family:Arial,sans-serif;color:#000000;">
+            <img src="https://account.honore-romane.fr/assets/signature.png" alt="Honoré Romane" width="220" style="outline:0;border:0;max-width:100%;height:auto;">
+          </p>
+        </td>
+        <td style="border-top:1.5pt solid #0b7b9e;border-bottom:1.5pt solid #0b7b9e;padding:10px 8px 10px 16px;vertical-align:top;width:50%;">
+          <p style="margin:0 0 10px 0;font-size:9pt;font-family:Arial,sans-serif;color:#0b7b9e;font-weight:700;">MAIRE Anael</p>
+          <ol style="margin:0;padding-left:20px;font-size:10pt;font-family:Arial,sans-serif;color:#222222;">
+            <li style="font-style:italic;margin-bottom:2px;">Responsable Parc Informatique</li>
+            <li style="font-style:italic;margin-bottom:2px;">Secrétaire Général Élèves</li>
+            <li style="font-style:italic;margin-bottom:2px;">Membre du Conseil d'Administration</li>
+            <li style="font-style:italic;margin-bottom:2px;">Élu au Conseil à la Vie Lycéenne</li>
+            <li style="font-style:italic;margin-bottom:2px;">Membre du Bureau de la Maison Des Lycéens</li>
+          </ol>
+          <p style="margin:12px 0 4px 0;font-size:9pt;font-family:Arial,sans-serif;color:#000000;">Lycée Honoré Romane – Rte de Caleyère – 05200 EMBRUN</p>
+          <p style="margin:0 0 4px 0;font-size:10pt;font-family:Arial,sans-serif;color:#e60000;text-decoration:underline;">07 81 45 08 56</p>
+          <p style="margin:0;font-size:9pt;font-family:Arial,sans-serif;"><a href="mailto:anaelmaire.pro@gmail.com" style="color:#1155cc;text-decoration:underline;">anaelmaire.pro@gmail.com</a></p>
+        </td>
+      </tr>
+    </table>
+
+  </div>
+</body>
+</html>`;
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;',
+                '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function showToast(msg, type = 'success') {
+            toastEl.textContent = msg;
+            toastEl.className = 'toast visible ' + type;
+            clearTimeout(showToast._t);
+            showToast._t = setTimeout(() => {
+                toastEl.classList.remove('visible');
+            }, 3500);
         }
 
         filterBtns.forEach(btn => {
@@ -829,13 +962,8 @@
         logoutBtn.addEventListener('click', async () => {
             logoutBtn.disabled = true;
             logoutBtn.textContent = 'Déconnexion…';
-            try {
-                await signOut(auth);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                window.location.replace(LOGIN_URL);
-            }
+            try { await signOut(auth); } catch (err) { console.error(err); }
+            finally { window.location.replace(LOGIN_URL); }
         });
     </script>
 </body>

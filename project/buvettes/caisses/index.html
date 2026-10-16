@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <title>Caisse Buvette — Honoré Romane</title>
+    <style>
+        :root {
+            --bg: #f5f3ef;
+            --card: #ffffff;
+            --card-hover: #fafaf8;
+            --border: #e5e2dc;
+            --text: #1a1a1a;
+            --text-muted: #6b6b6b;
+            --accent: #1a1a1a;
+            --accent-hover: #000000;
+            --accent-text: #ffffff;
+            --warning: #b45309;
+            --radius: 0.75rem;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0e0e0e;
+                --card: #1a1a1a;
+                --card-hover: #232323;
+                --border: #2e2e2e;
+                --text: #f2f2f2;
+                --text-muted: #9a9a9a;
+                --accent: #f2f2f2;
+                --accent-hover: #ffffff;
+                --accent-text: #0e0e0e;
+                --warning: #fbbf24;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: clamp(14px, 1vw + 12px, 17px);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+            padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+                     max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+            gap: 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 36rem;
+            margin: auto;
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: clamp(1.5rem, 4vw, 2.25rem);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .container {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        h1 {
+            font-size: clamp(1.25rem, 2vw + 1rem, 1.6rem);
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            text-align: center;
+        }
+
+        .notice {
+            background: color-mix(in srgb, var(--warning) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+            color: var(--text);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .notice strong {
+            color: var(--warning);
+        }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            display: block;
+            text-align: center;
+            font-family: inherit;
+            font-size: 1em;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 0.9rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background .15s, border-color .15s, color .15s, opacity .15s;
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            color: var(--accent-text);
+        }
+
+        .btn.primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn.secondary {
+            background: transparent;
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+
+        .btn.secondary:hover {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.72em;
+            opacity: 0.7;
+            user-select: none;
+        }
+
+        @media (max-height: 520px) and (orientation: landscape) {
+            body {
+                justify-content: flex-start;
+            }
+            .container {
+                margin: 0;
+                max-width: 48rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="container" role="main">
+        <h1>Caisse Buvette</h1>
+
+        <div class="notice">
+            <strong>Fonctionnalité non activée.</strong>
+            La caisse de la buvette n'est pas encore disponible sur cette plateforme. Le bouton ci-dessous vous redirige vers un site d'exemple, uniquement pour tester le concept.
+        </div>
+
+        <div class="actions">
+            <a href="https://lost-cyrano.github.io/refresher-cash-register/" class="btn primary">
+                Ouvrir la caisse (démo)
+            </a>
+            <a href="https://account.honore-romane.fr/account/" class="btn secondary">
+                Retour au menu
+            </a>
+        </div>
+    </main>
+
+    <footer class="footer">
+        MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
+    </footer>
+
+</body>
+</html>

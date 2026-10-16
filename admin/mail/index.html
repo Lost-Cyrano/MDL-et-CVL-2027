@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <title>Envoi de mails — Honoré Romane</title>
+    <style>
+        :root {
+            --bg: #f5f3ef;
+            --card: #ffffff;
+            --card-hover: #fafaf8;
+            --field: #fafaf8;
+            --border: #e5e2dc;
+            --text: #1a1a1a;
+            --text-muted: #6b6b6b;
+            --accent: #1a1a1a;
+            --accent-hover: #000000;
+            --accent-text: #ffffff;
+            --success: #1e7d4a;
+            --warning: #b45309;
+            --error: #c0392b;
+            --radius: 0.75rem;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0e0e0e;
+                --card: #1a1a1a;
+                --card-hover: #232323;
+                --field: #232323;
+                --border: #2e2e2e;
+                --text: #f2f2f2;
+                --text-muted: #9a9a9a;
+                --accent: #f2f2f2;
+                --accent-hover: #ffffff;
+                --accent-text: #0e0e0e;
+                --success: #4ade80;
+                --warning: #fbbf24;
+                --error: #ff6b5e;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: clamp(13px, 1vw + 11px, 15px);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: max(1rem, env(safe-area-inset-top)) clamp(1rem, 4vw, 2.5rem) 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            flex-wrap: wrap;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .back-link {
+            font-family: inherit;
+            font-size: 0.85em;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 0.4rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            transition: color .15s, border-color .15s;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .back-link:hover {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .page-title {
+            font-weight: 600;
+            font-size: 0.95em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .logout-btn {
+            font-family: inherit;
+            font-size: 0.82em;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            padding: 0.5rem 0.9rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s;
+            flex-shrink: 0;
+        }
+
+        .logout-btn:hover:not(:disabled) {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .logout-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 100rem;
+            margin: 0 auto;
+            padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 4vw, 2.5rem);
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+            gap: 1.25rem;
+            align-items: start;
+        }
+
+        /* --- Colonne gauche : sélection --- */
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: clamp(1rem, 2.5vw, 1.5rem);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .panel-title {
+            font-size: 0.78em;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .search {
+            font-family: inherit;
+            font-size: 0.9em;
+            padding: 0.6rem 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--field);
+            color: var(--text);
+            outline: none;
+            transition: border-color .15s;
+            width: 100%;
+        }
+
+        .search:focus {
+            border-color: var(--accent);
+        }
+
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .chip {
+            font-family: inherit;
+            font-size: 0.78em;
+            font-weight: 500;
+            padding: 0.35rem 0.75rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s, background .15s;
+        }
+
+        .chip:hover {
+            color: var(--text);
+            border-color: var(--text-muted);
+        }
+
+        .chip.active {
+            background: var(--accent);
+            color: var(--accent-text);
+            border-color: var(--accent);
+        }
+
+        .list {
+            max-height: 55vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding-right: 0.25rem;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.5rem 0.4rem;
+            border-radius: 0.4rem;
+            cursor: pointer;
+            transition: background .15s;
+            font-size: 0.9em;
+        }
+
+        .list-item:hover {
+            background: var(--card-hover);
+        }
+
+        .list-item input[type="checkbox"] {
+            flex-shrink: 0;
+            width: 1.05em;
+            height: 1.05em;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .list-item .name {
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .list-item .meta {
+            font-size: 0.78em;
+            color: var(--text-muted);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .list-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            font-size: 0.8em;
+        }
+
+        .list-actions button {
+            font-family: inherit;
+            font-size: 1em;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.3rem 0.7rem;
+            border-radius: 0.4rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s;
+        }
+
+        .list-actions button:hover {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .counter {
+            font-size: 0.82em;
+            color: var(--text-muted);
+        }
+
+        /* --- Colonne droite : compose --- */
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .form-field label {
+            font-size: 0.82em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .form-field input,
+        .form-field textarea,
+        .form-field select {
+            font-family: inherit;
+            font-size: 1em;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--field);
+            color: var(--text);
+            outline: none;
+            transition: border-color .15s;
+            width: 100%;
+        }
+
+        .form-field input:focus,
+        .form-field textarea:focus,
+        .form-field select:focus {
+            border-color: var(--accent);
+        }
+
+        .form-field textarea {
+            min-height: 12rem;
+            resize: vertical;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+
+        .recipients-box {
+            background: var(--field);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.6rem;
+            min-height: 2.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            align-items: center;
+            font-size: 0.85em;
+            max-height: 8rem;
+            overflow-y: auto;
+        }
+
+        .recipient-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.15rem 0.5rem;
+            background: color-mix(in srgb, var(--accent) 12%, transparent);
+            border: 1px solid var(--border);
+            border-radius: 2rem;
+            font-size: 0.85em;
+            max-width: 100%;
+        }
+
+        .recipient-chip span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 14rem;
+        }
+
+        .recipient-chip button {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1em;
+            line-height: 1;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .recipient-chip button:hover {
+            color: var(--error);
+        }
+
+        .recipients-empty {
+            color: var(--text-muted);
+            font-size: 0.85em;
+            padding: 0.3rem 0;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 0.8rem;
+            background: var(--field);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.88em;
+            transition: border-color .15s;
+        }
+
+        .toggle-row:hover {
+            border-color: var(--text-muted);
+        }
+
+        .toggle-row input[type="checkbox"] {
+            flex-shrink: 0;
+            width: 1.1em;
+            height: 1.1em;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .toggle-row .toggle-label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+        }
+
+        .toggle-row .toggle-label small {
+            color: var(--text-muted);
+            font-size: 0.78em;
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-size: 0.9em;
+            font-weight: 600;
+            padding: 0.7rem 1.3rem;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: opacity .15s, border-color .15s, color .15s, background .15s;
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            color: var(--accent-text);
+        }
+
+        .btn.primary:hover:not(:disabled) { opacity: 0.85; }
+
+        .btn.secondary {
+            background: transparent;
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+
+        .btn.secondary:hover:not(:disabled) {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .feedback {
+            font-size: 0.85em;
+            padding: 0.7rem 0.9rem;
+            border-radius: 0.5rem;
+            display: none;
+        }
+
+        .feedback.visible { display: block; }
+
+        .feedback.success {
+            background: color-mix(in srgb, var(--success) 12%, transparent);
+            color: var(--success);
+            border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
+        }
+
+        .feedback.error {
+            background: color-mix(in srgb, var(--error) 12%, transparent);
+            color: var(--error);
+            border: 1px solid color-mix(in srgb, var(--error) 35%, transparent);
+        }
+
+        .empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem 1rem;
+            font-size: 0.9em;
+        }
+
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.72em;
+            padding: 1.25rem 1rem max(1.25rem, env(safe-area-inset-bottom));
+            opacity: 0.7;
+            user-select: none;
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+            .list {
+                max-height: 40vh;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .page-title { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <a href="https://account.honore-romane.fr/account/" class="back-link">← Accueil</a>
+            <span class="page-title">Envoi de mails</span>
+        </div>
+        <button class="logout-btn" id="logout-btn">Déconnexion</button>
+    </header>
+
+    <main>
+
+        <!-- Colonne gauche : sélection destinataires -->
+        <section class="panel">
+            <div class="panel-title">Destinataires</div>
+
+            <input type="search" class="search" id="search" placeholder="Rechercher (nom, mail, classe…)" autocomplete="off">
+
+            <div class="filter-row" id="filters">
+                <button class="chip active" data-filter="all">Tous</button>
+                <button class="chip" data-filter="cvl">CVL</button>
+                <button class="chip" data-filter="mdl">MDL</button>
+                <button class="chip" data-filter="eco_delegues">Éco Délégués</button>
+                <button class="chip" data-filter="commission">Commission</button>
+                <button class="chip" data-filter="utilisateur">Utilisateurs</button>
+            </div>
+
+            <div class="list-actions">
+                <button id="select-all-visible">Tout sélectionner</button>
+                <button id="select-none">Tout désélectionner</button>
+            </div>
+
+            <div class="list" id="user-list">
+                <div class="empty">Chargement…</div>
+            </div>
+
+            <div class="counter" id="counter">0 sélectionné(s)</div>
+        </section>
+
+        <!-- Colonne droite : composition -->
+        <section class="panel">
+            <div class="panel-title">Message</div>
+
+            <div class="form-field">
+                <label>À</label>
+                <div class="recipients-box" id="recipients-box">
+                    <div class="recipients-empty">Aucun destinataire sélectionné.</div>
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label for="subject">Objet</label>
+                <input type="text" id="subject" maxlength="200" required>
+            </div>
+
+            <div class="form-field">
+                <label for="body">Message</label>
+                <textarea id="body" required></textarea>
+            </div>
+
+            <label class="toggle-row" for="bcc-mode">
+                <input type="checkbox" id="bcc-mode">
+                <span class="toggle-label">
+                    <strong>Copie carbone invisible (CCI)</strong>
+                    <small>Les destinataires ne verront pas les autres adresses. Recommandé pour les envois groupés.</small>
+                </span>
+            </label>
+
+            <div class="actions-row">
+                <button class="btn secondary" id="btn-reset">Réinitialiser</button>
+                <button class="btn primary" id="btn-send">Envoyer</button>
+            </div>
+
+            <div class="feedback" id="feedback"></div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+        import {
+            getAuth,
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            getDoc,
+            collection,
+            getDocs,
+            addDoc,
+            query,
+            orderBy,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
+            authDomain: "mdl-et-cvl-2027.firebaseapp.com",
+            projectId: "mdl-et-cvl-2027",
+            storageBucket: "mdl-et-cvl-2027.firebasestorage.app",
+            messagingSenderId: "142816093888",
+            appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
+            measurementId: "G-FBKEPBY0CQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const LOGIN_URL = 'https://account.honore-romane.fr/login/';
+        const HOME_URL = 'https://account.honore-romane.fr/account/';
+        const CURRENT_URL = 'https://account.honore-romane.fr/admin/mail/';
+
+        const ROLE_LABELS = {
+            cvl: 'CVL',
+            mdl: 'MDL',
+            eco_delegues: 'Éco Délégués',
+            commission: 'Commission',
+            utilisateur: 'Utilisateur'
+        };
+
+        const STATUS_ACTIVE_ONLY = true; // n'envoyer qu'aux comptes actifs
+
+        let me = null;
+        let allUsers = [];        // tous les utilisateurs actifs
+        let filteredUsers = [];
+        let selectedIds = new Set(); // uid -> sélectionné
+        let currentFilter = 'all';
+        let currentSearch = '';
+
+        const userListEl = document.getElementById('user-list');
+        const searchEl = document.getElementById('search');
+        const counterEl = document.getElementById('counter');
+        const filterBtns = document.querySelectorAll('#filters .chip');
+        const recipientsBox = document.getElementById('recipients-box');
+        const subjectEl = document.getElementById('subject');
+        const bodyEl = document.getElementById('body');
+        const bccModeEl = document.getElementById('bcc-mode');
+        const btnSend = document.getElementById('btn-send');
+        const btnReset = document.getElementById('btn-reset');
+        const btnSelectAll = document.getElementById('select-all-visible');
+        const btnSelectNone = document.getElementById('select-none');
+        const feedbackEl = document.getElementById('feedback');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        const goToLogin = () => {
+            window.location.replace(
+                LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL)
+            );
+        };
+        const goHome = () => window.location.replace(HOME_URL);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { goToLogin(); return; }
+            try {
+                const snap = await getDoc(doc(db, 'users', user.uid));
+                if (!snap.exists() || snap.data().status !== 'active') {
+                    await signOut(auth);
+                    goToLogin();
+                    return;
+                }
+                me = snap.data();
+                if (me.isAdmin !== true) { goHome(); return; }
+
+                await loadUsers();
+            } catch (err) {
+                console.error(err);
+                await signOut(auth).catch(() => {});
+                goToLogin();
+            }
+        });
+
+        async function loadUsers() {
+            try {
+                const q = query(collection(db, 'users'), orderBy('name', 'asc'));
+                const snap = await getDocs(q);
+                allUsers = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .filter(u => u.email && (!STATUS_ACTIVE_ONLY || u.status === 'active'));
+                applyFilters();
+            } catch (err) {
+                console.error(err);
+                userListEl.innerHTML = '<div class="empty">Erreur de chargement.</div>';
+            }
+        }
+
+        function applyFilters() {
+            let list = allUsers;
+
+            if (currentFilter !== 'all') {
+                list = list.filter(u => u.role === currentFilter);
+            }
+
+            if (currentSearch) {
+                const s = currentSearch.toLowerCase();
+                list = list.filter(u =>
+                    (u.name || '').toLowerCase().includes(s) ||
+                    (u.email || '').toLowerCase().includes(s) ||
+                    (u.classe || '').toLowerCase().includes(s)
+                );
+            }
+
+            filteredUsers = list;
+            renderUserList();
+        }
+
+        function renderUserList() {
+            if (!filteredUsers.length) {
+                userListEl.innerHTML = '<div class="empty">Aucun utilisateur.</div>';
+                return;
+            }
+
+            userListEl.innerHTML = filteredUsers.map(u => `
+                <label class="list-item" data-uid="${esc(u.id)}">
+                    <input type="checkbox" ${selectedIds.has(u.id) ? 'checked' : ''}>
+                    <span class="name">${esc(u.name || u.email)}</span>
+                    <span class="meta">${esc(ROLE_LABELS[u.role] || u.role || '')}</span>
+                </label>
+            `).join('');
+
+            userListEl.querySelectorAll('.list-item').forEach(item => {
+                const uid = item.dataset.uid;
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) selectedIds.add(uid);
+                    else selectedIds.delete(uid);
+                    renderRecipients();
+                });
+            });
+        }
+
+        function renderRecipients() {
+            const selected = allUsers.filter(u => selectedIds.has(u.id));
+
+            if (!selected.length) {
+                recipientsBox.innerHTML = '<div class="recipients-empty">Aucun destinataire sélectionné.</div>';
+            } else {
+                recipientsBox.innerHTML = selected.map(u => `
+                    <span class="recipient-chip">
+                        <span title="${esc(u.email)}">${esc(u.name || u.email)}</span>
+                        <button data-remove="${esc(u.id)}" aria-label="Retirer">×</button>
+                    </span>
+                `).join('');
+
+                recipientsBox.querySelectorAll('[data-remove]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        selectedIds.delete(btn.dataset.remove);
+                        renderUserList();
+                        renderRecipients();
+                    });
+                });
+            }
+
+            counterEl.textContent = `${selectedIds.size} sélectionné(s)`;
+        }
+
+        // Filtres
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                applyFilters();
+            });
+        });
+
+        searchEl.addEventListener('input', () => {
+            currentSearch = searchEl.value.trim();
+            applyFilters();
+        });
+
+        btnSelectAll.addEventListener('click', () => {
+            filteredUsers.forEach(u => selectedIds.add(u.id));
+            renderUserList();
+            renderRecipients();
+        });
+
+        btnSelectNone.addEventListener('click', () => {
+            selectedIds.clear();
+            renderUserList();
+            renderRecipients();
+        });
+
+        // Envoi
+        btnSend.addEventListener('click', async () => {
+            feedbackEl.className = 'feedback';
+            feedbackEl.textContent = '';
+
+            const subject = subjectEl.value.trim();
+            const body = bodyEl.value.trim();
+            const selected = allUsers.filter(u => selectedIds.has(u.id));
+            const emails = selected.map(u => u.email).filter(Boolean);
+
+            if (!emails.length) {
+                showFeedback('error', 'Sélectionnez au moins un destinataire.');
+                return;
+            }
+            if (!subject) {
+                showFeedback('error', 'L\'objet est requis.');
+                return;
+            }
+            if (!body) {
+                showFeedback('error', 'Le message est requis.');
+                return;
+            }
+
+            btnSend.disabled = true;
+            const original = btnSend.textContent;
+            btnSend.textContent = 'Envoi…';
+
+            const isBcc = bccModeEl.checked;
+            const textHtml = body.replace(/\n/g, '<br>');
+
+            const mailDoc = {
+                to: isBcc ? [] : emails,
+                bcc: isBcc ? emails : [],
+                message: {
+                    subject,
+                    text: body,
+                    html: textHtml
+                },
+                createdAt: serverTimestamp(),
+                createdBy: auth.currentUser.uid,
+                createdByEmail: me.email || null,
+                recipientCount: emails.length,
+                mode: isBcc ? 'bcc' : 'to'
+            };
+
+            try {
+                await addDoc(collection(db, 'mail'), mailDoc);
+                showFeedback('success', `Mail déposé pour envoi à ${emails.length} destinataire(s). Il sera traité par le service d'envoi.`);
+                // On ne vide pas automatiquement la sélection
+            } catch (err) {
+                console.error(err);
+                showFeedback('error', 'Erreur : ' + (err.message || 'envoi impossible.'));
+            } finally {
+                btnSend.disabled = false;
+                btnSend.textContent = original;
+            }
+        });
+
+        btnReset.addEventListener('click', () => {
+            selectedIds.clear();
+            subjectEl.value = '';
+            bodyEl.value = '';
+            bccModeEl.checked = false;
+            renderUserList();
+            renderRecipients();
+            feedbackEl.className = 'feedback';
+            feedbackEl.textContent = '';
+        });
+
+        function showFeedback(type, msg) {
+            feedbackEl.className = 'feedback visible ' + type;
+            feedbackEl.textContent = msg;
+        }
+
+        logoutBtn.addEventListener('click', async () => {
+            logoutBtn.disabled = true;
+            logoutBtn.textContent = 'Déconnexion…';
+            try { await signOut(auth); } catch (err) { console.error(err); }
+            finally { window.location.replace(LOGIN_URL); }
+        });
+
+        function esc(str) {
+            return String(str ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;',
+                '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+    </script>
+</body>
+</html>

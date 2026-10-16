@@ -300,14 +300,13 @@
             gap: 0.35rem;
         }
 
-        .form-field label {
+        .form-field > label {
             font-size: 0.82em;
             color: var(--text-muted);
             font-weight: 500;
         }
 
-        .form-field input,
-        .form-field textarea {
+        .form-field input[type="text"] {
             font-family: inherit;
             font-size: 1em;
             padding: 0.6rem 0.8rem;
@@ -320,15 +319,135 @@
             width: 100%;
         }
 
-        .form-field input:focus,
-        .form-field textarea:focus {
+        .form-field input[type="text"]:focus {
             border-color: var(--accent);
         }
 
-        .form-field textarea {
-            min-height: 12rem;
-            resize: vertical;
-            line-height: 1.5;
+        /* --- Barre d'outils éditeur --- */
+        .editor-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            padding: 0.4rem;
+            background: var(--field);
+            border: 1px solid var(--border);
+            border-bottom: none;
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+
+        .editor-toolbar button,
+        .editor-toolbar select {
+            font-family: inherit;
+            font-size: 0.82em;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text);
+            padding: 0.35rem 0.55rem;
+            border-radius: 0.35rem;
+            cursor: pointer;
+            transition: background .15s, border-color .15s;
+            min-width: 2rem;
+            text-align: center;
+        }
+
+        .editor-toolbar button:hover,
+        .editor-toolbar select:hover {
+            background: var(--card-hover);
+            border-color: var(--border);
+        }
+
+        .editor-toolbar button.active {
+            background: var(--accent);
+            color: var(--accent-text);
+            border-color: var(--accent);
+        }
+
+        .editor-toolbar select {
+            min-width: 6rem;
+            padding-right: 1.5rem;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.4rem center;
+            background-size: 0.8em;
+        }
+
+        .editor-toolbar .sep {
+            width: 1px;
+            background: var(--border);
+            margin: 0.2rem 0.15rem;
+        }
+
+        .editor {
+            font-family: inherit;
+            font-size: 1em;
+            padding: 0.85rem 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: 0 0 0.5rem 0.5rem;
+            background: var(--field);
+            color: var(--text);
+            outline: none;
+            min-height: 16rem;
+            max-height: 45vh;
+            overflow-y: auto;
+            line-height: 1.6;
+            transition: border-color .15s;
+        }
+
+        .editor:focus {
+            border-color: var(--accent);
+        }
+
+        .editor:empty::before {
+            content: attr(data-placeholder);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .editor a { color: #2563eb; text-decoration: underline; }
+        .editor ul, .editor ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+        .editor blockquote {
+            border-left: 3px solid var(--border);
+            padding-left: 0.75rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        .editor pre {
+            background: color-mix(in srgb, var(--text) 8%, transparent);
+            padding: 0.6rem;
+            border-radius: 0.35rem;
+            font-family: monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+
+        .vars-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            align-items: center;
+            font-size: 0.78em;
+            color: var(--text-muted);
+        }
+
+        .var-btn {
+            font-family: inherit;
+            font-size: 0.95em;
+            padding: 0.25rem 0.6rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 0.35rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s;
+            font-family: monospace;
+        }
+
+        .var-btn:hover {
+            color: var(--text);
+            border-color: var(--text);
         }
 
         .recipients-box {
@@ -384,42 +503,6 @@
             color: var(--text-muted);
             font-size: 0.85em;
             padding: 0.3rem 0;
-        }
-
-        .toggle-row {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            padding: 0.7rem 0.8rem;
-            background: var(--field);
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: 0.88em;
-            transition: border-color .15s;
-        }
-
-        .toggle-row:hover {
-            border-color: var(--text-muted);
-        }
-
-        .toggle-row input[type="checkbox"] {
-            flex-shrink: 0;
-            width: 1.1em;
-            height: 1.1em;
-            accent-color: var(--accent);
-            cursor: pointer;
-        }
-
-        .toggle-row .toggle-label {
-            display: flex;
-            flex-direction: column;
-            gap: 0.1rem;
-        }
-
-        .toggle-row .toggle-label small {
-            color: var(--text-muted);
-            font-size: 0.78em;
         }
 
         .actions-row {
@@ -483,6 +566,30 @@
             background: color-mix(in srgb, var(--error) 12%, transparent);
             color: var(--error);
             border: 1px solid color-mix(in srgb, var(--error) 35%, transparent);
+        }
+
+        .feedback.info {
+            background: color-mix(in srgb, var(--accent) 8%, transparent);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .progress {
+            margin-top: 0.5rem;
+            height: 6px;
+            background: var(--field);
+            border-radius: 3px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress.visible { display: block; }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width .2s;
         }
 
         .empty {
@@ -569,22 +676,81 @@
             </div>
 
             <div class="form-field">
-                <label for="body">Message</label>
-                <textarea id="body" required></textarea>
+                <label>Message</label>
+
+                <div class="editor-toolbar" id="toolbar">
+                    <select data-cmd="formatBlock" title="Style de texte">
+                        <option value="p">Normal</option>
+                        <option value="h1">Titre 1</option>
+                        <option value="h2">Titre 2</option>
+                        <option value="h3">Titre 3</option>
+                        <option value="blockquote">Citation</option>
+                        <option value="pre">Code</option>
+                    </select>
+
+                    <select data-cmd="fontName" title="Police">
+                        <option value="">Police…</option>
+                        <option value="Arial">Arial</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Verdana">Verdana</option>
+                        <option value="Tahoma">Tahoma</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Courier New">Courier New</option>
+                    </select>
+
+                    <select data-cmd="fontSize" title="Taille">
+                        <option value="">Taille…</option>
+                        <option value="1">Très petit</option>
+                        <option value="2">Petit</option>
+                        <option value="3">Normal</option>
+                        <option value="4">Grand</option>
+                        <option value="5">Très grand</option>
+                        <option value="6">Énorme</option>
+                        <option value="7">Géant</option>
+                    </select>
+
+                    <div class="sep"></div>
+
+                    <button type="button" data-cmd="bold" title="Gras"><b>G</b></button>
+                    <button type="button" data-cmd="italic" title="Italique"><i>I</i></button>
+                    <button type="button" data-cmd="underline" title="Souligné"><u>S</u></button>
+                    <button type="button" data-cmd="strikeThrough" title="Barré"><s>B</s></button>
+
+                    <div class="sep"></div>
+
+                    <button type="button" data-cmd="insertUnorderedList" title="Liste à puces">•</button>
+                    <button type="button" data-cmd="insertOrderedList" title="Liste numérotée">1.</button>
+
+                    <div class="sep"></div>
+
+                    <button type="button" data-cmd="justifyLeft" title="Aligner à gauche">⯇</button>
+                    <button type="button" data-cmd="justifyCenter" title="Centrer">≡</button>
+                    <button type="button" data-cmd="justifyRight" title="Aligner à droite">⯈</button>
+
+                    <div class="sep"></div>
+
+                    <button type="button" id="btn-link" title="Insérer un lien">🔗</button>
+                    <button type="button" data-cmd="removeFormat" title="Effacer la mise en forme">✕</button>
+                </div>
+
+                <div class="editor" id="editor" contenteditable="true" data-placeholder="Écrivez votre message…"></div>
             </div>
 
-            <label class="toggle-row" for="bcc-mode">
-                <input type="checkbox" id="bcc-mode">
-                <span class="toggle-label">
-                    <strong>Copie carbone invisible (CCI)</strong>
-                    <small>Les destinataires ne verront pas les autres adresses. Recommandé pour les envois groupés.</small>
-                </span>
-            </label>
+            <div class="vars-bar">
+                <span>Variables :</span>
+                <button type="button" class="var-btn" data-var="{nom_utilisateur}">{nom_utilisateur}</button>
+                <button type="button" class="var-btn" data-var="{prenom}">{prenom}</button>
+                <button type="button" class="var-btn" data-var="{email}">{email}</button>
+                <button type="button" class="var-btn" data-var="{classe}">{classe}</button>
+            </div>
 
             <div class="actions-row">
                 <button class="btn secondary" id="btn-reset">Réinitialiser</button>
                 <button class="btn primary" id="btn-send">Envoyer</button>
             </div>
+
+            <div class="progress" id="progress"><div class="progress-bar" id="progress-bar"></div></div>
 
             <div class="feedback" id="feedback"></div>
         </section>
@@ -622,10 +788,7 @@
             measurementId: "G-FBKEPBY0CQ"
         };
 
-        // ⚠️ REMPLACE par l'URL de ton Worker Cloudflare après déploiement
         const BREVO_WORKER_URL = 'https://honore-romane-mail.anaelmaire-pro.workers.dev/';
-
-        // ⚠️ REMPLACE par ton adresse expéditrice validée dans Brevo
         const SENDER_EMAIL = 'anaelmaire.pro@gmail.com';
         const SENDER_NAME = 'Honoré Romane';
 
@@ -658,13 +821,15 @@
         const filterBtns = document.querySelectorAll('#filters .chip');
         const recipientsBox = document.getElementById('recipients-box');
         const subjectEl = document.getElementById('subject');
-        const bodyEl = document.getElementById('body');
-        const bccModeEl = document.getElementById('bcc-mode');
+        const editorEl = document.getElementById('editor');
+        const toolbarEl = document.getElementById('toolbar');
         const btnSend = document.getElementById('btn-send');
         const btnReset = document.getElementById('btn-reset');
         const btnSelectAll = document.getElementById('select-all-visible');
         const btnSelectNone = document.getElementById('select-none');
         const feedbackEl = document.getElementById('feedback');
+        const progressEl = document.getElementById('progress');
+        const progressBarEl = document.getElementById('progress-bar');
         const logoutBtn = document.getElementById('logout-btn');
 
         const goToLogin = () => {
@@ -798,16 +963,92 @@
             renderRecipients();
         });
 
+        // --- Barre d'outils éditeur ---
+        toolbarEl.querySelectorAll('[data-cmd]').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                editorEl.focus();
+                const cmd = el.dataset.cmd;
+                const value = el.dataset.value || el.value || null;
+                if (el.tagName === 'SELECT') {
+                    document.execCommand(cmd, false, value);
+                    el.selectedIndex = 0;
+                } else {
+                    document.execCommand(cmd, false, value);
+                }
+            });
+        });
+
+        // Lien
+        document.getElementById('btn-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            const url = prompt('URL du lien :', 'https://');
+            if (url) {
+                editorEl.focus();
+                document.execCommand('createLink', false, url);
+            }
+        });
+
+        // Variables : clic pour insérer dans l'éditeur à la position du curseur
+        document.querySelectorAll('.var-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const variable = btn.dataset.var;
+                editorEl.focus();
+                // Position actuelle du curseur (peut être perdue par le clic)
+                const sel = window.getSelection();
+                if (!sel.rangeCount) {
+                    // Aucune sélection → on colle à la fin
+                    editorEl.innerHTML += variable;
+                    return;
+                }
+                const range = sel.getRangeAt(0);
+                range.deleteContents();
+                range.insertNode(document.createTextNode(variable));
+                range.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            });
+        });
+
+        // --- Substitution des variables ---
+        function substituteVars(html, user) {
+            const firstName = (user.name || '').trim().split(/\s+/)[0] || '';
+            const map = {
+                '{nom_utilisateur}': user.name || '',
+                '{prenom}': firstName,
+                '{email}': user.email || '',
+                '{classe}': user.classe || ''
+            };
+            let out = html;
+            for (const [key, value] of Object.entries(map)) {
+                out = out.replaceAll(key, escapeHtml(value));
+            }
+            return out;
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;',
+                '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function esc(str) {
+            return escapeHtml(str);
+        }
+
+        // --- Envoi ---
         btnSend.addEventListener('click', async () => {
             feedbackEl.className = 'feedback';
             feedbackEl.textContent = '';
+            progressEl.classList.remove('visible');
+            progressBarEl.style.width = '0%';
 
             const subject = subjectEl.value.trim();
-            const body = bodyEl.value.trim();
+            const rawHtml = editorEl.innerHTML.trim();
             const selected = allUsers.filter(u => selectedIds.has(u.id));
-            const emails = selected.map(u => u.email).filter(Boolean);
 
-            if (!emails.length) {
+            if (!selected.length) {
                 showFeedback('error', 'Sélectionnez au moins un destinataire.');
                 return;
             }
@@ -815,49 +1056,73 @@
                 showFeedback('error', 'L\'objet est requis.');
                 return;
             }
-            if (!body) {
+            if (!rawHtml || !editorEl.textContent.trim()) {
                 showFeedback('error', 'Le message est requis.');
+                return;
+            }
+
+            if (!confirm(`Envoyer ce mail à ${selected.length} destinataire(s) ? (1 envoi par personne)`)) {
                 return;
             }
 
             btnSend.disabled = true;
             const original = btnSend.textContent;
             btnSend.textContent = 'Envoi…';
+            progressEl.classList.add('visible');
 
-            try {
-                const response = await fetch(BREVO_WORKER_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        to: emails,
-                        subject,
-                        body,
-                        bcc: bccModeEl.checked,
-                        sender: { name: SENDER_NAME, email: SENDER_EMAIL }
-                    })
-                });
+            let success = 0;
+            let failures = [];
 
-                const result = await response.json().catch(() => ({}));
+            for (let i = 0; i < selected.length; i++) {
+                const user = selected[i];
+                const html = substituteVars(rawHtml, user);
+                const text = editorEl.textContent; // fallback texte brut (sans substitutions pour simplicité, ou on peut substituer aussi)
 
-                if (!response.ok) {
-                    throw new Error(result.error || `Erreur ${response.status}`);
+                try {
+                    const response = await fetch(BREVO_WORKER_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            to: user.email,
+                            subject,
+                            htmlContent: html,
+                            textContent: text,
+                            sender: { name: SENDER_NAME, email: SENDER_EMAIL }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json().catch(() => ({}));
+                        throw new Error(err.error || `HTTP ${response.status}`);
+                    }
+
+                    success++;
+                } catch (err) {
+                    console.error('Échec pour', user.email, err);
+                    failures.push(`${user.email} (${err.message})`);
                 }
 
-                showFeedback('success', `Mail envoyé à ${emails.length} destinataire(s).`);
-            } catch (err) {
-                console.error(err);
-                showFeedback('error', 'Erreur : ' + (err.message || 'envoi impossible.'));
-            } finally {
-                btnSend.disabled = false;
-                btnSend.textContent = original;
+                const pct = Math.round(((i + 1) / selected.length) * 100);
+                progressBarEl.style.width = pct + '%';
+                btnSend.textContent = `Envoi ${i + 1}/${selected.length}…`;
+            }
+
+            btnSend.disabled = false;
+            btnSend.textContent = original;
+            progressEl.classList.remove('visible');
+
+            if (failures.length === 0) {
+                showFeedback('success', `✓ ${success} mail(s) envoyé(s) avec succès.`);
+            } else {
+                showFeedback('error', `${success} réussi(s), ${failures.length} échec(s) : ${failures.slice(0, 3).join(', ')}${failures.length > 3 ? '…' : ''}`);
             }
         });
 
         btnReset.addEventListener('click', () => {
+            if (!confirm('Réinitialiser le formulaire ?')) return;
             selectedIds.clear();
             subjectEl.value = '';
-            bodyEl.value = '';
-            bccModeEl.checked = false;
+            editorEl.innerHTML = '';
             renderUserList();
             renderRecipients();
             feedbackEl.className = 'feedback';
@@ -875,13 +1140,6 @@
             try { await signOut(auth); } catch (err) { console.error(err); }
             finally { window.location.replace(LOGIN_URL); }
         });
-
-        function esc(str) {
-            return String(str ?? '').replace(/[&<>"']/g, c => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;',
-                '"': '&quot;', "'": '&#39;'
-            }[c]));
-        }
     </script>
 </body>
 </html>

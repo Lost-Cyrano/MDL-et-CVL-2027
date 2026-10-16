@@ -4,22 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
-    <title>Création de compte — Honoré Romane</title>
+    <title>Envoi de mails — Honoré Romane</title>
     <style>
         :root {
-            /* Thème clair (par défaut) */
             --bg: #f5f3ef;
             --card: #ffffff;
+            --card-hover: #fafaf8;
             --field: #fafaf8;
-            --field-focus: #ffffff;
-            --border: #d8d5cf;
+            --border: #e5e2dc;
             --text: #1a1a1a;
             --text-muted: #6b6b6b;
             --accent: #1a1a1a;
             --accent-hover: #000000;
             --accent-text: #ffffff;
-            --error: #c0392b;
             --success: #1e7d4a;
+            --warning: #b45309;
+            --error: #c0392b;
             --radius: 0.75rem;
             --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
@@ -28,16 +28,17 @@
             :root {
                 --bg: #0e0e0e;
                 --card: #1a1a1a;
+                --card-hover: #232323;
                 --field: #232323;
-                --field-focus: #2b2b2b;
-                --border: #3a3a3a;
+                --border: #2e2e2e;
                 --text: #f2f2f2;
                 --text-muted: #9a9a9a;
                 --accent: #f2f2f2;
                 --accent-hover: #ffffff;
                 --accent-text: #0e0e0e;
-                --error: #ff6b5e;
                 --success: #4ade80;
+                --warning: #fbbf24;
+                --error: #ff6b5e;
             }
         }
 
@@ -54,7 +55,7 @@
             background: var(--bg);
             color: var(--text);
             font-family: var(--font);
-            font-size: clamp(14px, 1vw + 12px, 17px);
+            font-size: clamp(13px, 1vw + 11px, 15px);
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
         }
@@ -62,314 +63,696 @@
         body {
             display: flex;
             flex-direction: column;
+            min-height: 100dvh;
+        }
+
+        header {
+            display: flex;
             align-items: center;
-            justify-content: center;
-            padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-                     max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+            justify-content: space-between;
             gap: 1rem;
+            padding: max(1rem, env(safe-area-inset-top)) clamp(1rem, 4vw, 2.5rem) 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            flex-wrap: wrap;
         }
 
-        .container {
-            width: 100%;
-            max-width: 32rem;
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: clamp(1.25rem, 4vw, 2.25rem);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            margin: auto 0;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .container {
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            }
-        }
-
-        h1 {
-            font-size: clamp(1.25rem, 2vw + 1rem, 1.65rem);
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 0.35rem;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.9em;
-            margin-bottom: 1.75rem;
-        }
-
-        form {
+        .header-left {
             display: flex;
-            flex-direction: column;
+            align-items: center;
             gap: 1rem;
+            min-width: 0;
+            flex: 1;
         }
 
-        .field {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-        }
-
-        label {
+        .back-link {
+            font-family: inherit;
             font-size: 0.85em;
             color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        input[type="text"],
-        input[type="tel"],
-        input[type="email"],
-        input[type="password"],
-        select,
-        button {
-            font-family: inherit;
-            font-size: 1em;
-            width: 100%;
-            border-radius: 0.5rem;
+            text-decoration: none;
+            padding: 0.4rem 0.75rem;
             border: 1px solid var(--border);
-            background: var(--field);
+            border-radius: 0.5rem;
+            transition: color .15s, border-color .15s;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .back-link:hover {
             color: var(--text);
-            padding: 0.75rem 0.9rem;
-            transition: border-color .15s, background .15s, opacity .15s;
-            outline: none;
+            border-color: var(--text);
         }
 
-        input:focus, select:focus {
-            border-color: var(--accent);
-            background: var(--field-focus);
-        }
-
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 0.9rem center;
-            background-size: 1em;
-            padding-right: 2.5rem;
-        }
-
-        select option {
-            background: var(--card);
-            color: var(--text);
-        }
-
-        button {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: var(--accent-text);
+        .page-title {
             font-weight: 600;
+            font-size: 0.95em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .logout-btn {
+            font-family: inherit;
+            font-size: 0.82em;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            padding: 0.5rem 0.9rem;
+            border-radius: 0.5rem;
             cursor: pointer;
-            padding: 0.85rem;
-            margin-top: 0.5rem;
+            transition: color .15s, border-color .15s;
+            flex-shrink: 0;
         }
 
-        button:hover:not(:disabled) {
-            background: var(--accent-hover);
-            border-color: var(--accent-hover);
+        .logout-btn:hover:not(:disabled) {
+            color: var(--text);
+            border-color: var(--text);
         }
 
-        button:disabled {
+        .logout-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
 
-        .error {
-            color: var(--error);
-            font-size: 0.8em;
-            min-height: 1em;
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 100rem;
+            margin: 0 auto;
+            padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 4vw, 2.5rem);
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+            gap: 1.25rem;
+            align-items: start;
         }
 
-        .form-error {
-            color: var(--error);
-            font-size: 0.9em;
-            text-align: center;
-            min-height: 1.2em;
-        }
-
-        /* Case RGPD */
-        .rgpd {
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: clamp(1rem, 2.5vw, 1.5rem);
             display: flex;
-            align-items: flex-start;
-            gap: 0.65rem;
-            padding: 0.85rem;
-            background: var(--field);
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .panel-title {
+            font-size: 0.78em;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .search {
+            font-family: inherit;
+            font-size: 0.9em;
+            padding: 0.6rem 0.9rem;
             border: 1px solid var(--border);
             border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: 0.85em;
-            line-height: 1.45;
-            color: var(--text-muted);
+            background: var(--field);
+            color: var(--text);
+            outline: none;
             transition: border-color .15s;
+            width: 100%;
         }
 
-        .rgpd:hover {
+        .search:focus {
             border-color: var(--accent);
         }
 
-        .rgpd input[type="checkbox"] {
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .chip {
+            font-family: inherit;
+            font-size: 0.78em;
+            font-weight: 500;
+            padding: 0.35rem 0.75rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s, background .15s;
+        }
+
+        .chip:hover {
+            color: var(--text);
+            border-color: var(--text-muted);
+        }
+
+        .chip.active {
+            background: var(--accent);
+            color: var(--accent-text);
+            border-color: var(--accent);
+        }
+
+        .list {
+            max-height: 55vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 0.5rem 0.25rem 0.5rem 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.5rem 0.4rem;
+            border-radius: 0.4rem;
+            cursor: pointer;
+            transition: background .15s;
+            font-size: 0.9em;
+        }
+
+        .list-item:hover {
+            background: var(--card-hover);
+        }
+
+        .list-item input[type="checkbox"] {
             flex-shrink: 0;
-            width: 1.15em;
-            height: 1.15em;
-            margin-top: 0.15em;
+            width: 1.05em;
+            height: 1.05em;
             accent-color: var(--accent);
             cursor: pointer;
         }
 
-        /* Écran de confirmation */
-        .confirmation {
+        .list-item .name {
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .list-item .meta {
+            font-size: 0.78em;
+            color: var(--text-muted);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .list-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            font-size: 0.8em;
+        }
+
+        .list-actions button {
+            font-family: inherit;
+            font-size: 1em;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.3rem 0.7rem;
+            border-radius: 0.4rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s;
+        }
+
+        .list-actions button:hover {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .counter {
+            font-size: 0.82em;
+            color: var(--text-muted);
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .form-field > label {
+            font-size: 0.82em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .form-field input[type="text"] {
+            font-family: inherit;
+            font-size: 1em;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--field);
+            color: var(--text);
+            outline: none;
+            transition: border-color .15s;
+            width: 100%;
+        }
+
+        .form-field input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        /* --- Barre d'outils éditeur --- */
+        .editor-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            padding: 0.4rem;
+            background: var(--field);
+            border: 1px solid var(--border);
+            border-bottom: none;
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+
+        .editor-toolbar button,
+        .editor-toolbar select {
+            font-family: inherit;
+            font-size: 0.82em;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text);
+            padding: 0.35rem 0.55rem;
+            border-radius: 0.35rem;
+            cursor: pointer;
+            transition: background .15s, border-color .15s;
+            min-width: 2rem;
+            text-align: center;
+        }
+
+        .editor-toolbar button:hover,
+        .editor-toolbar select:hover {
+            background: var(--card-hover);
+            border-color: var(--border);
+        }
+
+        .editor-toolbar button.active {
+            background: var(--accent);
+            color: var(--accent-text);
+            border-color: var(--accent);
+        }
+
+        .editor-toolbar select {
+            min-width: 6rem;
+            padding-right: 1.5rem;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.4rem center;
+            background-size: 0.8em;
+        }
+
+        .editor-toolbar .sep {
+            width: 1px;
+            background: var(--border);
+            margin: 0.2rem 0.15rem;
+        }
+
+        .editor {
+            font-family: inherit;
+            font-size: 1em;
+            padding: 0.85rem 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: 0 0 0.5rem 0.5rem;
+            background: var(--field);
+            color: var(--text);
+            outline: none;
+            min-height: 16rem;
+            max-height: 45vh;
+            overflow-y: auto;
+            line-height: 1.6;
+            transition: border-color .15s;
+        }
+
+        .editor:focus {
+            border-color: var(--accent);
+        }
+
+        .editor:empty::before {
+            content: attr(data-placeholder);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .editor a { color: #2563eb; text-decoration: underline; }
+        .editor ul, .editor ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+        .editor blockquote {
+            border-left: 3px solid var(--border);
+            padding-left: 0.75rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        .editor pre {
+            background: color-mix(in srgb, var(--text) 8%, transparent);
+            padding: 0.6rem;
+            border-radius: 0.35rem;
+            font-family: monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+
+        .vars-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            align-items: center;
+            font-size: 0.78em;
+            color: var(--text-muted);
+        }
+
+        .var-btn {
+            font-family: inherit;
+            font-size: 0.95em;
+            padding: 0.25rem 0.6rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 0.35rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s;
+            font-family: monospace;
+        }
+
+        .var-btn:hover {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .recipients-box {
+            background: var(--field);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.6rem;
+            min-height: 2.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            align-items: center;
+            font-size: 0.85em;
+            max-height: 8rem;
+            overflow-y: auto;
+        }
+
+        .recipient-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.15rem 0.5rem;
+            background: color-mix(in srgb, var(--accent) 12%, transparent);
+            border: 1px solid var(--border);
+            border-radius: 2rem;
+            font-size: 0.85em;
+            max-width: 100%;
+        }
+
+        .recipient-chip span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 14rem;
+        }
+
+        .recipient-chip button {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1em;
+            line-height: 1;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .recipient-chip button:hover {
+            color: var(--error);
+        }
+
+        .recipients-empty {
+            color: var(--text-muted);
+            font-size: 0.85em;
+            padding: 0.3rem 0;
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-size: 0.9em;
+            font-weight: 600;
+            padding: 0.7rem 1.3rem;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: opacity .15s, border-color .15s, color .15s, background .15s;
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            color: var(--accent-text);
+        }
+
+        .btn.primary:hover:not(:disabled) { opacity: 0.85; }
+
+        .btn.secondary {
+            background: transparent;
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+
+        .btn.secondary:hover:not(:disabled) {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .feedback {
+            font-size: 0.85em;
+            padding: 0.7rem 0.9rem;
+            border-radius: 0.5rem;
             display: none;
         }
 
-        .confirmation.visible {
-            display: block;
-        }
+        .feedback.visible { display: block; }
 
-        .confirmation p {
-            color: var(--text-muted);
-            font-size: 0.92em;
-            margin-bottom: 0.9rem;
-            text-align: left;
-        }
-
-        .confirmation p.thanks {
-            text-align: center;
-            color: var(--text);
-            margin-top: 1.25rem;
-            margin-bottom: 1.25rem;
-        }
-
-        .confirmation h2 {
-            text-align: center;
-            font-size: 1.15em;
+        .feedback.success {
+            background: color-mix(in srgb, var(--success) 12%, transparent);
             color: var(--success);
-            margin-bottom: 1.25rem;
+            border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
         }
 
-        .confirmation a.button {
-            display: block;
-            text-align: center;
-            text-decoration: none;
+        .feedback.error {
+            background: color-mix(in srgb, var(--error) 12%, transparent);
+            color: var(--error);
+            border: 1px solid color-mix(in srgb, var(--error) 35%, transparent);
+        }
+
+        .feedback.info {
+            background: color-mix(in srgb, var(--accent) 8%, transparent);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .progress {
+            margin-top: 0.5rem;
+            height: 6px;
+            background: var(--field);
+            border-radius: 3px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress.visible { display: block; }
+
+        .progress-bar {
+            height: 100%;
             background: var(--accent);
-            color: var(--accent-text);
-            font-weight: 600;
-            padding: 0.85rem;
-            border-radius: 0.5rem;
-            transition: background .15s;
+            width: 0%;
+            transition: width .2s;
         }
 
-        .confirmation a.button:hover {
-            background: var(--accent-hover);
+        .empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem 1rem;
+            font-size: 0.9em;
         }
 
-        /* Footer discret */
         .footer {
-            width: 100%;
             text-align: center;
             color: var(--text-muted);
             font-size: 0.72em;
-            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+            padding: 1.25rem 1rem max(1.25rem, env(safe-area-inset-bottom));
             opacity: 0.7;
             user-select: none;
         }
 
-        /* Petits écrans très bas de plafond (paysage mobile) */
-        @media (max-height: 520px) and (orientation: landscape) {
-            body {
-                justify-content: flex-start;
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
             }
-            .container {
-                max-width: 40rem;
-                margin: 0;
+            .list {
+                max-height: 40vh;
             }
-            form {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 0.75rem;
-            }
-            .field-full, button, .form-error, .rgpd {
-                grid-column: 1 / -1;
-            }
-            h1 { margin-bottom: 0.25rem; }
-            .subtitle { margin-bottom: 0.75rem; }
+        }
+
+        @media (max-width: 640px) {
+            .page-title { display: none; }
         }
     </style>
 </head>
 <body>
-    <main class="container" role="main">
 
-        <!-- Formulaire d'inscription -->
-        <section id="signup-section">
-            <h1>Créer un compte</h1>
-            <p class="subtitle">Tous les champs sont obligatoires.</p>
+    <header>
+        <div class="header-left">
+            <a href="https://account.honore-romane.fr/account/" class="back-link">← Accueil</a>
+            <span class="page-title">Envoi de mails</span>
+        </div>
+        <button class="logout-btn" id="logout-btn">Déconnexion</button>
+    </header>
 
-            <form id="signup-form" novalidate>
-                <div class="field">
-                    <label for="name">Nom Prénom</label>
-                    <input type="text" id="name" name="name" autocomplete="name" required>
-                    <span class="error" id="error-name"></span>
-                </div>
+    <main>
 
-                <div class="field">
-                    <label for="classe">Classe</label>
-                    <input type="text" id="classe" name="classe" autocomplete="off" required>
-                    <span class="error" id="error-classe"></span>
-                </div>
+        <section class="panel">
+            <div class="panel-title">Destinataires</div>
 
-                <div class="field">
-                    <label for="phone">Numéro de téléphone</label>
-                    <input type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" required>
-                    <span class="error" id="error-phone"></span>
-                </div>
+            <input type="search" class="search" id="search" placeholder="Rechercher (nom, mail, classe…)" autocomplete="off">
 
-                <div class="field">
-                    <label for="email">Adresse mail</label>
-                    <input type="email" id="email" name="email" autocomplete="email" inputmode="email" required>
-                    <span class="error" id="error-email"></span>
-                </div>
+            <div class="filter-row" id="filters">
+                <button class="chip active" data-filter="all">Tous</button>
+                <button class="chip" data-filter="cvl">CVL</button>
+                <button class="chip" data-filter="mdl">MDL</button>
+                <button class="chip" data-filter="eco_delegues">Éco Délégués</button>
+                <button class="chip" data-filter="commission">Commission</button>
+                <button class="chip" data-filter="utilisateur">Utilisateurs</button>
+            </div>
 
-                <div class="field">
-                    <label for="role">Fonction (choisir la plus élevée)</label>
-                    <select id="role" name="role" required>
-                        <option value="" disabled selected>Sélectionner…</option>
-                        <option value="cvl">CVL</option>
-                        <option value="mdl">MDL</option>
-                        <option value="eco_delegues">Éco Délégués</option>
-                        <option value="commission">Membre d'une commission</option>
-                        <option value="utilisateur">Simple utilisateur</option>
-                    </select>
-                    <span class="error" id="error-role"></span>
-                </div>
+            <div class="list-actions">
+                <button id="select-all-visible">Tout sélectionner</button>
+                <button id="select-none">Tout désélectionner</button>
+            </div>
 
-                <div class="field">
-                    <label for="password">Mot de passe</label>
-                    <input type="password" id="password" name="password" autocomplete="new-password" required minlength="8">
-                    <span class="error" id="error-password"></span>
-                </div>
+            <div class="list" id="user-list">
+                <div class="empty">Chargement…</div>
+            </div>
 
-                <label class="rgpd" for="rgpd">
-                    <input type="checkbox" id="rgpd" name="rgpd" required>
-                    <span>
-                        J'accepte que mes informations soient conservées pour vérifier mon identité avant l'activation de mon compte. Elles ne seront pas publiées et seront traitées dans le respect des normes RGPD européennes.
-                    </span>
-                </label>
-                <span class="error" id="error-rgpd"></span>
-
-                <div class="form-error" id="form-error"></div>
-
-                <button type="submit" id="submit-btn">Créer mon compte</button>
-            </form>
+            <div class="counter" id="counter">0 sélectionné(s)</div>
         </section>
 
-        <!-- Écran de confirmation -->
-        <section id="confirmation-section" class="confirmation">
-            <h2>Compte créé avec succès ✓</h2>
+        <section class="panel">
+            <div class="panel-title">Message</div>
 
-            <p>Vous serez prévenu(e) par mail (et possiblement ajouté(e) à la communauté WhatsApp) dès l'activation de votre compte. Les fonctionnalités, modalités et usages de l'application vous seront décrits lors des prochaines réunions.</p>
-            <h3>Penser à vérifier vos spams</h3>
-            <p class="thanks">Merci pour votre temps et votre confiance.</p>
+            <div class="form-field">
+                <label>À</label>
+                <div class="recipients-box" id="recipients-box">
+                    <div class="recipients-empty">Aucun destinataire sélectionné.</div>
+                </div>
+            </div>
 
-            <a href="https://account.honore-romane.fr/login/" class="button">Aller à la connexion</a>
+            <div class="form-field">
+                <label for="subject">Objet</label>
+                <input type="text" id="subject" maxlength="200" required>
+            </div>
+
+            <div class="form-field">
+                <label>Message</label>
+
+                <div class="editor-toolbar" id="toolbar">
+                    <select data-cmd="formatBlock" title="Style de texte">
+                        <option value="p">Normal</option>
+                        <option value="h1">Titre 1</option>
+                        <option value="h2">Titre 2</option>
+                        <option value="h3">Titre 3</option>
+                        <option value="blockquote">Citation</option>
+                        <option value="pre">Code</option>
+                    </select>
+
+                    <select data-cmd="fontName" title="Police">
+                        <option value="">Police…</option>
+                        <option value="Arial">Arial</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Verdana">Verdana</option>
+                        <option value="Tahoma">Tahoma</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Courier New">Courier New</option>
+                    </select>
+
+                    <select data-cmd="fontSize" title="Taille">
+                        <option value="">Taille…</option>
+                        <option value="1">Très petit</option>
+                        <option value="2">Petit</option>
+                        <option value="3">Normal</option>
+                        <option value="4">Grand</option>
+                        <option value="5">Très grand</option>
+                        <option value="6">Énorme</option>
+                        <option value="7">Géant</option>
+                    </select>
+
+                    <div class="sep"></div>
+
+                    <button type="button" data-cmd="bold" title="Gras"><b>G</b></button>
+                    <button type="button" data-cmd="italic" title="Italique"><i>I</i></button>
+                    <button type="button" data-cmd="underline" title="Souligné"><u>S</u></button>
+                    <button type="button" data-cmd="strikeThrough" title="Barré"><s>B</s></button>
+
+                    <div class="sep"></div>
+
+                    <button type="button" data-cmd="insertUnorderedList" title="Liste à puces">•</button>
+                    <button type="button" data-cmd="insertOrderedList" title="Liste numérotée">1.</button>
+
+                    <div class="sep"></div>
+
+                    <button type="button" data-cmd="justifyLeft" title="Aligner à gauche">⯇</button>
+                    <button type="button" data-cmd="justifyCenter" title="Centrer">≡</button>
+                    <button type="button" data-cmd="justifyRight" title="Aligner à droite">⯈</button>
+
+                    <div class="sep"></div>
+
+                    <button type="button" id="btn-link" title="Insérer un lien">🔗</button>
+                    <button type="button" data-cmd="removeFormat" title="Effacer la mise en forme">✕</button>
+                </div>
+
+                <div class="editor" id="editor" contenteditable="true" data-placeholder="Écrivez votre message…"></div>
+            </div>
+
+            <div class="vars-bar">
+                <span>Variables :</span>
+                <button type="button" class="var-btn" data-var="{nom_utilisateur}">{nom_utilisateur}</button>
+                <button type="button" class="var-btn" data-var="{prenom}">{prenom}</button>
+                <button type="button" class="var-btn" data-var="{email}">{email}</button>
+                <button type="button" class="var-btn" data-var="{classe}">{classe}</button>
+            </div>
+
+            <div class="actions-row">
+                <button class="btn secondary" id="btn-reset">Réinitialiser</button>
+                <button class="btn primary" id="btn-send">Envoyer</button>
+            </div>
+
+            <div class="progress" id="progress"><div class="progress-bar" id="progress-bar"></div></div>
+
+            <div class="feedback" id="feedback"></div>
         </section>
 
     </main>
@@ -382,18 +765,19 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
         import {
             getAuth,
-            createUserWithEmailAndPassword,
-            signOut,
-            updateProfile
+            onAuthStateChanged,
+            signOut
         } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
         import {
             getFirestore,
             doc,
-            setDoc,
-            serverTimestamp
+            getDoc,
+            collection,
+            getDocs,
+            query,
+            orderBy
         } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
-        // Configuration Firebase du projet "mdl-et-cvl-2027"
         const firebaseConfig = {
             apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
             authDomain: "mdl-et-cvl-2027.firebaseapp.com",
@@ -404,129 +788,357 @@
             measurementId: "G-FBKEPBY0CQ"
         };
 
+        const BREVO_WORKER_URL = 'https://honore-romane-mail.anaelmaire-pro.workers.dev/';
+        const SENDER_EMAIL = 'anaelmaire.pro@gmail.com';
+        const SENDER_NAME = 'Honoré Romane';
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const form = document.getElementById('signup-form');
-        const submitBtn = document.getElementById('submit-btn');
-        const formError = document.getElementById('form-error');
-        const signupSection = document.getElementById('signup-section');
-        const confirmationSection = document.getElementById('confirmation-section');
+        const LOGIN_URL = 'https://account.honore-romane.fr/login/';
+        const HOME_URL = 'https://account.honore-romane.fr/account/';
+        const CURRENT_URL = 'https://account.honore-romane.fr/admin/mail/';
 
-        // --- Validations ---
+        const ROLE_LABELS = {
+            cvl: 'CVL',
+            mdl: 'MDL',
+            eco_delegues: 'Éco Délégués',
+            commission: 'Commission',
+            utilisateur: 'Utilisateur'
+        };
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-        // Format international souple : +33 6 12 34 56 78 / 0612345678 / 06 12 34 56 78
-        const phoneRegex = /^(?:\+?\d{1,3}[\s.-]?)?(?:\d[\s.-]?){9,14}\d$/;
+        let me = null;
+        let allUsers = [];
+        let filteredUsers = [];
+        let selectedIds = new Set();
+        let currentFilter = 'all';
+        let currentSearch = '';
 
-        function setError(id, msg) {
-            document.getElementById('error-' + id).textContent = msg || '';
-        }
+        const userListEl = document.getElementById('user-list');
+        const searchEl = document.getElementById('search');
+        const counterEl = document.getElementById('counter');
+        const filterBtns = document.querySelectorAll('#filters .chip');
+        const recipientsBox = document.getElementById('recipients-box');
+        const subjectEl = document.getElementById('subject');
+        const editorEl = document.getElementById('editor');
+        const toolbarEl = document.getElementById('toolbar');
+        const btnSend = document.getElementById('btn-send');
+        const btnReset = document.getElementById('btn-reset');
+        const btnSelectAll = document.getElementById('select-all-visible');
+        const btnSelectNone = document.getElementById('select-none');
+        const feedbackEl = document.getElementById('feedback');
+        const progressEl = document.getElementById('progress');
+        const progressBarEl = document.getElementById('progress-bar');
+        const logoutBtn = document.getElementById('logout-btn');
 
-        function clearErrors() {
-            ['name','classe','phone','email','role','password','rgpd'].forEach(id => setError(id, ''));
-            formError.textContent = '';
-        }
+        const goToLogin = () => {
+            window.location.replace(
+                LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL)
+            );
+        };
+        const goHome = () => window.location.replace(HOME_URL);
 
-        function validate(values) {
-            let ok = true;
-
-            if (!values.name.trim() || values.name.trim().length < 2) {
-                setError('name', 'Nom et prénom requis.');
-                ok = false;
-            }
-            if (!values.classe.trim()) {
-                setError('classe', 'Classe requise.');
-                ok = false;
-            }
-            if (!phoneRegex.test(values.phone.replace(/\s/g, ''))) {
-                setError('phone', 'Numéro de téléphone invalide.');
-                ok = false;
-            }
-            if (!emailRegex.test(values.email)) {
-                setError('email', 'Adresse mail invalide.');
-                ok = false;
-            }
-            if (!values.role) {
-                setError('role', 'Sélectionnez une fonction.');
-                ok = false;
-            }
-            if (values.password.length < 8) {
-                setError('password', '8 caractères minimum.');
-                ok = false;
-            }
-            if (!values.rgpd) {
-                setError('rgpd', 'Vous devez accepter la clause de confidentialité.');
-                ok = false;
-            }
-
-            return ok;
-        }
-
-        // --- Soumission ---
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            clearErrors();
-
-            const values = {
-                name: document.getElementById('name').value.trim(),
-                classe: document.getElementById('classe').value.trim(),
-                phone: document.getElementById('phone').value.trim(),
-                email: document.getElementById('email').value.trim().toLowerCase(),
-                role: document.getElementById('role').value,
-                password: document.getElementById('password').value,
-                rgpd: document.getElementById('rgpd').checked
-            };
-
-            if (!validate(values)) return;
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Création…';
-
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { goToLogin(); return; }
             try {
-                // 1. Créer l'utilisateur Firebase Auth
-                const cred = await createUserWithEmailAndPassword(auth, values.email, values.password);
-                const uid = cred.user.uid;
+                const snap = await getDoc(doc(db, 'users', user.uid));
+                if (!snap.exists() || snap.data().status !== 'active') {
+                    await signOut(auth);
+                    goToLogin();
+                    return;
+                }
+                me = snap.data();
+                if (me.isAdmin !== true) { goHome(); return; }
 
-                // 2. Mettre à jour le displayName
-                await updateProfile(cred.user, { displayName: values.name });
-
-                // 3. Enregistrer le profil dans Firestore (statut "pending")
-                await setDoc(doc(db, 'users', uid), {
-                    uid,
-                    name: values.name,
-                    classe: values.classe,
-                    phone: values.phone,
-                    email: values.email,
-                    role: values.role,
-                    status: 'pending',
-                    rgpdAccepted: true,
-                    rgpdAcceptedAt: serverTimestamp(),
-                    createdAt: serverTimestamp()
-                });
-
-                // 4. Déconnecter immédiatement : le compte ne doit pas être utilisable avant validation admin
-                await signOut(auth);
-
-                // 5. Afficher la confirmation
-                signupSection.style.display = 'none';
-                confirmationSection.classList.add('visible');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-
+                await loadUsers();
             } catch (err) {
                 console.error(err);
-                const map = {
-                    'auth/email-already-in-use': 'Cette adresse mail est déjà utilisée.',
-                    'auth/invalid-email': 'Adresse mail invalide.',
-                    'auth/weak-password': 'Mot de passe trop faible.',
-                    'auth/network-request-failed': 'Erreur réseau. Réessayez.'
-                };
-                formError.textContent = map[err.code] || 'Une erreur est survenue. Réessayez.';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Créer mon compte';
+                await signOut(auth).catch(() => {});
+                goToLogin();
             }
+        });
+
+        async function loadUsers() {
+            try {
+                const q = query(collection(db, 'users'), orderBy('name', 'asc'));
+                const snap = await getDocs(q);
+                allUsers = snap.docs
+                    .map(d => ({ id: d.id, ...d.data() }))
+                    .filter(u => u.email && u.status === 'active');
+                applyFilters();
+            } catch (err) {
+                console.error(err);
+                userListEl.innerHTML = '<div class="empty">Erreur de chargement.</div>';
+            }
+        }
+
+        function applyFilters() {
+            let list = allUsers;
+            if (currentFilter !== 'all') {
+                list = list.filter(u => u.role === currentFilter);
+            }
+            if (currentSearch) {
+                const s = currentSearch.toLowerCase();
+                list = list.filter(u =>
+                    (u.name || '').toLowerCase().includes(s) ||
+                    (u.email || '').toLowerCase().includes(s) ||
+                    (u.classe || '').toLowerCase().includes(s)
+                );
+            }
+            filteredUsers = list;
+            renderUserList();
+        }
+
+        function renderUserList() {
+            if (!filteredUsers.length) {
+                userListEl.innerHTML = '<div class="empty">Aucun utilisateur.</div>';
+                return;
+            }
+            userListEl.innerHTML = filteredUsers.map(u => `
+                <label class="list-item" data-uid="${esc(u.id)}">
+                    <input type="checkbox" ${selectedIds.has(u.id) ? 'checked' : ''}>
+                    <span class="name">${esc(u.name || u.email)}</span>
+                    <span class="meta">${esc(ROLE_LABELS[u.role] || u.role || '')}</span>
+                </label>
+            `).join('');
+
+            userListEl.querySelectorAll('.list-item').forEach(item => {
+                const uid = item.dataset.uid;
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) selectedIds.add(uid);
+                    else selectedIds.delete(uid);
+                    renderRecipients();
+                });
+            });
+        }
+
+        function renderRecipients() {
+            const selected = allUsers.filter(u => selectedIds.has(u.id));
+            if (!selected.length) {
+                recipientsBox.innerHTML = '<div class="recipients-empty">Aucun destinataire sélectionné.</div>';
+            } else {
+                recipientsBox.innerHTML = selected.map(u => `
+                    <span class="recipient-chip">
+                        <span title="${esc(u.email)}">${esc(u.name || u.email)}</span>
+                        <button data-remove="${esc(u.id)}" aria-label="Retirer">×</button>
+                    </span>
+                `).join('');
+
+                recipientsBox.querySelectorAll('[data-remove]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        selectedIds.delete(btn.dataset.remove);
+                        renderUserList();
+                        renderRecipients();
+                    });
+                });
+            }
+            counterEl.textContent = `${selectedIds.size} sélectionné(s)`;
+        }
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                applyFilters();
+            });
+        });
+
+        searchEl.addEventListener('input', () => {
+            currentSearch = searchEl.value.trim();
+            applyFilters();
+        });
+
+        btnSelectAll.addEventListener('click', () => {
+            filteredUsers.forEach(u => selectedIds.add(u.id));
+            renderUserList();
+            renderRecipients();
+        });
+
+        btnSelectNone.addEventListener('click', () => {
+            selectedIds.clear();
+            renderUserList();
+            renderRecipients();
+        });
+
+        // --- Barre d'outils éditeur ---
+        toolbarEl.querySelectorAll('[data-cmd]').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                editorEl.focus();
+                const cmd = el.dataset.cmd;
+                const value = el.dataset.value || el.value || null;
+                if (el.tagName === 'SELECT') {
+                    document.execCommand(cmd, false, value);
+                    el.selectedIndex = 0;
+                } else {
+                    document.execCommand(cmd, false, value);
+                }
+            });
+        });
+
+        // Lien
+        document.getElementById('btn-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            const url = prompt('URL du lien :', 'https://');
+            if (url) {
+                editorEl.focus();
+                document.execCommand('createLink', false, url);
+            }
+        });
+
+        // Variables : clic pour insérer dans l'éditeur à la position du curseur
+        document.querySelectorAll('.var-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const variable = btn.dataset.var;
+                editorEl.focus();
+                // Position actuelle du curseur (peut être perdue par le clic)
+                const sel = window.getSelection();
+                if (!sel.rangeCount) {
+                    // Aucune sélection → on colle à la fin
+                    editorEl.innerHTML += variable;
+                    return;
+                }
+                const range = sel.getRangeAt(0);
+                range.deleteContents();
+                range.insertNode(document.createTextNode(variable));
+                range.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            });
+        });
+
+        // --- Substitution des variables ---
+        function substituteVars(html, user) {
+            const firstName = (user.name || '').trim().split(/\s+/)[0] || '';
+            const map = {
+                '{nom_utilisateur}': user.name || '',
+                '{prenom}': firstName,
+                '{email}': user.email || '',
+                '{classe}': user.classe || ''
+            };
+            let out = html;
+            for (const [key, value] of Object.entries(map)) {
+                out = out.replaceAll(key, escapeHtml(value));
+            }
+            return out;
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;',
+                '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function esc(str) {
+            return escapeHtml(str);
+        }
+
+        // --- Envoi ---
+        btnSend.addEventListener('click', async () => {
+            feedbackEl.className = 'feedback';
+            feedbackEl.textContent = '';
+            progressEl.classList.remove('visible');
+            progressBarEl.style.width = '0%';
+
+            const subject = subjectEl.value.trim();
+            const rawHtml = editorEl.innerHTML.trim();
+            const selected = allUsers.filter(u => selectedIds.has(u.id));
+
+            if (!selected.length) {
+                showFeedback('error', 'Sélectionnez au moins un destinataire.');
+                return;
+            }
+            if (!subject) {
+                showFeedback('error', 'L\'objet est requis.');
+                return;
+            }
+            if (!rawHtml || !editorEl.textContent.trim()) {
+                showFeedback('error', 'Le message est requis.');
+                return;
+            }
+
+            if (!confirm(`Envoyer ce mail à ${selected.length} destinataire(s) ? (1 envoi par personne)`)) {
+                return;
+            }
+
+            btnSend.disabled = true;
+            const original = btnSend.textContent;
+            btnSend.textContent = 'Envoi…';
+            progressEl.classList.add('visible');
+
+            let success = 0;
+            let failures = [];
+
+            for (let i = 0; i < selected.length; i++) {
+                const user = selected[i];
+                const html = substituteVars(rawHtml, user);
+                const text = editorEl.textContent; // fallback texte brut (sans substitutions pour simplicité, ou on peut substituer aussi)
+
+                try {
+                    const response = await fetch(BREVO_WORKER_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            to: user.email,
+                            subject,
+                            htmlContent: html,
+                            textContent: text,
+                            sender: { name: SENDER_NAME, email: SENDER_EMAIL }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json().catch(() => ({}));
+                        throw new Error(err.error || `HTTP ${response.status}`);
+                    }
+
+                    success++;
+                } catch (err) {
+                    console.error('Échec pour', user.email, err);
+                    failures.push(`${user.email} (${err.message})`);
+                }
+
+                const pct = Math.round(((i + 1) / selected.length) * 100);
+                progressBarEl.style.width = pct + '%';
+                btnSend.textContent = `Envoi ${i + 1}/${selected.length}…`;
+            }
+
+            btnSend.disabled = false;
+            btnSend.textContent = original;
+            progressEl.classList.remove('visible');
+
+            if (failures.length === 0) {
+                showFeedback('success', `✓ ${success} mail(s) envoyé(s) avec succès.`);
+            } else {
+                showFeedback('error', `${success} réussi(s), ${failures.length} échec(s) : ${failures.slice(0, 3).join(', ')}${failures.length > 3 ? '…' : ''}`);
+            }
+        });
+
+        btnReset.addEventListener('click', () => {
+            if (!confirm('Réinitialiser le formulaire ?')) return;
+            selectedIds.clear();
+            subjectEl.value = '';
+            editorEl.innerHTML = '';
+            renderUserList();
+            renderRecipients();
+            feedbackEl.className = 'feedback';
+            feedbackEl.textContent = '';
+        });
+
+        function showFeedback(type, msg) {
+            feedbackEl.className = 'feedback visible ' + type;
+            feedbackEl.textContent = msg;
+        }
+
+        logoutBtn.addEventListener('click', async () => {
+            logoutBtn.disabled = true;
+            logoutBtn.textContent = 'Déconnexion…';
+            try { await signOut(auth); } catch (err) { console.error(err); }
+            finally { window.location.replace(LOGIN_URL); }
         });
     </script>
 </body>

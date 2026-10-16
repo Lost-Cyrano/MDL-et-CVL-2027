@@ -114,6 +114,28 @@
             white-space: nowrap;
         }
 
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .quota-info {
+            font-size: 0.78em;
+            color: var(--text-muted);
+            padding: 0.35rem 0.7rem;
+            background: var(--field);
+            border: 1px solid var(--border);
+            border-radius: 2rem;
+            white-space: nowrap;
+        }
+
+        .quota-info.low {
+            color: var(--error);
+            border-color: color-mix(in srgb, var(--error) 40%, transparent);
+        }
+
         .logout-btn {
             font-family: inherit;
             font-size: 0.82em;
@@ -333,6 +355,7 @@
             border: 1px solid var(--border);
             border-bottom: none;
             border-radius: 0.5rem 0.5rem 0 0;
+            align-items: center;
         }
 
         .editor-toolbar button,
@@ -374,6 +397,7 @@
 
         .editor-toolbar .sep {
             width: 1px;
+            height: 1.4em;
             background: var(--border);
             margin: 0.2rem 0.15rem;
         }
@@ -422,6 +446,17 @@
             overflow-x: auto;
             margin: 0.5rem 0;
         }
+        .editor hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 1rem 0;
+        }
+        .editor img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.35rem;
+            margin: 0.5rem 0;
+        }
 
         .vars-bar {
             display: flex;
@@ -433,7 +468,7 @@
         }
 
         .var-btn {
-            font-family: inherit;
+            font-family: monospace;
             font-size: 0.95em;
             padding: 0.25rem 0.6rem;
             border: 1px solid var(--border);
@@ -442,7 +477,6 @@
             border-radius: 0.35rem;
             cursor: pointer;
             transition: color .15s, border-color .15s;
-            font-family: monospace;
         }
 
         .var-btn:hover {
@@ -619,6 +653,7 @@
 
         @media (max-width: 640px) {
             .page-title { display: none; }
+            .quota-info { font-size: 0.72em; }
         }
     </style>
 </head>
@@ -629,7 +664,10 @@
             <a href="https://account.honore-romane.fr/account/" class="back-link">← Accueil</a>
             <span class="page-title">Envoi de mails</span>
         </div>
-        <button class="logout-btn" id="logout-btn">Déconnexion</button>
+        <div class="header-right">
+            <span class="quota-info" id="quota-info">Quota : —</span>
+            <button class="logout-btn" id="logout-btn">Déconnexion</button>
+        </div>
     </header>
 
     <main>
@@ -679,16 +717,7 @@
                 <label>Message</label>
 
                 <div class="editor-toolbar" id="toolbar">
-                    <select data-cmd="formatBlock" title="Style de texte">
-                        <option value="p">Normal</option>
-                        <option value="h1">Titre 1</option>
-                        <option value="h2">Titre 2</option>
-                        <option value="h3">Titre 3</option>
-                        <option value="blockquote">Citation</option>
-                        <option value="pre">Code</option>
-                    </select>
-
-                    <select data-cmd="fontName" title="Police">
+                    <select id="font-family" title="Police">
                         <option value="">Police…</option>
                         <option value="Arial">Arial</option>
                         <option value="Helvetica">Helvetica</option>
@@ -699,15 +728,15 @@
                         <option value="Courier New">Courier New</option>
                     </select>
 
-                    <select data-cmd="fontSize" title="Taille">
+                    <select id="font-size" title="Taille">
                         <option value="">Taille…</option>
-                        <option value="1">Très petit</option>
-                        <option value="2">Petit</option>
-                        <option value="3">Normal</option>
-                        <option value="4">Grand</option>
-                        <option value="5">Très grand</option>
-                        <option value="6">Énorme</option>
-                        <option value="7">Géant</option>
+                        <option value="12px">Très petit (12)</option>
+                        <option value="14px">Petit (14)</option>
+                        <option value="16px">Normal (16)</option>
+                        <option value="18px">Grand (18)</option>
+                        <option value="22px">Très grand (22)</option>
+                        <option value="28px">Énorme (28)</option>
+                        <option value="36px">Géant (36)</option>
                     </select>
 
                     <div class="sep"></div>
@@ -731,6 +760,9 @@
                     <div class="sep"></div>
 
                     <button type="button" id="btn-link" title="Insérer un lien">🔗</button>
+                    <button type="button" id="btn-image" title="Insérer une image">🖼</button>
+                    <button type="button" id="btn-hr" title="Ligne de séparation">—</button>
+                    <button type="button" id="btn-signature" title="Insérer une signature">✍</button>
                     <button type="button" data-cmd="removeFormat" title="Effacer la mise en forme">✕</button>
                 </div>
 
@@ -792,6 +824,10 @@
         const SENDER_EMAIL = 'anaelmaire.pro@gmail.com';
         const SENDER_NAME = 'Honoré Romane';
 
+        // Quota quotidien Brevo (plan gratuit)
+        const DAILY_QUOTA = 300;
+        const QUOTA_STORAGE_KEY = 'honore_romane_mail_quota';
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -831,6 +867,7 @@
         const progressEl = document.getElementById('progress');
         const progressBarEl = document.getElementById('progress-bar');
         const logoutBtn = document.getElementById('logout-btn');
+        const quotaInfoEl = document.getElementById('quota-info');
 
         const goToLogin = () => {
             window.location.replace(
@@ -838,6 +875,31 @@
             );
         };
         const goHome = () => window.location.replace(HOME_URL);
+
+        // --- Gestion du quota local ---
+        function getQuota() {
+            const today = new Date().toISOString().slice(0, 10);
+            try {
+                const stored = JSON.parse(localStorage.getItem(QUOTA_STORAGE_KEY) || '{}');
+                if (stored.date === today) return { used: stored.used || 0, date: today };
+            } catch (_) {}
+            return { used: 0, date: today };
+        }
+
+        function saveQuota(quota) {
+            localStorage.setItem(QUOTA_STORAGE_KEY, JSON.stringify(quota));
+        }
+
+        function getRemaining() {
+            const q = getQuota();
+            return Math.max(0, DAILY_QUOTA - q.used);
+        }
+
+        function updateQuotaDisplay() {
+            const remaining = getRemaining();
+            quotaInfoEl.textContent = `Quota : ${remaining} / ${DAILY_QUOTA} mails restants`;
+            quotaInfoEl.classList.toggle('low', remaining < 50);
+        }
 
         onAuthStateChanged(auth, async (user) => {
             if (!user) { goToLogin(); return; }
@@ -851,6 +913,7 @@
                 me = snap.data();
                 if (me.isAdmin !== true) { goHome(); return; }
 
+                updateQuotaDisplay();
                 await loadUsers();
             } catch (err) {
                 console.error(err);
@@ -963,20 +1026,52 @@
             renderRecipients();
         });
 
-        // --- Barre d'outils éditeur ---
+        // --- Application de style direct (contourne les bugs de execCommand) ---
+        function applyStyleToSelection(styleProp, value) {
+            editorEl.focus();
+            const sel = window.getSelection();
+            if (!sel.rangeCount) return;
+            const range = sel.getRangeAt(0);
+            if (range.collapsed) return;
+
+            const span = document.createElement('span');
+            span.style[styleProp] = value;
+            try {
+                range.surroundContents(span);
+            } catch (_) {
+                // Fallback : extraire et réinsérer
+                const content = range.extractContents();
+                span.appendChild(content);
+                range.insertNode(span);
+            }
+            sel.removeAllRanges();
+            const newRange = document.createRange();
+            newRange.selectNodeContents(span);
+            sel.addRange(newRange);
+        }
+
+        // --- Barre d'outils ---
         toolbarEl.querySelectorAll('[data-cmd]').forEach(el => {
             el.addEventListener('click', (e) => {
                 e.preventDefault();
                 editorEl.focus();
-                const cmd = el.dataset.cmd;
-                const value = el.dataset.value || el.value || null;
-                if (el.tagName === 'SELECT') {
-                    document.execCommand(cmd, false, value);
-                    el.selectedIndex = 0;
-                } else {
-                    document.execCommand(cmd, false, value);
-                }
+                document.execCommand(el.dataset.cmd, false, null);
             });
+        });
+
+        // Police et taille : application directe via style CSS
+        document.getElementById('font-family').addEventListener('change', (e) => {
+            if (e.target.value) {
+                applyStyleToSelection('fontFamily', e.target.value);
+                e.target.selectedIndex = 0;
+            }
+        });
+
+        document.getElementById('font-size').addEventListener('change', (e) => {
+            if (e.target.value) {
+                applyStyleToSelection('fontSize', e.target.value);
+                e.target.selectedIndex = 0;
+            }
         });
 
         // Lien
@@ -989,15 +1084,45 @@
             }
         });
 
-        // Variables : clic pour insérer dans l'éditeur à la position du curseur
+        // Image
+        document.getElementById('btn-image').addEventListener('click', (e) => {
+            e.preventDefault();
+            const url = prompt('URL de l\'image :', 'https://');
+            if (url) {
+                editorEl.focus();
+                document.execCommand('insertImage', false, url);
+            }
+        });
+
+        // Ligne horizontale
+        document.getElementById('btn-hr').addEventListener('click', (e) => {
+            e.preventDefault();
+            editorEl.focus();
+            document.execCommand('insertHorizontalRule', false, null);
+        });
+
+        // Signature
+        document.getElementById('btn-signature').addEventListener('click', (e) => {
+            e.preventDefault();
+            editorEl.focus();
+            const sig = document.createElement('div');
+            sig.style.marginTop = '1.5rem';
+            sig.style.paddingTop = '0.75rem';
+            sig.style.borderTop = '1px solid #ccc';
+            sig.style.fontSize = '0.9em';
+            sig.style.color = '#666';
+            sig.innerHTML = '<strong>MAIRE Anael</strong><br>Pour Honoré Romane 2027';
+            editorEl.appendChild(sig);
+            editorEl.appendChild(document.createElement('br'));
+        });
+
+        // Variables : insertion à la position du curseur
         document.querySelectorAll('.var-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const variable = btn.dataset.var;
                 editorEl.focus();
-                // Position actuelle du curseur (peut être perdue par le clic)
                 const sel = window.getSelection();
                 if (!sel.rangeCount) {
-                    // Aucune sélection → on colle à la fin
                     editorEl.innerHTML += variable;
                     return;
                 }
@@ -1047,6 +1172,7 @@
             const subject = subjectEl.value.trim();
             const rawHtml = editorEl.innerHTML.trim();
             const selected = allUsers.filter(u => selectedIds.has(u.id));
+            const remaining = getRemaining();
 
             if (!selected.length) {
                 showFeedback('error', 'Sélectionnez au moins un destinataire.');
@@ -1060,11 +1186,12 @@
                 showFeedback('error', 'Le message est requis.');
                 return;
             }
-
-            if (!confirm(`Envoyer ce mail à ${selected.length} destinataire(s) ? (1 envoi par personne)`)) {
+            if (selected.length > remaining) {
+                showFeedback('error', `Quota insuffisant : ${remaining} mail(s) restant(s) aujourd'hui, ${selected.length} demandé(s).`);
                 return;
             }
 
+            // DÉSACTIVÉ : plus de confirmation avant envoi
             btnSend.disabled = true;
             const original = btnSend.textContent;
             btnSend.textContent = 'Envoi…';
@@ -1076,7 +1203,7 @@
             for (let i = 0; i < selected.length; i++) {
                 const user = selected[i];
                 const html = substituteVars(rawHtml, user);
-                const text = editorEl.textContent; // fallback texte brut (sans substitutions pour simplicité, ou on peut substituer aussi)
+                const text = editorEl.textContent;
 
                 try {
                     const response = await fetch(BREVO_WORKER_URL, {
@@ -1107,6 +1234,12 @@
                 btnSend.textContent = `Envoi ${i + 1}/${selected.length}…`;
             }
 
+            // Mise à jour du quota local
+            const q = getQuota();
+            q.used += success;
+            saveQuota(q);
+            updateQuotaDisplay();
+
             btnSend.disabled = false;
             btnSend.textContent = original;
             progressEl.classList.remove('visible');
@@ -1119,7 +1252,6 @@
         });
 
         btnReset.addEventListener('click', () => {
-            if (!confirm('Réinitialiser le formulaire ?')) return;
             selectedIds.clear();
             subjectEl.value = '';
             editorEl.innerHTML = '';

@@ -150,7 +150,6 @@
             align-items: start;
         }
 
-        /* --- Colonne gauche : sélection --- */
         .panel {
             background: var(--card);
             border: 1px solid var(--border);
@@ -222,11 +221,9 @@
             display: flex;
             flex-direction: column;
             gap: 0.25rem;
-            padding-right: 0.25rem;
+            padding: 0.5rem 0.25rem 0.5rem 0;
             border-top: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
         }
 
         .list-item {
@@ -297,7 +294,6 @@
             color: var(--text-muted);
         }
 
-        /* --- Colonne droite : compose --- */
         .form-field {
             display: flex;
             flex-direction: column;
@@ -311,8 +307,7 @@
         }
 
         .form-field input,
-        .form-field textarea,
-        .form-field select {
+        .form-field textarea {
             font-family: inherit;
             font-size: 1em;
             padding: 0.6rem 0.8rem;
@@ -326,15 +321,13 @@
         }
 
         .form-field input:focus,
-        .form-field textarea:focus,
-        .form-field select:focus {
+        .form-field textarea:focus {
             border-color: var(--accent);
         }
 
         .form-field textarea {
             min-height: 12rem;
             resize: vertical;
-            font-family: inherit;
             line-height: 1.5;
         }
 
@@ -508,7 +501,6 @@
             user-select: none;
         }
 
-        /* --- Responsive --- */
         @media (max-width: 900px) {
             main {
                 grid-template-columns: 1fr;
@@ -535,7 +527,6 @@
 
     <main>
 
-        <!-- Colonne gauche : sélection destinataires -->
         <section class="panel">
             <div class="panel-title">Destinataires</div>
 
@@ -562,7 +553,6 @@
             <div class="counter" id="counter">0 sélectionné(s)</div>
         </section>
 
-        <!-- Colonne droite : composition -->
         <section class="panel">
             <div class="panel-title">Message</div>
 
@@ -618,10 +608,8 @@
             getDoc,
             collection,
             getDocs,
-            addDoc,
             query,
-            orderBy,
-            serverTimestamp
+            orderBy
         } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -633,6 +621,13 @@
             appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
             measurementId: "G-FBKEPBY0CQ"
         };
+
+        // ⚠️ REMPLACE par l'URL de ton Worker Cloudflare après déploiement
+        const BREVO_WORKER_URL = 'https://honore-romane-mail.anaelmaire-pro.workers.dev/';
+
+        // ⚠️ REMPLACE par ton adresse expéditrice validée dans Brevo
+        const SENDER_EMAIL = 'anaelmaire.pro@gmail.com';
+        const SENDER_NAME = 'Honoré Romane';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -650,12 +645,10 @@
             utilisateur: 'Utilisateur'
         };
 
-        const STATUS_ACTIVE_ONLY = true; // n'envoyer qu'aux comptes actifs
-
         let me = null;
-        let allUsers = [];        // tous les utilisateurs actifs
+        let allUsers = [];
         let filteredUsers = [];
-        let selectedIds = new Set(); // uid -> sélectionné
+        let selectedIds = new Set();
         let currentFilter = 'all';
         let currentSearch = '';
 
@@ -707,7 +700,7 @@
                 const snap = await getDocs(q);
                 allUsers = snap.docs
                     .map(d => ({ id: d.id, ...d.data() }))
-                    .filter(u => u.email && (!STATUS_ACTIVE_ONLY || u.status === 'active'));
+                    .filter(u => u.email && u.status === 'active');
                 applyFilters();
             } catch (err) {
                 console.error(err);
@@ -717,11 +710,9 @@
 
         function applyFilters() {
             let list = allUsers;
-
             if (currentFilter !== 'all') {
                 list = list.filter(u => u.role === currentFilter);
             }
-
             if (currentSearch) {
                 const s = currentSearch.toLowerCase();
                 list = list.filter(u =>
@@ -730,7 +721,6 @@
                     (u.classe || '').toLowerCase().includes(s)
                 );
             }
-
             filteredUsers = list;
             renderUserList();
         }
@@ -740,7 +730,6 @@
                 userListEl.innerHTML = '<div class="empty">Aucun utilisateur.</div>';
                 return;
             }
-
             userListEl.innerHTML = filteredUsers.map(u => `
                 <label class="list-item" data-uid="${esc(u.id)}">
                     <input type="checkbox" ${selectedIds.has(u.id) ? 'checked' : ''}>
@@ -762,7 +751,6 @@
 
         function renderRecipients() {
             const selected = allUsers.filter(u => selectedIds.has(u.id));
-
             if (!selected.length) {
                 recipientsBox.innerHTML = '<div class="recipients-empty">Aucun destinataire sélectionné.</div>';
             } else {
@@ -781,11 +769,9 @@
                     });
                 });
             }
-
             counterEl.textContent = `${selectedIds.size} sélectionné(s)`;
         }
 
-        // Filtres
         filterBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 filterBtns.forEach(b => b.classList.remove('active'));
@@ -812,7 +798,6 @@
             renderRecipients();
         });
 
-        // Envoi
         btnSend.addEventListener('click', async () => {
             feedbackEl.className = 'feedback';
             feedbackEl.textContent = '';
@@ -839,28 +824,26 @@
             const original = btnSend.textContent;
             btnSend.textContent = 'Envoi…';
 
-            const isBcc = bccModeEl.checked;
-            const textHtml = body.replace(/\n/g, '<br>');
-
-            const mailDoc = {
-                to: isBcc ? [] : emails,
-                bcc: isBcc ? emails : [],
-                message: {
-                    subject,
-                    text: body,
-                    html: textHtml
-                },
-                createdAt: serverTimestamp(),
-                createdBy: auth.currentUser.uid,
-                createdByEmail: me.email || null,
-                recipientCount: emails.length,
-                mode: isBcc ? 'bcc' : 'to'
-            };
-
             try {
-                await addDoc(collection(db, 'mail'), mailDoc);
-                showFeedback('success', `Mail déposé pour envoi à ${emails.length} destinataire(s). Il sera traité par le service d'envoi.`);
-                // On ne vide pas automatiquement la sélection
+                const response = await fetch(BREVO_WORKER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: emails,
+                        subject,
+                        body,
+                        bcc: bccModeEl.checked,
+                        sender: { name: SENDER_NAME, email: SENDER_EMAIL }
+                    })
+                });
+
+                const result = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(result.error || `Erreur ${response.status}`);
+                }
+
+                showFeedback('success', `Mail envoyé à ${emails.length} destinataire(s).`);
             } catch (err) {
                 console.error(err);
                 showFeedback('error', 'Erreur : ' + (err.message || 'envoi impossible.'));

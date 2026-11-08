@@ -213,6 +213,29 @@
             border-color: var(--text);
         }
 
+        .export-btn {
+            font-family: inherit;
+            font-size: 0.85em;
+            font-weight: 600;
+            padding: 0.55rem 1rem;
+            border: 1px solid var(--accent);
+            background: var(--accent);
+            color: var(--accent-text);
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: opacity .15s;
+            flex-shrink: 0;
+        }
+
+        .export-btn:hover:not(:disabled) {
+            opacity: 0.85;
+        }
+
+        .export-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .list {
             display: flex;
             flex-direction: column;
@@ -535,6 +558,7 @@
                 Tous <span class="count" id="count-all">0</span>
             </button>
             <input type="search" class="search" id="search" placeholder="Rechercher (nom, mail, classe…)" autocomplete="off">
+            <button class="export-btn" id="export-btn" title="Exporter la liste des sièges en JSON">⬇ Exporter sieges.json</button>
         </div>
 
         <div class="list" id="list">
@@ -594,6 +618,7 @@
         const searchEl = document.getElementById('search');
         const filterBtns = document.querySelectorAll('.filter-btn');
         const toastEl = document.getElementById('toast');
+        const exportBtn = document.getElementById('export-btn');
         const counts = {
             pending: document.getElementById('count-pending'),
             active: document.getElementById('count-active'),
@@ -984,6 +1009,79 @@
                 btn.textContent = original;
             }
         }
+
+        // --- Export sieges.json ---
+
+        // Découpe "Nom Prénom" sur le premier espace.
+        function splitName(fullName) {
+            const trimmed = String(fullName || '').trim();
+            if (!trimmed) return { nom: '', prenom: '' };
+            const idx = trimmed.indexOf(' ');
+            if (idx === -1) return { nom: trimmed.toUpperCase(), prenom: '' };
+            const nom = trimmed.slice(0, idx).trim().toUpperCase();
+            const prenomRaw = trimmed.slice(idx + 1).trim();
+            const prenom = prenomRaw
+                ? prenomRaw.charAt(0).toUpperCase() + prenomRaw.slice(1).toLowerCase()
+                : '';
+            return { nom, prenom };
+        }
+
+        // "Monsieur" → "M", "Madame" → "F", sinon "".
+        function genderToSex(gender) {
+            if (gender === 'Madame') return 'F';
+            if (gender === 'Monsieur') return 'M';
+            return '';
+        }
+
+        function buildSiegesJson() {
+            const rows = allUsers
+                .filter(u => {
+                    const n = Number(u.seatNumber);
+                    return Number.isInteger(n) && n >= 1;
+                })
+                .sort((a, b) => Number(a.seatNumber) - Number(b.seatNumber))
+                .map(u => {
+                    const { nom, prenom } = splitName(u.name);
+                    return {
+                        numero: Number(u.seatNumber),
+                        nom,
+                        prenom,
+                        sex: genderToSex(u.gender),
+                        circonscription: u.classe || '',
+                        groupe: ROLE_LABELS[u.role] || u.role || ''
+                    };
+                });
+            return JSON.stringify(rows, null, 2);
+        }
+
+        function exportSiegesJson() {
+            try {
+                const json = buildSiegesJson();
+                const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'sieges.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                const count = JSON.parse(json).length;
+                showToast(`Export réussi : ${count} siège(s) dans sieges.json.`, 'success');
+            } catch (err) {
+                console.error(err);
+                showToast("Erreur lors de l'export du fichier.", 'error');
+            }
+        }
+
+        exportBtn.addEventListener('click', () => {
+            if (allUsers.length === 0) {
+                showToast('Aucun utilisateur chargé.', 'error');
+                return;
+            }
+            exportSiegesJson();
+        });
 
         // --- Envoi du mail de validation ---
         async function sendValidationEmail(user) {

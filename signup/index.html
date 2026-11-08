@@ -305,6 +305,16 @@
 
             <form id="signup-form" novalidate>
                 <div class="field">
+                    <label for="gender">Dénomination</label>
+                    <select id="gender" name="gender" required>
+                        <option value="" disabled selected>Sélectionner…</option>
+                        <option value="Monsieur">Monsieur</option>
+                        <option value="Madame">Madame</option>
+                    </select>
+                    <span class="error" id="error-gender"></span>
+                </div>
+
+                <div class="field">
                     <label for="name">Nom Prénom</label>
                     <input type="text" id="name" name="name" autocomplete="name" required>
                     <span class="error" id="error-name"></span>
@@ -425,13 +435,17 @@
         }
 
         function clearErrors() {
-            ['name','classe','phone','email','role','password','rgpd'].forEach(id => setError(id, ''));
+            ['gender','name','classe','phone','email','role','password','rgpd'].forEach(id => setError(id, ''));
             formError.textContent = '';
         }
 
         function validate(values) {
             let ok = true;
 
+            if (!values.gender) {
+                setError('gender', 'Sélectionnez une dénomination.');
+                ok = false;
+            }
             if (!values.name.trim() || values.name.trim().length < 2) {
                 setError('name', 'Nom et prénom requis.');
                 ok = false;
@@ -471,6 +485,7 @@
             clearErrors();
 
             const values = {
+                gender: document.getElementById('gender').value,
                 name: document.getElementById('name').value.trim(),
                 classe: document.getElementById('classe').value.trim(),
                 phone: document.getElementById('phone').value.trim(),
@@ -496,6 +511,7 @@
                 // 3. Enregistrer le profil dans Firestore (statut "pending")
                 await setDoc(doc(db, 'users', uid), {
                     uid,
+                    gender: values.gender,
                     name: values.name,
                     classe: values.classe,
                     phone: values.phone,

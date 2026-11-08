@@ -301,6 +301,12 @@
             color: var(--accent-text);
         }
 
+        .badge.seat {
+            background: color-mix(in srgb, var(--accent) 12%, transparent);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
         .info-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
@@ -360,6 +366,7 @@
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
+            align-items: flex-end;
         }
 
         .action-btn {
@@ -392,6 +399,48 @@
         .action-btn.danger:hover:not(:disabled) {
             background: color-mix(in srgb, var(--error) 12%, transparent);
             border-color: var(--error);
+        }
+
+        /* Champ numéro de siège */
+        .seat-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 9rem;
+        }
+
+        .seat-field label {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .seat-field input {
+            font-family: inherit;
+            font-size: 0.9em;
+            width: 100%;
+            padding: 0.5rem 0.7rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--card-hover);
+            color: var(--text);
+            outline: none;
+            transition: border-color .15s;
+        }
+
+        .seat-field input:focus {
+            border-color: var(--text);
+        }
+
+        .seat-field input.invalid {
+            border-color: var(--error);
+        }
+
+        .seat-error {
+            color: var(--error);
+            font-size: 0.75em;
+            min-height: 1em;
         }
 
         .footer {
@@ -632,6 +681,44 @@
             }[c]));
         }
 
+        // --- Gestion des sièges ---
+
+        // Renvoie la liste des sièges déjà attribués (peu importe le statut,
+        // dès lors que le champ seatNumber existe).
+        function getUsedSeats(exceptUid = null) {
+            const used = new Set();
+            for (const u of allUsers) {
+                if (u.id === exceptUid) continue;
+                const n = Number(u.seatNumber);
+                if (Number.isInteger(n) && n >= 1) used.add(n);
+            }
+            return used;
+        }
+
+        // Prochain siège proposé : max(sieges existants) + 1, ou 1 si aucun.
+        function getNextSeat() {
+            let max = 0;
+            for (const u of allUsers) {
+                const n = Number(u.seatNumber);
+                if (Number.isInteger(n) && n >= 1 && n > max) max = n;
+            }
+            return max + 1;
+        }
+
+        // Vérifie qu'un numéro de siège est valide et libre.
+        // Retourne null si ok, sinon un message d'erreur.
+        function checkSeat(seatRaw, uid) {
+            const seat = Number(seatRaw);
+            if (!Number.isInteger(seat) || seat < 1) {
+                return 'Numéro de siège invalide (entier ≥ 1).';
+            }
+            const used = getUsedSeats(uid);
+            if (used.has(seat)) {
+                return `Le siège n°${seat} est déjà attribué.`;
+            }
+            return null;
+        }
+
         function render() {
             let list = allUsers;
             if (currentFilter !== 'all') {
@@ -667,14 +754,39 @@
             const statusLabel = STATUS_LABELS[u.status] || u.status || '—';
             const adminBadge = isAdmin ? '<span class="badge admin">Admin</span>' : '';
 
+            const hasSeat = Number.isInteger(Number(u.seatNumber)) && Number(u.seatNumber) >= 1;
+            const seatBadge = hasSeat
+                ? `<span class="badge seat">Siège n°${esc(u.seatNumber)}</span>`
+                : '';
+
             const createdAt = u.createdAt?.toDate
                 ? u.createdAt.toDate().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
                 : '—';
+
+            // Champ de saisie du siège, uniquement pour un compte pending sans siège attribué.
+            const showSeatInput = isPending && !isAdmin && !hasSeat;
+            const proposedSeat = showSeatInput ? getNextSeat() : null;
+            const seatFieldHtml = showSeatInput ? `
+                <div class="seat-field">
+                    <label for="seat-${esc(u.id)}">N° de siège</label>
+                    <input
+                        type="number"
+                        id="seat-${esc(u.id)}"
+                        min="1"
+                        step="1"
+                        value="${proposedSeat}"
+                        data-seat-input
+                        inputmode="numeric"
+                    >
+                    <span class="seat-error" data-seat-error></span>
+                </div>
+            ` : '';
 
             let actionsHtml = '';
             if (!isAdmin) {
                 if (isPending) {
                     actionsHtml = `
+                        ${seatFieldHtml}
                         <button class="action-btn primary" data-action="activate">Valider</button>
                         <button class="action-btn danger" data-action="reject">Refuser</button>
                     `;
@@ -697,6 +809,7 @@
                         <div class="user-card-title">
                             <span class="name">${esc(u.name || 'Sans nom')}</span>
                             ${adminBadge}
+                            ${seatBadge}
                             <span class="badge ${statusClass}">${esc(statusLabel)}</span>
                             <span class="badge role">${esc(roleLabel)}</span>
                         </div>
@@ -724,6 +837,10 @@
                         <div class="info-item">
                             <span class="info-label">Inscrit le</span>
                             <div class="info-value"><span>${esc(createdAt)}</span></div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Siège</span>
+                            <div class="info-value"><span>${hasSeat ? 'n°' + esc(u.seatNumber) : '—'}</span></div>
                         </div>
                         <div class="info-item">
                             <span class="info-label">UID</span>
@@ -765,6 +882,23 @@
                 });
             });
 
+            // Validation en direct du champ siège (feedback visuel)
+            listEl.querySelectorAll('[data-seat-input]').forEach(input => {
+                input.addEventListener('input', () => {
+                    const card = input.closest('.user-card');
+                    const uid = card.dataset.uid;
+                    const err = checkSeat(input.value, uid);
+                    const errEl = card.querySelector('[data-seat-error]');
+                    if (err) {
+                        input.classList.add('invalid');
+                        if (errEl) errEl.textContent = err;
+                    } else {
+                        input.classList.remove('invalid');
+                        if (errEl) errEl.textContent = '';
+                    }
+                });
+            });
+
             listEl.querySelectorAll('.action-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const card = btn.closest('.user-card');
@@ -779,7 +913,23 @@
                     }
 
                     if (action === 'activate') {
-                        await changeStatus(uid, 'active', btn);
+                        const seatInput = card.querySelector('[data-seat-input]');
+                        // Si un champ siège est affiché, on l'utilise ; sinon on garde l'existant.
+                        let seat = null;
+                        if (seatInput) {
+                            const err = checkSeat(seatInput.value, uid);
+                            if (err) {
+                                seatInput.classList.add('invalid');
+                                const errEl = card.querySelector('[data-seat-error]');
+                                if (errEl) errEl.textContent = err;
+                                showToast(err, 'error');
+                                return;
+                            }
+                            seat = Number(seatInput.value);
+                        } else if (Number.isInteger(Number(user.seatNumber)) && Number(user.seatNumber) >= 1) {
+                            seat = Number(user.seatNumber);
+                        }
+                        await changeStatus(uid, 'active', btn, seat);
                     } else if (action === 'deactivate') {
                         await changeStatus(uid, 'pending', btn);
                     } else if (action === 'reject') {
@@ -789,7 +939,7 @@
             });
         }
 
-        async function changeStatus(uid, status, btn) {
+        async function changeStatus(uid, status, btn, seatNumber = null) {
             btn.disabled = true;
             const original = btn.textContent;
             btn.textContent = '…';
@@ -797,15 +947,28 @@
             const user = allUsers.find(x => x.id === uid);
 
             try {
-                await updateDoc(doc(db, 'users', uid), { status });
-                if (user) user.status = status;
+                const payload = { status };
+                // Attribution du siège uniquement à la première validation
+                if (status === 'active' && seatNumber !== null) {
+                    payload.seatNumber = seatNumber;
+                }
+
+                await updateDoc(doc(db, 'users', uid), payload);
+
+                if (user) {
+                    user.status = status;
+                    if (status === 'active' && seatNumber !== null) {
+                        user.seatNumber = seatNumber;
+                    }
+                }
+
                 updateCounts();
                 render();
 
                 if (status === 'active' && user) {
                     const mailOk = await sendValidationEmail(user);
                     if (mailOk) {
-                        showToast(`Compte validé et mail envoyé à ${user.email}.`, 'success');
+                        showToast(`Compte validé (siège n°${user.seatNumber}) et mail envoyé à ${user.email}.`, 'success');
                     } else {
                         showToast(`Compte validé, mais échec de l'envoi du mail.`, 'error');
                     }
@@ -853,12 +1016,15 @@
         }
 
         function buildValidationEmailText(user) {
+            const seatLine = (Number.isInteger(Number(user.seatNumber)) && Number(user.seatNumber) >= 1)
+                ? `\n- Numéro de siège : ${user.seatNumber}`
+                : '';
             return `Bonjour ${user.name || ''} !
 
 Pour votre parfaite information, votre compte a été validé avec succès au sein des services informatiques des institutions lycéennes d'Honoré Romane avec les informations suivantes :
 - Identité : ${user.name || ''}
 - Classe : ${user.classe || ''}
-- e-mail : ${user.email || ''}
+- e-mail : ${user.email || ''}${seatLine}
 
 Au plaisir de vous compter parmi nous !
 
@@ -880,6 +1046,9 @@ anaelmaire.pro@gmail.com`;
             const safeName = escapeHtml(user.name || '');
             const safeClasse = escapeHtml(user.classe || '');
             const safeEmail = escapeHtml(user.email || '');
+            const seatHtml = (Number.isInteger(Number(user.seatNumber)) && Number(user.seatNumber) >= 1)
+                ? `<p style="margin:0 0 6px 0;"><i>- Numéro de siège : ${escapeHtml(user.seatNumber)}</i></p>`
+                : '';
 
             return `<!DOCTYPE html>
 <html lang="fr">
@@ -894,9 +1063,10 @@ anaelmaire.pro@gmail.com`;
 
       <p style="margin:0 0 6px 0;"><i>- Identité : ${safeName}</i></p>
       <p style="margin:0 0 6px 0;"><i>- Classe : ${safeClasse}</i></p>
-      <p style="margin:0 0 14px 0;"><i>- e-mail : <a href="mailto:${safeEmail}" style="color:#0b7b9e;text-decoration:underline;">${safeEmail}</a></i></p>
+      <p style="margin:0 0 6px 0;"><i>- e-mail : <a href="mailto:${safeEmail}" style="color:#0b7b9e;text-decoration:underline;">${safeEmail}</a></i></p>
+      ${seatHtml}
 
-      <p style="margin:0 0 14px 0;"><b>Au plaisir de vous compter parmi nous !</b></p>
+      <p style="margin:14px 0;"><b>Au plaisir de vous compter parmi nous !</b></p>
     </div>
 
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:18px;border-collapse:collapse;">

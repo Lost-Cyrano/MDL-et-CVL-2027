@@ -120,6 +120,56 @@
             border: none;
         }
 
+        /* --- Menu admin --- */
+        .admin-menu h1 {
+            font-size: 1.25em;
+            margin-bottom: 0.5rem;
+        }
+
+        .admin-menu .subtitle {
+            margin-bottom: 1.5rem;
+        }
+
+        .menu-btn {
+            display: block;
+            width: 100%;
+            margin-top: 0.6rem;
+            padding: 0.9rem 1rem;
+            border-radius: 0.6rem;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid #d8d5cf;
+            background: #ffffff;
+            color: var(--text);
+            text-align: left;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .menu-btn {
+                border-color: #3a3a3a;
+                background: #262626;
+            }
+        }
+
+        .menu-btn:hover { filter: brightness(0.97); }
+        .menu-btn:active { transform: scale(0.99); }
+        .menu-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .menu-btn .icon {
+            display: inline-block;
+            width: 1.5em;
+            text-align: center;
+            margin-right: 0.5em;
+        }
+
+        .menu-btn.primary {
+            background: var(--accent);
+            color: var(--accent-text);
+            border-color: var(--accent);
+        }
+
         .footer {
             width: 100%;
             text-align: center;
@@ -132,11 +182,27 @@
     </style>
 </head>
 <body>
-    <main class="container" role="main">
+    <main class="container" role="main" id="main-card">
         <div class="spinner" id="spinner"></div>
         <p id="status-msg">Redirection en cours…</p>
         <p class="error" id="error-msg"></p>
         <button class="btn" id="retry-btn" type="button">Réessayer</button>
+
+        <!-- Menu admin (caché par défaut) -->
+        <div class="admin-menu hidden" id="admin-menu" style="display:none;">
+            <h1>Espace administrateur</h1>
+            <p class="subtitle">Votre compte dispose des droits d'administration. Que souhaitez-vous faire ?</p>
+
+            <button class="menu-btn primary" id="btn-admin-session" type="button">
+                <span class="icon">⚙️</span> Administrer la session
+            </button>
+            <button class="menu-btn" id="btn-vote" type="button">
+                <span class="icon">🗳️</span> Voter à la session
+            </button>
+            <button class="menu-btn" id="btn-back-menu" type="button">
+                <span class="icon">↩️</span> Retourner au menu
+            </button>
+        </div>
     </main>
 
     <footer class="footer">
@@ -170,8 +236,15 @@
         const db = getFirestore(app);
 
         const VOTE_URL = 'https://vote.honore-romane.fr';
+        const ADMIN_URL = 'https://vote.honore-romane.fr/admin/';
+        const ACCOUNT_MENU_URL = 'https://account.honore-romane.fr/account';
         const LOGIN_URL = 'https://account.honore-romane.fr/login/';
         const currentUrl = 'https://account.honore-romane.fr/tools/vote/';
+
+        // État partagé entre le chargement et les boutons
+        let currentUser = null;
+        let currentSiege = null;
+        let currentIsAdmin = false;
 
         const showError = (msg) => {
             const el = document.getElementById('error-msg');
@@ -202,8 +275,9 @@
             return b64urlEncode(new TextEncoder().encode(str));
         }
 
-        // --- Signature JWT HS256 avec crypto.subtle (aucune dépendance) ---
-        async function buildSignedToken(uid, siege) {
+        // --- Signature JWT HS256 avec crypto.subtle ---
+        // extraClaims permet d'ajouter par exemple { admin: true }
+        async function buildSignedToken(uid, siege, extraClaims = {}) {
             const keySnap = await getDoc(doc(db, 'config', 'jwtKey'));
             if (!keySnap.exists()) throw new Error('Clé JWT absente de Firestore (config/jwtKey)');
             const raw = keySnap.data().value;
@@ -217,7 +291,8 @@
                 sub: uid,
                 siege: siege,
                 iat: now,
-                exp: now + 120
+                exp: now + 120,
+                ...extraClaims
             };
 
             const headerB64 = b64urlEncodeString(JSON.stringify(header));
@@ -235,6 +310,50 @@
             const sigB64 = b64urlEncode(new Uint8Array(sigBuf));
 
             return data + '.' + sigB64;
+        }
+
+        // --- Actions des boutons ---
+        async function handleVote() {
+            try {
+                const token = await buildSignedToken(currentUser.uid, currentSiege);
+                window.location.replace(VOTE_URL + '/?t=' + encodeURIComponent(token));
+            } catch (err) {
+                showError('Erreur : ' + (err.message || err));
+            }
+        }
+
+        async function handleAdminSession() {
+            try {
+                const token = await buildSignedToken(currentUser.uid, currentSiege, { admin: true });
+                window.location.replace(ADMIN_URL + '?t=' + encodeURIComponent(token));
+            } catch (err) {
+                showError('Erreur : ' + (err.message || err));
+            }
+        }
+
+        function handleBackMenu() {
+            window.location.replace(ACCOUNT_MENU_URL);
+        }
+
+        function showAdminMenu() {
+            // Cache l'écran de chargement
+            const sp = document.getElementById('spinner');
+            if (sp) sp.style.display = 'none';
+            const st = document.getElementById('status-msg');
+            if (st) st.style.display = 'none';
+            const err = document.getElementById('error-msg');
+            if (err) err.style.display = 'none';
+            const retry = document.getElementById('retry-btn');
+            if (retry) retry.style.display = 'none';
+
+            // Affiche le menu
+            const menu = document.getElementById('admin-menu');
+            if (menu) menu.style.display = 'block';
+
+            // Branche les boutons
+            document.getElementById('btn-admin-session').addEventListener('click', handleAdminSession);
+            document.getElementById('btn-vote').addEventListener('click', handleVote);
+            document.getElementById('btn-back-menu').addEventListener('click', handleBackMenu);
         }
 
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -265,8 +384,18 @@
                     return;
                 }
 
-                const token = await buildSignedToken(user.uid, siege);
-                window.location.replace(VOTE_URL + '/?t=' + encodeURIComponent(token));
+                currentUser = user;
+                currentSiege = siege;
+                currentIsAdmin = userData.isAdmin === true;
+
+                // --- Branchement selon le rôle ---
+                if (currentIsAdmin) {
+                    showAdminMenu();
+                } else {
+                    // Comportement inchangé pour les non-admins : redirection immédiate
+                    const token = await buildSignedToken(user.uid, siege);
+                    window.location.replace(VOTE_URL + '/?t=' + encodeURIComponent(token));
+                }
 
             } catch (err) {
                 showError('Erreur : ' + (err.message || err));

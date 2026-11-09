@@ -77,7 +77,7 @@
             width: 2.25rem;
             height: 2.25rem;
             margin: 0 auto 1rem;
-            border: 3px solid var(--border, #d8d5cf);
+            border: 3px solid #d8d5cf;
             border-top-color: var(--text);
             border-radius: 50%;
             animation: spin 0.9s linear infinite;
@@ -107,7 +107,7 @@
         }
 
         .btn {
-            display: inline-block;
+            display: none;
             margin-top: 1rem;
             padding: 0.6rem 1.2rem;
             background: var(--accent);
@@ -116,6 +116,8 @@
             text-decoration: none;
             font-size: 0.9em;
             font-weight: 600;
+            cursor: pointer;
+            border: none;
         }
 
         .footer {
@@ -134,21 +136,18 @@
         <div class="spinner" id="spinner"></div>
         <p id="status-msg">Redirection en cours…</p>
         <p class="error" id="error-msg"></p>
-        <a class="btn hidden" id="retry-btn" href="#" style="display:none;">Réessayer</a>
+        <button class="btn" id="retry-btn" type="button">Réessayer</button>
     </main>
 
     <footer class="footer">
         MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
     </footer>
 
-    <!-- jose via unpkg : MIME correct (application/javascript) -->
-    <script src="https://unpkg.com/jose@5.9.6/dist/browser/jose.umd.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
         import {
             getAuth,
-            onAuthStateChanged,
-            signOut
+            onAuthStateChanged
         } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
         import {
             getFirestore,
@@ -192,22 +191,26 @@
             );
         };
 
-        // Vérifie que jose est bien chargé avant de l'utiliser
-        function ensureJose() {
-            if (typeof jose === 'undefined' || !jose.SignJWT) {
-                throw new Error('Librairie jose non chargée (CDN bloqué ou hors ligne). Réessayez.');
-            }
+        // --- Helpers base64url ---
+        function b64urlEncode(bytes) {
+            let bin = '';
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
         }
 
+        function b64urlEncodeString(str) {
+            return b64urlEncode(new TextEncoder().encode(str));
+        }
+
+        // --- Signature JWT HS256 avec crypto.subtle (aucune dépendance) ---
         async function buildSignedToken(uid, siege) {
-            ensureJose();
             const keySnap = await getDoc(doc(db, 'config', 'jwtKey'));
             if (!keySnap.exists()) throw new Error('Clé JWT absente de Firestore (config/jwtKey)');
             const raw = keySnap.data().value;
             if (!raw || typeof raw !== 'string') throw new Error('Champ config/jwtKey.value invalide');
-            const secret = new TextEncoder().encode(raw);
 
             const now = Math.floor(Date.now() / 1000);
+            const header = { alg: 'HS256', typ: 'JWT' };
             const payload = {
                 iss: 'account.honore-romane.fr',
                 aud: 'vote.honore-romane.fr',
@@ -217,9 +220,21 @@
                 exp: now + 120
             };
 
-            return await jose.SignJWT(payload)
-                .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
-                .sign(secret);
+            const headerB64 = b64urlEncodeString(JSON.stringify(header));
+            const payloadB64 = b64urlEncodeString(JSON.stringify(payload));
+            const data = headerB64 + '.' + payloadB64;
+
+            const cryptoKey = await crypto.subtle.importKey(
+                'raw',
+                new TextEncoder().encode(raw),
+                { name: 'HMAC', hash: 'SHA-256' },
+                false,
+                ['sign']
+            );
+            const sigBuf = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(data));
+            const sigB64 = b64urlEncode(new Uint8Array(sigBuf));
+
+            return data + '.' + sigB64;
         }
 
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -254,14 +269,11 @@
                 window.location.replace(VOTE_URL + '/?t=' + encodeURIComponent(token));
 
             } catch (err) {
-                // Erreur technique : on N'efface PAS la session, on affiche l'erreur.
                 showError('Erreur : ' + (err.message || err));
             }
         });
 
-        // Bouton "Réessayer" : recharge simplement la page
-        document.getElementById('retry-btn').addEventListener('click', (e) => {
-            e.preventDefault();
+        document.getElementById('retry-btn').addEventListener('click', () => {
             window.location.reload();
         });
     </script>

@@ -132,6 +132,11 @@
             doc,
             getDoc
         } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+        import {
+            getDatabase,
+            ref,
+            set
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
@@ -146,17 +151,24 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const rtdb = getDatabase(app);
 
         const VOTE_URL = 'https://vote.honore-romane.fr';
         const LOGIN_URL = 'https://account.honore-romane.fr/login/';
+        const TOOLS_URL = 'https://account.honore-romane.fr/tools/vote/';
 
         // Page actuelle, transmise pour permettre le retour après connexion
         const currentUrl = 'https://account.honore-romane.fr/vote/';
 
-        // Si non connecté → login avec redirect
+        // Numéro de siège attendu dans l'URL (ex: /vote/?siege=12)
+        const params = new URLSearchParams(window.location.search);
+        const siegeParam = parseInt(params.get('siege'), 10);
+
+        // Si non connecté → login avec redirect (on conserve le ?siege= pour le retour)
         const goToLogin = () => {
+            const redirectTarget = currentUrl + (siegeParam ? '?siege=' + siegeParam : '');
             window.location.replace(
-                LOGIN_URL + '?redirect=' + encodeURIComponent(currentUrl)
+                LOGIN_URL + '?redirect=' + encodeURIComponent(redirectTarget)
             );
         };
 
@@ -169,6 +181,12 @@
                 return;
             }
 
+            // Pas de siège fourni → on renvoie vers l'outil de choix du siège
+            if (!siegeParam || siegeParam < 1) {
+                window.location.replace(TOOLS_URL);
+                return;
+            }
+
             try {
                 // Vérifier que le compte est actif
                 const snap = await getDoc(doc(db, 'users', user.uid));
@@ -178,8 +196,18 @@
                     return;
                 }
 
-                // Utilisateur valide → redirection vers le site de vote
-                window.location.replace(VOTE_URL);
+                // Génère un identifiant de transmission unique (handoff)
+                const handoffId = crypto.randomUUID();
+
+                // Écrit les données dans RTDB : uid, siège, timestamp
+                await set(ref(rtdb, 'handoff/' + handoffId), {
+                    uid: user.uid,
+                    siege: siegeParam,
+                    createdAt: Date.now()
+                });
+
+                // Redirige vers le site de vote avec l'identifiant
+                window.location.replace(VOTE_URL + '/?h=' + encodeURIComponent(handoffId));
 
             } catch (err) {
                 console.error(err);
@@ -189,4 +217,4 @@
         });
     </script>
 </body>
-</html>vote/index.html
+</html>

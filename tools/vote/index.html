@@ -106,6 +106,18 @@
             word-break: break-word;
         }
 
+        .btn {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.6rem 1.2rem;
+            background: var(--accent);
+            color: var(--accent-text);
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
         .footer {
             width: 100%;
             text-align: center;
@@ -119,16 +131,18 @@
 </head>
 <body>
     <main class="container" role="main">
-        <div class="spinner"></div>
-        <p>Redirection en cours…</p>
+        <div class="spinner" id="spinner"></div>
+        <p id="status-msg">Redirection en cours…</p>
         <p class="error" id="error-msg"></p>
+        <a class="btn hidden" id="retry-btn" href="#" style="display:none;">Réessayer</a>
     </main>
 
     <footer class="footer">
         MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/jose@5.9.6/dist/browser/jose.umd.min.js"></script>
+    <!-- jose via unpkg : MIME correct (application/javascript) -->
+    <script src="https://unpkg.com/jose@5.9.6/dist/browser/jose.umd.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
         import {
@@ -163,6 +177,12 @@
         const showError = (msg) => {
             const el = document.getElementById('error-msg');
             if (el) el.textContent = msg;
+            const sp = document.getElementById('spinner');
+            if (sp) sp.style.display = 'none';
+            const st = document.getElementById('status-msg');
+            if (st) st.textContent = 'Impossible de continuer.';
+            const btn = document.getElementById('retry-btn');
+            if (btn) btn.style.display = 'inline-block';
             console.error(msg);
         };
 
@@ -172,8 +192,15 @@
             );
         };
 
-        // Signature JWT HS256 avec la clé lue dans Firestore
+        // Vérifie que jose est bien chargé avant de l'utiliser
+        function ensureJose() {
+            if (typeof jose === 'undefined' || !jose.SignJWT) {
+                throw new Error('Librairie jose non chargée (CDN bloqué ou hors ligne). Réessayez.');
+            }
+        }
+
         async function buildSignedToken(uid, siege) {
+            ensureJose();
             const keySnap = await getDoc(doc(db, 'config', 'jwtKey'));
             if (!keySnap.exists()) throw new Error('Clé JWT absente de Firestore (config/jwtKey)');
             const raw = keySnap.data().value;
@@ -187,7 +214,7 @@
                 sub: uid,
                 siege: siege,
                 iat: now,
-                exp: now + 120 // 2 minutes
+                exp: now + 120
             };
 
             return await jose.SignJWT(payload)
@@ -206,27 +233,20 @@
             try {
                 const snap = await getDoc(doc(db, 'users', user.uid));
                 if (!snap.exists()) {
-                    showError('Profil utilisateur introuvable');
-                    await signOut(auth);
-                    goToLogin();
+                    showError('Profil utilisateur introuvable dans Firestore.');
                     return;
                 }
 
                 const userData = snap.data();
 
                 if (userData.status !== 'active') {
-                    showError('Compte non actif (status: ' + userData.status + ')');
-                    await signOut(auth);
-                    goToLogin();
+                    showError('Compte non actif (status: ' + userData.status + '). Contactez un administrateur.');
                     return;
                 }
 
-                // Champ réel dans Firestore : seatNumber
                 const siege = userData.seatNumber;
                 if (siege === undefined || siege === null || siege === '') {
-                    showError('Numéro de siège (seatNumber) manquant sur le profil');
-                    await signOut(auth);
-                    goToLogin();
+                    showError('Numéro de siège (seatNumber) manquant sur le profil.');
                     return;
                 }
 
@@ -234,10 +254,15 @@
                 window.location.replace(VOTE_URL + '/?t=' + encodeURIComponent(token));
 
             } catch (err) {
+                // Erreur technique : on N'efface PAS la session, on affiche l'erreur.
                 showError('Erreur : ' + (err.message || err));
-                await signOut(auth).catch(() => {});
-                goToLogin();
             }
+        });
+
+        // Bouton "Réessayer" : recharge simplement la page
+        document.getElementById('retry-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.reload();
         });
     </script>
 </body>

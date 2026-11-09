@@ -150,7 +150,7 @@
 
         const VOTE_URL = 'https://vote.honore-romane.fr';
         const LOGIN_URL = 'https://account.honore-romane.fr/login/';
-        const currentUrl = 'https://account.honore-romane.fr/vote/';
+        const currentUrl = 'https://account.honore-romane.fr/tools/vote/';
 
         const goToLogin = () => {
             window.location.replace(
@@ -199,7 +199,7 @@
 
                 const userData = snap.data();
                 // Numéro de siège — adaptez le nom du champ si besoin
-                const siege = userData.siege;
+                const siege = userData.seatNumber;
                 if (!siege) throw new Error('Numéro de siège introuvable pour cet utilisateur');
 
                 // Génération du JWT signé

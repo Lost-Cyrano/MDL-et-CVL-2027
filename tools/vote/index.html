@@ -99,6 +99,13 @@
             font-size: 0.95em;
         }
 
+        .error {
+            color: #b91c1c;
+            font-size: 0.85em;
+            margin-top: 0.75rem;
+            word-break: break-word;
+        }
+
         .footer {
             width: 100%;
             text-align: center;
@@ -114,6 +121,7 @@
     <main class="container" role="main">
         <div class="spinner"></div>
         <p>Redirection en cours…</p>
+        <p class="error" id="error-msg"></p>
     </main>
 
     <footer class="footer">
@@ -152,6 +160,12 @@
         const LOGIN_URL = 'https://account.honore-romane.fr/login/';
         const currentUrl = 'https://account.honore-romane.fr/tools/vote/';
 
+        const showError = (msg) => {
+            const el = document.getElementById('error-msg');
+            if (el) el.textContent = msg;
+            console.error(msg);
+        };
+
         const goToLogin = () => {
             window.location.replace(
                 LOGIN_URL + '?redirect=' + encodeURIComponent(currentUrl)
@@ -161,8 +175,10 @@
         // Signature JWT HS256 avec la clé lue dans Firestore
         async function buildSignedToken(uid, siege) {
             const keySnap = await getDoc(doc(db, 'config', 'jwtKey'));
-            if (!keySnap.exists()) throw new Error('Clé JWT absente de Firestore');
-            const secret = new TextEncoder().encode(keySnap.data().value);
+            if (!keySnap.exists()) throw new Error('Clé JWT absente de Firestore (config/jwtKey)');
+            const raw = keySnap.data().value;
+            if (!raw || typeof raw !== 'string') throw new Error('Champ config/jwtKey.value invalide');
+            const secret = new TextEncoder().encode(raw);
 
             const now = Math.floor(Date.now() / 1000);
             const payload = {
@@ -179,7 +195,6 @@
                 .sign(secret);
         }
 
-        // On attend que Firebase ait restauré la session (ou non)
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             unsubscribe();
 
@@ -189,27 +204,37 @@
             }
 
             try {
-                // Vérifier que le compte est actif
                 const snap = await getDoc(doc(db, 'users', user.uid));
-                if (!snap.exists() || snap.data().status !== 'active') {
+                if (!snap.exists()) {
+                    showError('Profil utilisateur introuvable');
                     await signOut(auth);
                     goToLogin();
                     return;
                 }
 
                 const userData = snap.data();
-                // Numéro de siège — adaptez le nom du champ si besoin
+
+                if (userData.status !== 'active') {
+                    showError('Compte non actif (status: ' + userData.status + ')');
+                    await signOut(auth);
+                    goToLogin();
+                    return;
+                }
+
+                // Champ réel dans Firestore : seatNumber
                 const siege = userData.seatNumber;
-                if (!siege) throw new Error('Numéro de siège introuvable pour cet utilisateur');
+                if (siege === undefined || siege === null || siege === '') {
+                    showError('Numéro de siège (seatNumber) manquant sur le profil');
+                    await signOut(auth);
+                    goToLogin();
+                    return;
+                }
 
-                // Génération du JWT signé
                 const token = await buildSignedToken(user.uid, siege);
-
-                // Redirection vers le site de vote avec le token
                 window.location.replace(VOTE_URL + '/?t=' + encodeURIComponent(token));
 
             } catch (err) {
-                console.error(err);
+                showError('Erreur : ' + (err.message || err));
                 await signOut(auth).catch(() => {});
                 goToLogin();
             }

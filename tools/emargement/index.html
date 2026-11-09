@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="color-scheme" content="light dark">
+    <title>Émargement — Honoré Romane</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+        import {
+            getAuth, onAuthStateChanged, signOut
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+        import {
+            getFirestore, doc, getDoc
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
+            authDomain: "mdl-et-cvl-2027.firebaseapp.com",
+            projectId: "mdl-et-cvl-2027",
+            storageBucket: "mdl-et-cvl-2027.firebasestorage.app",
+            messagingSenderId: "142816093888",
+            appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
+            measurementId: "G-FBKEPBY0CQ"
+        };
+        const fbApp = initializeApp(firebaseConfig);
+        const auth = getAuth(fbApp);
+        const db = getFirestore(fbApp);
+
+        // ===== Helpers base64url =====
+        function b64urlEncode(bytes) {
+            let bin = '';
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+        function b64urlEncodeString(str) { return b64urlEncode(new TextEncoder().encode(str)); }
+        function b64urlDecodeToBytes(str) {
+            const pad = str.length % 4 === 0 ? '' : '='.repeat(4 - (str.length % 4));
+            const b64 = str.replace(/-/g, '+').replace(/_/g, '/') + pad;
+            const bin = atob(b64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return bytes;
+        }
+        function b64urlDecodeToString(str) { return new TextDecoder().decode(b64urlDecodeToBytes(str)); }
+
+        // ===== Signature JWT HS256 =====
+        window.__buildSignedToken = async (uid, extraClaims = {}) => {
+            const keySnap = await getDoc(doc(db, 'config', 'jwtKey'));
+            if (!keySnap.exists()) throw new Error('Clé JWT absente (config/jwtKey)');
+            const raw = keySnap.data().value;
+            if (!raw || typeof raw !== 'string') throw new Error('Champ value invalide');
+
+            const now = Math.floor(Date.now() / 1000);
+            const header = { alg: 'HS256', typ: 'JWT' };
+            const payload = {
+                iss: 'account.honore-romane.fr',
+                aud: 'emargement.honore-romane.fr',
+                sub: uid,
+                iat: now,
+                exp: now + 300,
+                ...extraClaims
+            };
+            const headerB64 = b64urlEncodeString(JSON.stringify(header));
+            const payloadB64 = b64urlEncodeString(JSON.stringify(payload));
+            const data = headerB64 + '.' + payloadB64;
+            const cryptoKey = await crypto.subtle.importKey(
+                'raw', new TextEncoder().encode(raw),
+                { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+            );
+            const sigBuf = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(data));
+            const sigB64 = b64urlEncode(new Uint8Array(sigBuf));
+            return data + '.' + sigB64;
+        };
+
+        // ===== Vérification JWT HS256 =====
+        window.__verifyToken = async (token) => {
+            try {
+                const keySnap = await getDoc(doc(db, 'config', 'jwtKey'));
+                if (!keySnap.exists()) throw new Error('Clé absente');
+                const raw = keySnap.data().value;
+                if (!raw || typeof raw !== 'string') throw new Error('Clé invalide');
+
+                const parts = token.split('.');
+                if (parts.length !== 3) throw new Error('Format JWT invalide');
+                const [h, p, s] = parts;
+                const header = JSON.parse(b64urlDecodeToString(h));
+                if (header.alg !== 'HS256') throw new Error('Algo non supporté');
+
+                const cryptoKey = await crypto.subtle.importKey(
+                    'raw', new TextEncoder().encode(raw),
+                    { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']
+                );
+                const valid = await crypto.subtle.verify(
+                    'HMAC', cryptoKey, b64urlDecodeToBytes(s),
+                    new TextEncoder().encode(h + '.' + p)
+                );
+                if (!valid) throw new Error('Signature invalide');
+
+                const payload = JSON.parse(b64urlDecodeToString(p));
+                if (payload.iss !== 'account.honore-romane.fr') throw new Error('iss invalide');
+                if (payload.aud !== 'emargement.honore-romane.fr') throw new Error('aud invalide');
+                if (typeof payload.exp !== 'number' || payload.exp < Math.floor(Date.now() / 1000)) {
+                    throw new Error('Token expiré');
+                }
+                return payload;
+            } catch (e) {
+                console.error('Vérif JWT échouée:', e);
+                return null;
+            }
+        };
+
+        window.__firebaseReady = true;
+        window.__signOut = () => signOut(auth);
+        window.__onAuthStateChanged = (cb) => onAuthStateChanged(auth, cb);
+        window.__getUserDoc = async (uid) => {
+            const snap = await getDoc(doc(db, 'users', uid));
+            return snap.exists() ? snap.data() : null;
+        };
+    </script>
+    <script src="config.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb; --primary-hover: #1d4ed8;
+            --bg: #f8fafc; --card: #ffffff;
+            --text: #1e293b; --text-light: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981; --success-bg: #ecfdf5;
+            --danger: #ef4444; --danger-bg: #fef2f2;
+            --warning: #f59e0b;
+            --an: #1b558a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        html, body { min-height: 100vh; min-height: 100dvh; background: var(--bg); color: var(--text); }
+        body { display: flex; flex-direction: column; align-items: center; padding: 1rem; }
+        .container { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 1rem; }
+        .card { background: var(--card); border-radius: 16px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid var(--border); }
+        h1 { font-size: 1.35rem; margin-bottom: 0.5rem; text-align: center; }
+        h2 { font-size: 1.1rem; margin-bottom: 0.75rem; }
+        p { color: var(--text-light); font-size: 0.92rem; line-height: 1.5; }
+        .subtitle { text-align: center; margin-bottom: 1rem; }
+        .hidden { display: none !important; }
+
+        button { background: var(--primary); color: white; border: none; padding: 0.85rem 1rem; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.15s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        button:hover:not(:disabled) { background: var(--primary-hover); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button.secondary { background: var(--text-light); }
+        button.secondary:hover:not(:disabled) { background: #475569; }
+        button.danger { background: var(--danger); }
+        button.danger:hover:not(:disabled) { background: #dc2626; }
+        button.success { background: var(--success); }
+        button.success:hover:not(:disabled) { background: #059669; }
+        button.outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        button.outline:hover:not(:disabled) { background: var(--bg); }
+
+        input, textarea { width: 100%; padding: 0.8rem; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem; margin-bottom: 0.75rem; background: var(--bg); color: var(--text); }
+        input:focus, textarea:focus { outline: none; border-color: var(--primary); }
+
+        .row { display: flex; gap: 0.5rem; align-items: center; }
+        .row > * { flex: 1; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+
+        .spinner { width: 44px; height: 44px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 1rem auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: var(--text); color: white; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 0.9rem; z-index: 1000; opacity: 0; transition: opacity 0.3s; pointer-events: none; max-width: 90vw; text-align: center; }
+        .toast.show { opacity: 1; }
+
+        /* ==== Menu admin ==== */
+        .menu-btn { display: flex; width: 100%; margin-top: 0.6rem; padding: 1rem; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--text); text-align: left; transition: background 0.15s, transform 0.1s; align-items: center; gap: 0.6rem; }
+        .menu-btn:hover { background: var(--bg); }
+        .menu-btn:active { transform: scale(0.99); }
+        .menu-btn .icon { font-size: 1.25rem; width: 1.6em; text-align: center; }
+        .menu-btn.primary { background: var(--primary); color: white; border-color: var(--primary); }
+        .menu-btn.primary:hover { background: var(--primary-hover); }
+
+        /* ==== Admin émargement ==== */
+        .qr-hero { display: flex; justify-content: center; padding: 1.5rem; background: white; border-radius: 16px; margin: 1rem 0; border: 1px solid var(--border); }
+        #qrcode { display: flex; justify-content: center; }
+        #qrcode img, #qrcode canvas { width: 280px !important; height: 280px !important; max-width: 100%; }
+        @media (min-width: 600px) { #qrcode img, #qrcode canvas { width: 340px !important; height: 340px !important; } }
+
+        .info-panel { background: var(--bg); border-radius: 10px; padding: 0.9rem; margin-bottom: 1rem; }
+        .info-panel .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-light); }
+        .info-panel .value { font-weight: 700; font-size: 1rem; }
+        .info-panel + .info-panel { margin-top: -0.25rem; }
+
+        .presence-list { max-height: 50vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; }
+        .presence-item { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+        .presence-item:last-child { border-bottom: none; }
+        .presence-item .pname { font-weight: 600; font-size: 0.92rem; }
+        .presence-item .pmeta { font-size: 0.78rem; color: var(--text-light); }
+        .presence-item .badge { font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: var(--success-bg); color: #065f46; font-weight: 600; white-space: nowrap; }
+
+        .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+        .stat { text-align: center; padding: 0.85rem; background: var(--bg); border-radius: 10px; }
+        .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 0.78rem; color: var(--text-light); }
+        @media (max-width: 400px) { .stat-row { grid-template-columns: 1fr; } }
+
+        /* ==== User ==== */
+        .identity-card { text-align: center; }
+        .identity-title { font-size: 1.1rem; font-weight: 700; margin: 0.75rem 0 0.25rem; }
+        .identity-sub { color: var(--text-light); font-size: 0.9rem; }
+        .avatar-big { width: 5rem; height: 5rem; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.6rem; margin: 0 auto 0.5rem; }
+
+        #qr-reader { width: 100%; border-radius: 12px; overflow: hidden; margin-top: 1rem; border: 1px solid var(--border); }
+        #qr-reader video, #qr-reader canvas { border-radius: 12px; }
+
+        /* ==== Result screens ==== */
+        .result-screen { text-align: center; padding: 2rem 1.5rem; }
+        .result-icon { width: 5rem; height: 5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 2.5rem; font-weight: 700; color: white; }
+        .result-icon.success { background: var(--success); }
+        .result-icon.error { background: var(--danger); }
+        .result-screen.success-screen { background: var(--success-bg); border-color: #a7f3d0; }
+        .result-screen.error-screen { background: var(--danger-bg); border-color: #fecaca; }
+        .result-screen h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+        .result-screen.success-screen h1 { color: #065f46; }
+        .result-screen.error-screen h1 { color: #991b1b; }
+        .result-screen .reason { color: #991b1b; font-weight: 600; margin: 0.75rem 0 1rem; }
+        .result-actions { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1.25rem; }
+
+        .footer-status { margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-light); display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+        .status-dot.connected { background: var(--success); }
+
+        .footer { text-align: center; color: var(--text-light); font-size: 0.72rem; padding: 1.25rem 0 0.5rem; opacity: 0.7; user-select: none; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+
+    <!-- ========== ÉCRAN DE CHARGEMENT / VÉRIFICATION ========== -->
+    <div id="loading-screen" class="card">
+        <div class="spinner"></div>
+        <h1>Vérification…</h1>
+        <p class="subtitle">Validation de votre identité en cours.</p>
+    </div>
+
+    <!-- ========== MENU (ADMIN ou USER) ========== -->
+    <div id="menu-screen" class="card hidden">
+        <h1 id="menu-title">Bienvenue</h1>
+        <p class="subtitle" id="menu-subtitle"></p>
+
+        <!-- Menu admin -->
+        <div id="admin-menu" class="hidden">
+            <button class="menu-btn primary" id="btn-admin-emargement" type="button">
+                <span class="icon">📋</span> Administrer l'émargement
+            </button>
+            <button class="menu-btn" id="btn-user-flow" type="button">
+                <span class="icon">✍️</span> Émarger la feuille de présence
+            </button>
+            <button class="menu-btn" id="btn-back-menu" type="button">
+                <span class="icon">↩️</span> Retourner au menu principal
+            </button>
+        </div>
+
+        <!-- Menu utilisateur normal -->
+        <div id="user-menu" class="hidden">
+            <div class="identity-card">
+                <div class="avatar-big" id="user-avatar">?</div>
+                <div class="identity-title" id="user-name">…</div>
+                <div class="identity-sub" id="user-meta"></div>
+            </div>
+            <button class="menu-btn primary" id="btn-user-scan" type="button" style="margin-top:1.25rem;">
+                <span class="icon">📷</span> Scanner le QR Code de la session
+            </button>
+            <button class="menu-btn" id="btn-user-back" type="button">
+                <span class="icon">↩️</span> Retourner au menu principal
+            </button>
+        </div>
+    </div>
+
+    <!-- ========== ADMIN — ÉMARGEMENT ========== -->
+    <div id="admin-screen" class="card hidden">
+        <h1>Session d'émargement</h1>
+        <p class="subtitle">Partagez ce QR Code aux participants.</p>
+
+        <div class="info-panel">
+            <label class="label" for="session-title-input">Titre de la session</label>
+            <input type="text" id="session-title-input" placeholder="Ex. Assemblée MDL n°25" maxlength="80">
+        </div>
+
+        <div class="qr-hero"><div id="qrcode"></div></div>
+
+        <div class="info-panel flex-between">
+            <div>
+                <div class="label">Début de session</div>
+                <div class="value" id="session-start-display">—</div>
+            </div>
+            <div style="text-align:right;">
+                <div class="label">Présents</div>
+                <div class="value" id="session-presence-count">0</div>
+            </div>
+        </div>
+
+        <div class="flex-between" style="margin: 0.5rem 0;">
+            <span style="font-size:0.85rem;color:var(--text-light);">Connectés : <strong id="connected-count">0</strong></span>
+            <span id="connection-status" class="badge" style="font-size:0.75rem;padding:0.25rem 0.5rem;border-radius:4px;background:#fef3c7;color:#92400e;font-weight:600;">En attente…</span>
+        </div>
+
+        <h2 style="margin-top:1rem;">Liste des présents</h2>
+        <div class="presence-list" id="presence-list">
+            <div style="padding:1rem;text-align:center;color:var(--text-light);font-size:0.85rem;">Aucun participant pour l'instant.</div>
+        </div>
+
+        <button class="danger" id="btn-close-session" type="button" style="margin-top:1.25rem;">
+            Clore la session et télécharger le PDF
+        </button>
+        <button class="outline" id="btn-admin-back" type="button" style="margin-top:0.5rem;">
+            Retour au menu
+        </button>
+    </div>
+
+    <!-- ========== USER — SCAN ========== -->
+    <div id="user-scan-screen" class="card hidden">
+        <h1>Scanner le QR Code</h1>
+        <p class="subtitle">Visez le QR Code affiché par l'administrateur.</p>
+
+        <div class="identity-card" style="margin-bottom:1rem;">
+            <div class="avatar-big" id="scan-avatar">?</div>
+            <div class="identity-title" id="scan-name">…</div>
+            <div class="identity-sub" id="scan-meta"></div>
+        </div>
+
+        <div id="qr-reader"></div>
+        <div id="scan-error" class="hidden" style="margin-top:1rem;padding:0.85rem;border-radius:10px;background:var(--danger-bg);color:#991b1b;font-size:0.9rem;"></div>
+
+        <div class="footer-status"><span class="status-dot" id="scan-status-dot"></span><span id="scan-status-text">Recherche de la caméra…</span></div>
+
+        <button class="outline" id="btn-scan-back" type="button" style="margin-top:1rem;">Retour au menu</button>
+    </div>
+
+    <!-- ========== USER — CONNEXION EN COURS ========== -->
+    <div id="user-connecting-screen" class="card hidden">
+        <div class="spinner"></div>
+        <h1>Connexion à la session…</h1>
+        <p class="subtitle">Enregistrement de votre présence.</p>
+        <div class="footer-status"><span class="status-dot" id="connect-status-dot"></span><span id="connect-status-text">Connexion…</span></div>
+    </div>
+
+    <!-- ========== USER — SUCCÈS ========== -->
+    <div id="success-screen" class="card result-screen success-screen hidden">
+        <div class="result-icon success">✓</div>
+        <h1>Présence enregistrée</h1>
+        <p id="success-title">Merci pour votre présence !</p>
+        <p style="margin-top:0.5rem;" id="success-session"></p>
+        <div class="result-actions">
+            <button class="success" id="btn-success-home" type="button">Retour à l'accueil</button>
+        </div>
+    </div>
+
+    <!-- ========== USER — ÉCHEC ========== -->
+    <div id="error-screen" class="card result-screen error-screen hidden">
+        <div class="result-icon error">✕</div>
+        <h1>Émargement impossible</h1>
+        <p class="reason" id="error-reason">Raison inconnue.</p>
+        <p id="error-detail"></p>
+        <div class="result-actions">
+            <button class="primary" id="btn-error-retry" type="button">Réessayer</button>
+            <button class="outline" id="btn-error-home" type="button">Retour à l'accueil</button>
+        </div>
+    </div>
+
+    <footer class="footer">MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés</footer>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* =======================================================================
+   CONFIG
+   ======================================================================= */
+const APP_PREFIX = (typeof EMARGEMENT_APP_PREFIX !== 'undefined') ? EMARGEMENT_APP_PREFIX : 'emargement';
+const PEER_CONFIG_FALLBACK = {
+    servers: [
+        { host: '0.peerjs.com', port: 443, path: '/', secure: true, key: 'peerjs' },
+        { host: '1.peerjs.com', port: 443, path: '/', secure: true, key: 'peerjs' }
+    ],
+    commonOptions: { debug: 1 }
+};
+const PEER_CFG = (typeof PEER_CONFIG !== 'undefined') ? PEER_CONFIG : PEER_CONFIG_FALLBACK;
+
+const ACCOUNT_MENU_URL = 'https://account.honore-romane.fr/account/';
+const LOGIN_URL = 'https://account.honore-romane.fr/login/';
+const CURRENT_URL = 'https://account.honore-romane.fr/tools/emargement/';
+const HEMICYCLE_NONE = null;
+
+/* =======================================================================
+   ÉTAT GLOBAL
+   ======================================================================= */
+let currentUser = null;          // Firebase user
+let currentUserData = null;      // Firestore data
+let currentIsAdmin = false;
+let userIdentity = null;         // {civilite, nom, prenom, classe, sex, seatNumber}
+
+// Admin state
+let peer = null;
+let connections = [];
+let sessionId = null;
+let displayCode = null;
+let sessionTitle = '';
+let sessionStart = null;         // Date arrondie
+let presentList = [];            // [{ uid, civilite, nom, prenom, classe, sex, seatNumber, at }]
+let sessionClosed = false;
+let currentServerIndex = 0;
+let reconnectTimer = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT = 30;
+
+// User state
+let userPeer = null;
+let userConn = null;
+let userConnectionEstablished = false;
+let userServerIndex = 0;
+let userReconnectAttempts = 0;
+let userReconnectInterval = null;
+let userTargetSessionId = null;
+let userTargetAdminId = null;
+let qrScanner = null;
+let scanCooldown = false;
+
+/* =======================================================================
+   HELPERS UI
+   ======================================================================= */
+function showScreen(id) {
+    const screens = [
+        'loading-screen', 'menu-screen', 'admin-screen',
+        'user-scan-screen', 'user-connecting-screen',
+        'success-screen', 'error-screen'
+    ];
+    screens.forEach(s => {
+        const el = document.getElementById(s);
+        if (el) el.classList.toggle('hidden', s !== id);
+    });
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._to);
+    t._to = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function initials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function escapeHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+}
+
+/* =======================================================================
+   ARRONDI À LA DEMI-HEURE INFÉRIEURE
+   ======================================================================= */
+function roundToPreviousHalfHour(date) {
+    const d = new Date(date.getTime());
+    d.setSeconds(0, 0);
+    if (d.getMinutes() >= 30) {
+        d.setMinutes(30);
+    } else {
+        d.setMinutes(0);
+    }
+    return d;
+}
+
+function formatDateFR(d) {
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+function formatTimeFR(d) {
+    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+/* =======================================================================
+   INIT — AUTH + ROLE
+   ======================================================================= */
+async function bootstrap() {
+    // Attendre module Firebase
+    await new Promise(resolve => {
+        if (window.__firebaseReady) return resolve();
+        const check = setInterval(() => {
+            if (window.__firebaseReady) { clearInterval(check); resolve(); }
+        }, 50);
+        setTimeout(() => { clearInterval(check); resolve(); }, 6000);
+    });
+
+    if (!window.__onAuthStateChanged) {
+        redirectToLogin();
+        return;
+    }
+
+    window.__onAuthStateChanged(async (user) => {
+        if (!user) {
+            redirectToLogin();
+            return;
+        }
+        try {
+            const data = await window.__getUserDoc(user.uid);
+            if (!data || data.status !== 'active') {
+                try { await window.__signOut(); } catch (e) {}
+                redirectToLogin();
+                return;
+            }
+            currentUser = user;
+            currentUserData = data;
+            currentIsAdmin = data.isAdmin === true;
+            buildUserIdentity(data);
+            showMenu();
+        } catch (err) {
+            console.error(err);
+            redirectToLogin();
+        }
+    });
+}
+
+function redirectToLogin() {
+    window.location.replace(LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL));
+}
+
+/* =======================================================================
+   IDENTITÉ
+   ======================================================================= */
+function buildUserIdentity(data) {
+    const sex = (data.sex || data.genre || '').toUpperCase() === 'F' ? 'F' : (data.sex === 'M' || data.genre === 'M' ? 'M' : '');
+    const civilite = sex === 'F' ? 'Madame' : (sex === 'M' ? 'Monsieur' : '');
+    const nom = data.name || data.nom || '';
+    const prenom = data.prenom || data.firstName || '';
+    const classe = data.classe || '';
+    const seatNumber = data.seatNumber !== undefined ? data.seatNumber : null;
+
+    // Le "name" Firestore est souvent "NOM Prénom" — on tente de séparer
+    let fullNom = nom;
+    let fullPrenom = prenom;
+    if (!fullPrenom && nom && nom.includes(' ')) {
+        const parts = nom.trim().split(/\s+/);
+        fullNom = parts[0];
+        fullPrenom = parts.slice(1).join(' ');
+    }
+
+    userIdentity = {
+        uid: currentUser.uid,
+        civilite,
+        sex: sex || null,
+        nom: fullNom || '',
+        prenom: fullPrenom || '',
+        displayName: [fullNom, fullPrenom].filter(Boolean).join(' ').trim() || (currentUser.email || 'Utilisateur'),
+        classe,
+        seatNumber
+    };
+}
+
+function renderIdentityTo(elAvatar, elName, elMeta) {
+    const i = userIdentity;
+    if (!i) return;
+    if (elAvatar) elAvatar.textContent = initials(i.displayName);
+    if (elName) elName.textContent = `${i.civilite ? i.civilite + ' ' : ''}${i.displayName}`.trim();
+    if (elMeta) elMeta.textContent = i.classe || '';
+}
+
+/* =======================================================================
+   MENU
+   ======================================================================= */
+function showMenu() {
+    document.getElementById('menu-title').textContent = currentIsAdmin
+        ? 'Espace administrateur'
+        : 'Émargement';
+    document.getElementById('menu-subtitle').textContent = currentIsAdmin
+        ? 'Choisissez votre action.'
+        : 'Enregistrez votre présence à une session.';
+
+    document.getElementById('admin-menu').classList.toggle('hidden', !currentIsAdmin);
+    document.getElementById('user-menu').classList.toggle('hidden', currentIsAdmin);
+
+    if (!currentIsAdmin) {
+        renderIdentityTo(
+            document.getElementById('user-avatar'),
+            document.getElementById('user-name'),
+            document.getElementById('user-meta')
+        );
+    }
+
+    showScreen('menu-screen');
+}
+
+/* =======================================================================
+   BOUTONS MENU
+   ======================================================================= */
+document.getElementById('btn-admin-emargement').addEventListener('click', startAdminSession);
+document.getElementById('btn-user-flow').addEventListener('click', () => openUserScan());
+document.getElementById('btn-back-menu').addEventListener('click', () => {
+    window.location.replace(ACCOUNT_MENU_URL);
+});
+document.getElementById('btn-user-scan').addEventListener('click', openUserScan);
+document.getElementById('btn-user-back').addEventListener('click', () => {
+    window.location.replace(ACCOUNT_MENU_URL);
+});
+document.getElementById('btn-scan-back').addEventListener('click', () => {
+    stopScanner();
+    showMenu();
+});
+document.getElementById('btn-admin-back').addEventListener('click', () => {
+    if (peer) { try { peer.destroy(); } catch(e) {} }
+    peer = null;
+    showMenu();
+});
+document.getElementById('btn-success-home').addEventListener('click', () => {
+    window.location.replace(ACCOUNT_MENU_URL);
+});
+document.getElementById('btn-error-retry').addEventListener('click', () => {
+    showMenu();
+    if (currentIsAdmin) {
+        // re-open user flow
+        setTimeout(() => openUserScan(), 200);
+    } else {
+        setTimeout(() => openUserScan(), 200);
+    }
+});
+document.getElementById('btn-error-home').addEventListener('click', () => {
+    window.location.replace(ACCOUNT_MENU_URL);
+});
+
+/* =======================================================================
+   ========================= ADMIN : ÉMARGEMENT =========================
+   ======================================================================= */
+function generateShortCode() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let c = '';
+    for (let i = 0; i < 4; i++) c += chars.charAt(Math.floor(Math.random() * chars.length));
+    return c;
+}
+
+function startAdminSession() {
+    sessionClosed = false;
+    presentList = [];
+    sessionStart = roundToPreviousHalfHour(new Date());
+    sessionTitle = '';
+
+    // admin auto-émargé
+    presentList.push({
+        uid: userIdentity.uid,
+        civilite: userIdentity.civilite,
+        nom: userIdentity.nom,
+        prenom: userIdentity.prenom,
+        classe: userIdentity.classe,
+        sex: userIdentity.sex,
+        seatNumber: userIdentity.seatNumber,
+        at: new Date().toISOString()
+    });
+
+    document.getElementById('session-title-input').value = '';
+    document.getElementById('session-start-display').textContent =
+        `${formatDateFR(sessionStart)} — ${formatTimeFR(sessionStart)}`;
+    document.getElementById('session-presence-count').textContent = presentList.length;
+    renderPresenceList();
+
+    showScreen('admin-screen');
+    document.getElementById('session-title-input').focus();
+
+    initAdminPeer();
+
+    document.getElementById('session-title-input').addEventListener('input', (e) => {
+        sessionTitle = e.target.value.trim();
+    }, { once: false });
+    sessionTitle = document.getElementById('session-title-input').value.trim();
+
+    document.getElementById('btn-close-session').disabled = false;
+    document.getElementById('btn-close-session').onclick = closeSessionAndExport;
+}
+
+function initAdminPeer() {
+    if (sessionClosed) return;
+    if (peer) { try { peer.destroy(); } catch(e) {} peer = null; }
+    displayCode = generateShortCode();
+    sessionId = APP_PREFIX + '-' + displayCode;
+
+    const server = PEER_CFG.servers[currentServerIndex];
+    const opts = {
+        ...PEER_CFG.commonOptions,
+        host: server.host, port: server.port, path: server.path,
+        secure: server.secure, key: server.key, pingInterval: 5000
+    };
+
+    try { peer = new Peer(sessionId, opts); }
+    catch (e) { console.error(e); switchAdminServer(); return; }
+
+    let opened = false;
+    peer.on('open', (id) => {
+        opened = true;
+        reconnectAttempts = 0;
+        console.log('Session admin ouverte:', id);
+        document.getElementById('connection-status').textContent = 'Prêt';
+        document.getElementById('connection-status').style.background = '#d1fae5';
+        document.getElementById('connection-status').style.color = '#065f46';
+
+        const baseUrl = window.location.origin + window.location.pathname.replace('/admin', '/');
+        // On génère un QR qui encode le sessionId complet (uuid) + displayCode
+        const link = `${baseUrl}?s=${encodeURIComponent(sessionId)}&c=${displayCode}`;
+
+        document.getElementById('qrcode').innerHTML = '';
+        new QRCode(document.getElementById('qrcode'), {
+            text: link, width: 340, height: 340,
+            colorDark: "#1e293b", colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    });
+
+    peer.on('connection', (conn) => {
+        connections.push(conn);
+        updateAdminConnectedCount();
+        conn.on('data', (data) => handleAdminIncoming(conn, data));
+        conn.on('close', () => {
+            connections = connections.filter(c => c.peer !== conn.peer);
+            updateAdminConnectedCount();
+        });
+    });
+
+    peer.on('error', (err) => {
+        console.error('Admin Peer err:', err);
+        if (err.type === 'unavailable-id') {
+            try { peer.destroy(); } catch(e) {}
+            setTimeout(initAdminPeer, 500);
+        } else if (!opened || ['network','server-error','socket-error','socket-closed'].includes(err.type)) {
+            switchAdminServer();
+        } else {
+            showToast('Erreur: ' + err.type);
+        }
+    });
+
+    peer.on('disconnected', () => {
+        if (sessionClosed) return;
+        try { peer.reconnect(); } catch(e) {}
+    });
+}
+
+function switchAdminServer() {
+    currentServerIndex = (currentServerIndex + 1) % PEER_CFG.servers.length;
+    try { peer.destroy(); } catch(e) {}
+    peer = null;
+    setTimeout(initAdminPeer, 700);
+}
+
+function updateAdminConnectedCount() {
+    document.getElementById('connected-count').textContent = connections.length;
+}
+
+function handleAdminIncoming(conn, data) {
+    if (!data || data.type !== 'checkin') return;
+
+    // Vérifier JWT + infos utilisateur
+    (async () => {
+        const payload = await window.__verifyToken(data.token);
+        if (!payload) {
+            conn.send({ type: 'checkin_result', ok: false, reason: 'Token invalide ou expiré.' });
+            return;
+        }
+        if (!payload.sub) {
+            conn.send({ type: 'checkin_result', ok: false, reason: 'Identifiant utilisateur manquant.' });
+            return;
+        }
+
+        // Re-vérifier le profil Firestore (source de vérité pour l'identité)
+        let userData = null;
+        try { userData = await window.__getUserDoc(payload.sub); }
+        catch (e) { /* ignore */ }
+
+        if (!userData || userData.status !== 'active') {
+            conn.send({ type: 'checkin_result', ok: false, reason: 'Compte non actif ou introuvable.' });
+            return;
+        }
+
+        // Déjà émargé ?
+        if (presentList.some(p => p.uid === payload.sub)) {
+            conn.send({ type: 'checkin_result', ok: false, reason: 'Vous avez déjà émargé à cette session.' });
+            return;
+        }
+
+        // OK — ajouter
+        const sex = (userData.sex || userData.genre || '').toUpperCase();
+        const nomRaw = userData.name || userData.nom || '';
+        const prenomRaw = userData.prenom || userData.firstName || '';
+        let nom = nomRaw, prenom = prenomRaw;
+        if (!prenomRaw && nomRaw.includes(' ')) {
+            const parts = nomRaw.trim().split(/\s+/);
+            nom = parts[0];
+            prenom = parts.slice(1).join(' ');
+        }
+        const civilite = sex === 'F' ? 'Madame' : (sex === 'M' ? 'Monsieur' : '');
+
+        const entry = {
+            uid: payload.sub,
+            civilite,
+            nom,
+            prenom,
+            classe: userData.classe || '',
+            sex: sex || null,
+            seatNumber: userData.seatNumber ?? null,
+            at: new Date().toISOString()
+        };
+        presentList.push(entry);
+
+        document.getElementById('session-presence-count').textContent = presentList.length;
+        renderPresenceList();
+
+        conn.send({
+            type: 'checkin_result',
+            ok: true,
+            sessionTitle: sessionTitle || 'Session d\'émargement',
+            sessionStart: sessionStart.toISOString()
+        });
+
+        showToast(`Présence enregistrée : ${entry.civilite} ${nom} ${prenom}`.trim());
+    })();
+}
+
+function renderPresenceList() {
+    const el = document.getElementById('presence-list');
+    if (!el) return;
+    if (presentList.length === 0) {
+        el.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--text-light);font-size:0.85rem;">Aucun participant pour l\'instant.</div>';
+        return;
+    }
+    el.innerHTML = presentList.map((p, i) => {
+        const name = `${p.civilite ? p.civilite + ' ' : ''}${p.nom} ${p.prenom}`.trim() || 'Utilisateur';
+        const meta = [p.classe, p.seatNumber != null ? `Siège n°${p.seatNumber}` : ''].filter(Boolean).join(' · ');
+        return `
+            <div class="presence-item">
+                <div style="min-width:0;">
+                    <div class="pname">${i + 1}. ${escapeHtml(name)}</div>
+                    <div class="pmeta">${escapeHtml(meta || '—')}</div>
+                </div>
+                <span class="badge">Présent</span>
+            </div>`;
+    }).join('');
+}
+
+/* =======================================================================
+   ========================= ADMIN : PDF ================================
+   ======================================================================= */
+function closeSessionAndExport() {
+    if (sessionClosed) return;
+    if (presentList.length === 0) { showToast('Aucun participant à exporter.'); return; }
+    if (!confirm('Clore la session ? Le PDF sera téléchargé et les participants seront déconnectés.')) return;
+
+    sessionClosed = true;
+    sessionTitle = document.getElementById('session-title-input').value.trim() || 'Session d\'émargement';
+
+    try { exportPresencePDF(); } catch (e) { console.error(e); showToast('Erreur PDF'); }
+
+    // Notifier participants
+    connections.forEach(c => { try { if (c.open) c.send({ type: 'session_closed' }); } catch(e) {} });
+    setTimeout(() => {
+        connections.forEach(c => { try { c.close(); } catch(e) {} });
+        connections = [];
+        if (peer) { try { peer.destroy(); } catch(e) {} }
+        peer = null;
+        showScreen('menu-screen');
+        // Reset
+        presentList = [];
+        sessionClosed = false;
+    }, 500);
+}
+
+function exportPresencePDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const COLORS = {
+        an: [27, 85, 138],
+        anLight: [232, 240, 248],
+        text: [30, 41, 59],
+        textLight: [100, 116, 139],
+        border: [226, 232, 240],
+        white: [255, 255, 255]
+    };
+
+    function setFill(c) { doc.setFillColor(c[0], c[1], c[2]); }
+    function setText(c) { doc.setTextColor(c[0], c[1], c[2]); }
+    function setDraw(c) { doc.setDrawColor(c[0], c[1], c[2]); }
+
+    function tricolore(x, y, w, h) {
+        const third = w / 3;
+        setFill([0, 0, 255]); doc.rect(x, y, third, h, 'F');
+        setFill([255, 255, 255]); doc.rect(x + third, y, third, h, 'F');
+        setFill([255, 0, 0]); doc.rect(x + 2*third, y, third, h, 'F');
+        setDraw([200, 200, 200]); doc.rect(x, y, w, h, 'S');
+    }
+
+    let pageNum = 1;
+    function header() {
+        setFill(COLORS.an);
+        doc.rect(0, 0, pageW, 12, 'F');
+        tricolore(pageW - 24, 3, 18, 6);
+        setText(COLORS.white);
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.text("FEUILLE D'ÉMARGEMENT", 10, 8);
+        setText(COLORS.text);
+    }
+    function footer() {
+        setDraw(COLORS.border);
+        doc.setLineWidth(0.2);
+        doc.line(10, pageH - 12, pageW - 10, pageH - 12);
+        setText(COLORS.textLight);
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Session ${displayCode || ''} — Généré le ${new Date().toLocaleString()}`, 10, pageH - 7);
+        doc.text(`Page ${pageNum}`, pageW - 10, pageH - 7, { align: 'right' });
+        setText(COLORS.text);
+    }
+
+    header();
+
+    // Titre
+    doc.setFontSize(20);
+    doc.setFont(undefined, 'bold');
+    setText(COLORS.an);
+    doc.text("Rapport d'émargement", pageW / 2, 30, { align: 'center' });
+
+    // Infos générales
+    const infoY = 40;
+    setFill(COLORS.anLight);
+    doc.roundedRect(14, infoY, pageW - 28, 30, 3, 3, 'F');
+
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    setText(COLORS.an);
+    doc.text('Informations générales', 20, infoY + 8);
+
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    setText(COLORS.text);
+    doc.text(`Titre : ${sessionTitle}`, 20, infoY + 16);
+    doc.text(`Date : ${formatDateFR(sessionStart)} — Heure : ${formatTimeFR(sessionStart)}`, 20, infoY + 23);
+    doc.text(`Nombre de présents : ${presentList.length}`, 20, infoY + 30);
+
+    // Liste
+    let y = infoY + 42;
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    setText(COLORS.an);
+    doc.text('Liste des présents', 14, y);
+    y += 3;
+    setDraw(COLORS.border);
+    doc.setLineWidth(0.3);
+    doc.line(14, y, pageW - 14, y);
+    y += 6;
+
+    // Table header
+    setFill(COLORS.an);
+    doc.rect(14, y - 4, pageW - 28, 7, 'F');
+    setText(COLORS.white);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    doc.text('N°', 18, y);
+    doc.text('Civilité', 26, y);
+    doc.text('Nom', 44, y);
+    doc.text('Prénom', 86, y);
+    doc.text('Classe', 130, y);
+    doc.text('Siège', pageW - 20, y, { align: 'right' });
+    y += 8;
+
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'normal');
+    setText(COLORS.text);
+
+    presentList.forEach((p, i) => {
+        if (y > pageH - 30) {
+            footer(); pageNum++; doc.addPage(); header();
+            y = 22;
+            setFill(COLORS.an);
+            doc.rect(14, y - 4, pageW - 28, 7, 'F');
+            setText(COLORS.white);
+            doc.setFontSize(9); doc.setFont(undefined, 'bold');
+            doc.text('N°', 18, y);
+            doc.text('Civilité', 26, y);
+            doc.text('Nom', 44, y);
+            doc.text('Prénom', 86, y);
+            doc.text('Classe', 130, y);
+            doc.text('Siège', pageW - 20, y, { align: 'right' });
+            y += 8;
+            doc.setFontSize(9); doc.setFont(undefined, 'normal');
+            setText(COLORS.text);
+        }
+        if (i % 2 === 0) {
+            setFill([248, 250, 252]);
+            doc.rect(14, y - 4.5, pageW - 28, 7, 'F');
+        }
+        doc.text(String(i + 1), 18, y);
+        doc.text(p.civilite || '—', 26, y);
+        doc.text(p.nom || '', 44, y);
+        doc.text(p.prenom || '', 86, y);
+        doc.text(p.classe || '—', 130, y);
+        doc.text(p.seatNumber != null ? 'n°' + p.seatNumber : '—', pageW - 20, y, { align: 'right' });
+        y += 7;
+    });
+
+    footer();
+
+    const safeTitle = sessionTitle.replace(/[^\w\-]+/g, '_').slice(0, 40) || 'session';
+    const dateStr = sessionStart.toISOString().slice(0, 10);
+    doc.save(`emargement_${safeTitle}_${dateStr}.pdf`);
+}
+
+/* =======================================================================
+   ========================= USER : SCAN ================================
+   ======================================================================= */
+function openUserScan() {
+    renderIdentityTo(
+        document.getElementById('scan-avatar'),
+        document.getElementById('scan-name'),
+        document.getElementById('scan-meta')
+    );
+    document.getElementById('scan-error').classList.add('hidden');
+    document.getElementById('scan-status-text').textContent = 'Recherche de la caméra…';
+    document.getElementById('scan-status-dot').classList.remove('connected');
+    showScreen('user-scan-screen');
+    scanCooldown = false;
+    startScanner();
+}
+
+function startScanner() {
+    stopScanner();
+    const readerDiv = document.getElementById('qr-reader');
+    const errDiv = document.getElementById('scan-error');
+    errDiv.classList.add('hidden');
+
+    if (typeof Html5Qrcode === 'undefined') {
+        errDiv.textContent = 'Bibliothèque de scan indisponible.';
+        errDiv.classList.remove('hidden');
+        return;
+    }
+
+    qrScanner = new Html5Qrcode('qr-reader');
+    qrScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 260, height: 260 } },
+        (decodedText) => onQrDecoded(decodedText),
+        () => {}
+    ).then(() => {
+        document.getElementById('scan-status-text').textContent = 'Caméra active — visez le QR Code';
+        document.getElementById('scan-status-dot').classList.add('connected');
+    }).catch((err) => {
+        errDiv.textContent = 'Impossible d\'accéder à la caméra : ' + err;
+        errDiv.classList.remove('hidden');
+        document.getElementById('scan-status-text').textContent = 'Caméra indisponible';
+    });
+}
+
+function stopScanner() {
+    if (qrScanner) {
+        try { qrScanner.stop().catch(()=>{}); } catch(e) {}
+        try { qrScanner.clear(); } catch(e) {}
+        qrScanner = null;
+    }
+}
+
+function onQrDecoded(text) {
+    if (scanCooldown) return;
+    scanCooldown = true;
+
+    let sessionIdFromQr = null;
+    let displayCodeFromQr = null;
+
+    // Le QR encode une URL contenant ?s=sessionId&c=code (ou directement sessionId)
+    try {
+        const url = new URL(text);
+        sessionIdFromQr = url.searchParams.get('s');
+        displayCodeFromQr = url.searchParams.get('c');
+    } catch (e) {
+        // fallback : texte brut
+        sessionIdFromQr = text.trim();
+    }
+
+    if (!sessionIdFromQr) {
+        showScanError('QR Code non reconnu.');
+        scanCooldown = false;
+        return;
+    }
+
+    userTargetSessionId = sessionIdFromQr;
+    userTargetAdminId = sessionIdFromQr; // = sessionId côté admin
+
+    stopScanner();
+    showScreen('user-connecting-screen');
+    document.getElementById('connect-status-text').textContent = 'Connexion…';
+    document.getElementById('connect-status-dot').classList.remove('connected');
+
+    connectUserToAdmin();
+}
+
+function showScanError(msg) {
+    const errDiv = document.getElementById('scan-error');
+    errDiv.textContent = msg;
+    errDiv.classList.remove('hidden');
+    showToast(msg);
+}
+
+/* =======================================================================
+   ========================= USER : CONNEXION ADMIN =====================
+   ======================================================================= */
+async function connectUserToAdmin() {
+    if (!userIdentity) { showUserError('Identité indisponible.'); return; }
+    if (!userTargetSessionId) { showUserError('Session cible inconnue.'); return; }
+
+    // Signer un JWT court
+    let token;
+    try {
+        token = await window.__buildSignedToken(userIdentity.uid);
+    } catch (e) {
+        showUserError('Impossible de signer la requête : ' + (e.message || e));
+        return;
+    }
+
+    const server = PEER_CFG.servers[userServerIndex % PEER_CFG.servers.length];
+    const clientId = 'emg-u-' + Math.random().toString(36).substr(2, 12);
+    const opts = {
+        ...PEER_CFG.commonOptions,
+        host: server.host, port: server.port, path: server.path,
+        secure: server.secure, key: server.key
+    };
+
+    if (userPeer) { try { userPeer.destroy(); } catch(e) {} }
+    try { userPeer = new Peer(clientId, opts); }
+    catch (e) { userServerIndex++; showUserError('Erreur PeerJS : ' + e.message); return; }
+
+    userPeer.on('open', () => {
+        document.getElementById('connect-status-text').textContent = 'Connexion à l\'administrateur…';
+        userConn = userPeer.connect(userTargetSessionId, { reliable: true });
+        const t = setTimeout(() => {
+            if (!userConnectionEstablished) {
+                showUserError('L\'administrateur ne répond pas. Vérifiez que la session est toujours ouverte.');
+            }
+        }, 9000);
+        userConn.on('open', () => {
+            clearTimeout(t);
+            userConnectionEstablished = true;
+            document.getElementById('connect-status-dot').classList.add('connected');
+            document.getElementById('connect-status-text').textContent = 'Envoi de votre émargement…';
+            userConn.send({ type: 'checkin', token });
+        });
+        userConn.on('data', (data) => handleUserResponse(data));
+        userConn.on('error', (e) => {
+            if (!userConnectionEstablished) showUserError('Erreur de connexion : ' + (e.message || e));
+        });
+        userConn.on('close', () => {
+            if (!userConnectionEstablished) showUserError('Connexion fermée par l\'administrateur.');
+        });
+    });
+
+    userPeer.on('error', (err) => {
+        console.error('User peer err:', err);
+        if (err.type === 'peer-unavailable') {
+            showUserError('Session d\'émargement introuvable ou déjà close.');
+        } else {
+            showUserError('Erreur réseau : ' + err.type);
+        }
+    });
+}
+
+function handleUserResponse(data) {
+    if (!data) return;
+    if (data.type === 'checkin_result') {
+        if (data.ok) {
+            const title = data.sessionTitle || 'Session d\'émargement';
+            const s = data.sessionStart ? new Date(data.sessionStart) : new Date();
+            document.getElementById('success-title').textContent = 'Merci pour votre présence !';
+            document.getElementById('success-session').textContent =
+                `${title} — ${formatDateFR(s)} à ${formatTimeFR(s)}`;
+            cleanupUserPeer();
+            showScreen('success-screen');
+        } else {
+            showUserError(data.reason || 'Émargement refusé.', true);
+        }
+    } else if (data.type === 'session_closed') {
+        showUserError('La session a été clôturée par l\'administrateur.', false);
+    }
+}
+
+function showUserError(msg, allowRetry = true) {
+    document.getElementById('error-reason').textContent = msg;
+    document.getElementById('error-detail').textContent = allowRetry
+        ? 'Vous pouvez réessayer ou revenir à l\'accueil.'
+        : '';
+    document.getElementById('btn-error-retry').style.display = allowRetry ? '' : 'none';
+    cleanupUserPeer();
+    showScreen('error-screen');
+}
+
+function cleanupUserPeer() {
+    if (userConn) { try { userConn.close(); } catch(e) {} }
+    userConn = null;
+    if (userPeer) { try { userPeer.destroy(); } catch(e) {} }
+    userPeer = null;
+    userConnectionEstablished = false;
+}
+
+/* =======================================================================
+   DÉMARRAGE
+   ======================================================================= */
+window.onload = bootstrap;
+window.onbeforeunload = () => {
+    if (peer) { try { peer.destroy(); } catch(e) {} }
+    if (userPeer) { try { userPeer.destroy(); } catch(e) {} }
+    if (qrScanner) { try { qrScanner.stop(); } catch(e) {} }
+};
+</script>
+</body>
+</html>

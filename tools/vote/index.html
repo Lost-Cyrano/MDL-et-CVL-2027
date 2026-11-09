@@ -133,11 +133,6 @@
             doc,
             getDoc
         } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
-        import {
-            getDatabase,
-            ref,
-            get
-        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
@@ -146,14 +141,12 @@
             storageBucket: "mdl-et-cvl-2027.firebasestorage.app",
             messagingSenderId: "142816093888",
             appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
-            measurementId: "G-FBKEPBY0CQ",
-            databaseURL: "https://mdl-et-cvl-2027-default-rtdb.europe-west1.firebasedatabase.app"
+            measurementId: "G-FBKEPBY0CQ"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const rtdb = getDatabase(app);
 
         const VOTE_URL = 'https://vote.honore-romane.fr';
         const LOGIN_URL = 'https://account.honore-romane.fr/login/';
@@ -165,11 +158,11 @@
             );
         };
 
-        // Signature JWT HS256 avec la clé lue dans RTDB
+        // Signature JWT HS256 avec la clé lue dans Firestore
         async function buildSignedToken(uid, siege) {
-            const keySnap = await get(ref(rtdb, 'config/jwtKey'));
-            if (!keySnap.exists()) throw new Error('Clé JWT absente de RTDB');
-            const secret = new TextEncoder().encode(keySnap.val());
+            const keySnap = await getDoc(doc(db, 'config', 'jwtKey'));
+            if (!keySnap.exists()) throw new Error('Clé JWT absente de Firestore');
+            const secret = new TextEncoder().encode(keySnap.data().value);
 
             const now = Math.floor(Date.now() / 1000);
             const payload = {

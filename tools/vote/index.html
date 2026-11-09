@@ -120,6 +120,7 @@
         MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/jose@5.9.6/dist/browser/jose.umd.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
         import {
@@ -135,7 +136,7 @@
         import {
             getDatabase,
             ref,
-            set
+            get
         } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -145,7 +146,8 @@
             storageBucket: "mdl-et-cvl-2027.firebasestorage.app",
             messagingSenderId: "142816093888",
             appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
-            measurementId: "G-FBKEPBY0CQ"
+            measurementId: "G-FBKEPBY0CQ",
+            databaseURL: "https://mdl-et-cvl-2027-default-rtdb.europe-west1.firebasedatabase.app"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -155,22 +157,34 @@
 
         const VOTE_URL = 'https://vote.honore-romane.fr';
         const LOGIN_URL = 'https://account.honore-romane.fr/login/';
-        const TOOLS_URL = 'https://account.honore-romane.fr/tools/vote/';
-
-        // Page actuelle, transmise pour permettre le retour après connexion
         const currentUrl = 'https://account.honore-romane.fr/vote/';
 
-        // Numéro de siège attendu dans l'URL (ex: /vote/?siege=12)
-        const params = new URLSearchParams(window.location.search);
-        const siegeParam = parseInt(params.get('siege'), 10);
-
-        // Si non connecté → login avec redirect (on conserve le ?siege= pour le retour)
         const goToLogin = () => {
-            const redirectTarget = currentUrl + (siegeParam ? '?siege=' + siegeParam : '');
             window.location.replace(
-                LOGIN_URL + '?redirect=' + encodeURIComponent(redirectTarget)
+                LOGIN_URL + '?redirect=' + encodeURIComponent(currentUrl)
             );
         };
+
+        // Signature JWT HS256 avec la clé lue dans RTDB
+        async function buildSignedToken(uid, siege) {
+            const keySnap = await get(ref(rtdb, 'config/jwtKey'));
+            if (!keySnap.exists()) throw new Error('Clé JWT absente de RTDB');
+            const secret = new TextEncoder().encode(keySnap.val());
+
+            const now = Math.floor(Date.now() / 1000);
+            const payload = {
+                iss: 'account.honore-romane.fr',
+                aud: 'vote.honore-romane.fr',
+                sub: uid,
+                siege: siege,
+                iat: now,
+                exp: now + 120 // 2 minutes
+            };
+
+            return await jose.SignJWT(payload)
+                .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+                .sign(secret);
+        }
 
         // On attend que Firebase ait restauré la session (ou non)
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -178,12 +192,6 @@
 
             if (!user) {
                 goToLogin();
-                return;
-            }
-
-            // Pas de siège fourni → on renvoie vers l'outil de choix du siège
-            if (!siegeParam || siegeParam < 1) {
-                window.location.replace(TOOLS_URL);
                 return;
             }
 
@@ -196,18 +204,16 @@
                     return;
                 }
 
-                // Génère un identifiant de transmission unique (handoff)
-                const handoffId = crypto.randomUUID();
+                const userData = snap.data();
+                // Numéro de siège — adaptez le nom du champ si besoin
+                const siege = userData.siege;
+                if (!siege) throw new Error('Numéro de siège introuvable pour cet utilisateur');
 
-                // Écrit les données dans RTDB : uid, siège, timestamp
-                await set(ref(rtdb, 'handoff/' + handoffId), {
-                    uid: user.uid,
-                    siege: siegeParam,
-                    createdAt: Date.now()
-                });
+                // Génération du JWT signé
+                const token = await buildSignedToken(user.uid, siege);
 
-                // Redirige vers le site de vote avec l'identifiant
-                window.location.replace(VOTE_URL + '/?h=' + encodeURIComponent(handoffId));
+                // Redirection vers le site de vote avec le token
+                window.location.replace(VOTE_URL + '/?t=' + encodeURIComponent(token));
 
             } catch (err) {
                 console.error(err);

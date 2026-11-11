@@ -1,133 +1,372 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="color-scheme" content="light dark">
-    <title>Accès restreint — Honoré Romane</title>
-    <style>
-        :root {
-            --bg: #f5f3ef;
-            --card: #ffffff;
-            --text: #1a1a1a;
-            --text-muted: #6b6b6b;
-            --accent: #1a1a1a;
-            --accent-hover: #000000;
-            --accent-text: #ffffff;
-            --radius: 0.75rem;
-            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #0e0e0e;
-                --card: #1a1a1a;
-                --text: #f2f2f2;
-                --text-muted: #9a9a9a;
-                --accent: #f2f2f2;
-                --accent-hover: #ffffff;
-                --accent-text: #0e0e0e;
-            }
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        html, body {
-            min-height: 100vh;
-            min-height: 100dvh;
-            background: var(--bg);
-            color: var(--text);
-            font-family: var(--font);
-            font-size: clamp(14px, 1vw + 12px, 17px);
-            line-height: 1.5;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-                     max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-            gap: 1rem;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 32rem;
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: clamp(1.5rem, 4vw, 2.25rem);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            text-align: center;
-            margin: auto 0;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            .container {
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            }
-        }
-
-        .code {
-            font-size: clamp(2.5rem, 8vw, 4rem);
-            font-weight: 700;
-            line-height: 1;
-            margin-bottom: 0.5rem;
-        }
-
-        p {
-            color: var(--text-muted);
-            font-size: 0.95em;
-            margin-bottom: 1.75rem;
-        }
-
-        p + p {
-            margin-top: -1rem;
-        }
-
-        a.button {
-            display: block;
-            text-decoration: none;
-            background: var(--accent);
-            color: var(--accent-text);
-            font-weight: 600;
-            padding: 0.85rem;
-            border-radius: 0.5rem;
-            transition: background .15s;
-        }
-
-        a.button:hover {
-            background: var(--accent-hover);
-        }
-
-        .footer {
-            width: 100%;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.72em;
-            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-            opacity: 0.7;
-            user-select: none;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Rapports — Honoré Romane</title>
+<style>
+:root{--bg:#f5f3ef;--card:#fff;--card-hover:#fafaf8;--field:#fafaf8;--border:#e5e2dc;--text:#1a1a1a;--text-muted:#6b6b6b;--accent:#1a1a1a;--accent-hover:#000;--accent-text:#fff;--success:#1e7d4a;--warning:#b45309;--error:#c0392b;--mdl:#2563eb;--cvl:#c0392b;--radius:.75rem;--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+@media(prefers-color-scheme:dark){:root{--bg:#0e0e0e;--card:#1a1a1a;--card-hover:#232323;--field:#232323;--border:#2e2e2e;--text:#f2f2f2;--text-muted:#9a9a9a;--accent:#f2f2f2;--accent-hover:#fff;--accent-text:#0e0e0e;--success:#4ade80;--warning:#fbbf24;--error:#ff6b5e;--mdl:#60a5fa;--cvl:#ff6b5e}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--text);font-family:var(--font);font-size:clamp(13px,1vw + 11px,15px);line-height:1.5;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;min-height:100dvh}
+header{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:max(1rem,env(safe-area-inset-top)) clamp(1rem,4vw,2.5rem) 1rem;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.header-left{display:flex;align-items:center;gap:1rem;min-width:0;flex:1}
+.back-link{font-family:inherit;font-size:.85em;color:var(--text-muted);text-decoration:none;padding:.4rem .75rem;border:1px solid var(--border);border-radius:.5rem;transition:color .15s,border-color .15s;flex-shrink:0;white-space:nowrap}
+.back-link:hover{color:var(--text);border-color:var(--text)}
+.page-title{font-weight:600;font-size:.95em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.header-actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.text-btn{font-family:inherit;font-size:.82em;font-weight:500;border:1px solid var(--border);background:transparent;color:var(--text-muted);padding:.5rem .85rem;border-radius:.5rem;cursor:pointer;transition:color .15s,border-color .15s,background .15s;white-space:nowrap}
+.text-btn:hover:not(:disabled){color:var(--text);border-color:var(--text)}
+.text-btn.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.text-btn.primary:hover{opacity:.85}
+.text-btn:disabled{opacity:.5;cursor:not-allowed}
+main{flex:1;width:100%;max-width:90rem;margin:0 auto;padding:clamp(1rem,3vw,2rem) clamp(1rem,4vw,2.5rem);display:flex;flex-direction:column;gap:1rem}
+.view-bar{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
+.view-title{font-size:clamp(1.05rem,1.5vw + .8rem,1.4rem);font-weight:700;letter-spacing:-.01em;text-transform:capitalize}
+.view-toggle{display:flex;gap:.4rem;border:1px solid var(--border);border-radius:.5rem;padding:.2rem;background:var(--card)}
+.view-toggle button{font-family:inherit;font-size:.82em;font-weight:500;border:none;background:transparent;color:var(--text-muted);padding:.45rem .9rem;border-radius:.35rem;cursor:pointer;transition:background .15s,color .15s}
+.view-toggle button.on{background:var(--accent);color:var(--accent-text)}
+.view-toggle button:hover:not(.on){color:var(--text)}
+.filters{display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end;background:var(--card);padding:1rem 1.25rem;border-radius:var(--radius);border:1px solid var(--border)}
+.filters .form-field{display:flex;flex-direction:column;gap:.35rem;flex:1;min-width:140px}
+.filters label{font-size:.78em;color:var(--text-muted);font-weight:500}
+.filters input{font-family:inherit;font-size:1em;padding:.55rem .75rem;border:1px solid var(--border);border-radius:.5rem;background:var(--field);color:var(--text);outline:none;transition:border-color .15s;width:100%}
+.filters input:focus{border-color:var(--accent)}
+.filters .reset-btn{font-family:inherit;font-size:.82em;font-weight:500;padding:.55rem .9rem;border:1px solid var(--border);border-radius:.5rem;background:transparent;color:var(--text-muted);cursor:pointer;transition:color .15s,border-color .15s}
+.filters .reset-btn:hover{color:var(--text);border-color:var(--text)}
+.list{display:flex;flex-direction:column;gap:.5rem}
+.date-item{display:flex;align-items:center;gap:.75rem;padding:.85rem 1.1rem;background:var(--card);border-radius:.6rem;border:1px solid var(--border);border-left:3px solid;cursor:pointer;transition:background .15s,border-color .15s}
+.date-item:hover{background:var(--card-hover)}
+.date-item.mdl{border-left-color:var(--mdl)}
+.date-item.cvl{border-left-color:var(--cvl)}
+.date-item .d{font-weight:600;flex:1}
+.date-item .n{font-size:.78em;color:var(--text-muted)}
+.badge{font-size:.72em;padding:.15rem .55rem;border-radius:99px;font-weight:600}
+.b-mdl{background:color-mix(in srgb,var(--mdl) 15%,transparent);color:var(--mdl)}
+.b-cvl{background:color-mix(in srgb,var(--cvl) 15%,transparent);color:var(--cvl)}
+.cal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.weekdays{display:grid;grid-template-columns:repeat(7,1fr);background:var(--card-hover);border-bottom:1px solid var(--border)}
+.weekdays span{padding:.6rem .5rem;text-align:center;font-size:.72em;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+.days{display:grid;grid-template-columns:repeat(7,1fr)}
+.day{min-height:clamp(4.5rem,12vw,7rem);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:.4rem;display:flex;flex-direction:column;gap:.25rem;cursor:pointer;transition:background .15s;position:relative;overflow:hidden}
+.day:nth-child(7n){border-right:none}
+.days .day:last-child{border-bottom:none}
+.day.other-month{background:color-mix(in srgb,var(--bg) 60%,transparent)}
+.day.other-month .day-number{color:var(--text-muted);opacity:.5}
+.day:hover{background:var(--card-hover)}
+.day-number{font-size:.78em;font-weight:600;color:var(--text);width:1.5rem;height:1.5rem;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0}
+.day.today .day-number{background:var(--accent);color:var(--accent-text)}
+.day-events{display:flex;flex-direction:column;gap:.15rem;min-width:0}
+.day-event{font-size:.68em;padding:.1rem .35rem;border-left:2px solid var(--accent);border-radius:.2rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.day-event.cat-mdl{border-left-color:var(--mdl);background:color-mix(in srgb,var(--mdl) 15%,transparent);color:var(--text)}
+.day-event.cat-cvl{border-left-color:var(--cvl);background:color-mix(in srgb,var(--cvl) 15%,transparent);color:var(--text)}
+.month-bar{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
+.month-title{font-size:clamp(1.05rem,1.5vw + .8rem,1.4rem);font-weight:700;letter-spacing:-.01em;text-transform:capitalize}
+.month-nav{display:flex;gap:.4rem}
+.month-nav button{font-family:inherit;font-size:1em;width:2.25rem;height:2.25rem;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:.5rem;cursor:pointer;transition:background .15s,border-color .15s}
+.month-nav button:hover{background:var(--card-hover);border-color:var(--text-muted)}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:1rem;z-index:100;overflow-y:auto}
+.modal-backdrop.visible{display:flex}
+.modal{background:var(--card);border-radius:var(--radius);width:100%;max-width:75rem;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.25);margin:auto;overflow:hidden}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding:clamp(1rem,2.5vw,1.5rem) clamp(1.25rem,3vw,1.75rem);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.modal-header-info{flex:1;min-width:0}
+.modal-title{font-size:1.15em;font-weight:700;margin-bottom:.2rem}
+.modal-sub{font-size:.82em;color:var(--text-muted)}
+.modal-header-actions{display:flex;gap:.5rem;align-items:flex-start;flex-wrap:wrap}
+.modal-close{font-family:inherit;font-size:1.2em;background:transparent;border:none;color:var(--text-muted);cursor:pointer;padding:.25rem .5rem;border-radius:.35rem;line-height:1}
+.modal-close:hover{color:var(--text);background:var(--card-hover)}
+.btn{font-family:inherit;font-size:.85em;font-weight:600;padding:.55rem 1rem;border-radius:.5rem;border:1px solid transparent;cursor:pointer;transition:opacity .15s,border-color .15s,color .15s,background .15s}
+.btn.primary{background:var(--accent);color:var(--accent-text)}
+.btn.primary:hover:not(:disabled){opacity:.85}
+.btn.secondary{background:transparent;color:var(--text);border-color:var(--border)}
+.btn.secondary:hover:not(:disabled){border-color:var(--text)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.modal-body{flex:1;display:grid;grid-template-columns:20rem 1fr;overflow:hidden;min-height:0}
+@media(max-width:800px){.modal-body{grid-template-columns:1fr}}
+.files-side{border-right:1px solid var(--border);overflow-y:auto;padding:.85rem}
+@media(max-width:800px){.files-side{border-right:none;border-bottom:1px solid var(--border);max-height:40vh}}
+.file{display:flex;flex-direction:column;gap:.35rem;padding:.7rem .85rem;border:1px solid var(--border);border-radius:.5rem;margin-bottom:.5rem;cursor:pointer;transition:background .15s,border-color .15s}
+.file:hover{background:var(--card-hover);border-color:var(--text-muted)}
+.file.on{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.file.on .file-cat{opacity:.8}
+.file-name{font-size:.82em;word-break:break-word;font-weight:500}
+.file-cat{font-size:.68em;text-transform:uppercase;font-weight:700;opacity:.6}
+.file-actions{display:flex;gap:.4rem;margin-top:.25rem}
+.file-actions a{font-size:.72em;padding:.3rem .6rem;border-radius:.35rem;border:1px solid var(--border);background:transparent;cursor:pointer;text-decoration:none;color:var(--text-muted);transition:color .15s,border-color .15s}
+.file.on .file-actions a{background:color-mix(in srgb,var(--accent-text) 15%,transparent);color:var(--accent-text);border-color:color-mix(in srgb,var(--accent-text) 30%,transparent)}
+.file-actions a:hover{color:var(--text);border-color:var(--text)}
+.viewer{background:var(--field);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;min-height:400px}
+.viewer iframe{width:100%;height:100%;border:none;background:#fff;display:block}
+.viewer .placeholder{color:var(--text-muted);text-align:center;padding:2rem;font-size:.9em}
+.viewer .placeholder a{color:var(--mdl)}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--accent-text);padding:.75rem 1.25rem;border-radius:.5rem;font-size:.85em;opacity:0;transition:.3s;pointer-events:none;z-index:200;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.25)}
+.toast.show{opacity:1}
+.loading{text-align:center;padding:3rem 1rem;color:var(--text-muted);font-size:.9em}
+.empty{text-align:center;color:var(--text-muted);font-size:.9em;padding:1.5rem 1rem}
+.footer{text-align:center;color:var(--text-muted);font-size:.72em;padding:1.25rem 1rem max(1.25rem,env(safe-area-inset-bottom));opacity:.7;user-select:none}
+@media(max-width:640px){
+.weekdays span{font-size:.65em;padding:.5rem .2rem}
+.day{padding:.25rem;min-height:4rem}
+.day-number{font-size:.7em;width:1.3rem;height:1.3rem}
+.day-event{font-size:.62em}
+.page-title{display:none}
+}
+</style>
 </head>
 <body>
-    <main class="container" role="main">
-        <div class="code">🔒</div>
-        <p>Cette fonctionnalité n'est pas encore disponible.</p>
-        <p>Vous n'avez pas l'autorisation d'y accéder pour le moment.</p>
-        <a href="https://account.honore-romane.fr/account/" class="button">Retour à la page d'accueil</a>
-    </main>
-
-    <footer class="footer">
-        MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
-    </footer>
+<header>
+<div class="header-left">
+<a href="https://account.honore-romane.fr/account/" class="back-link">← Accueil</a>
+<span class="page-title">Rapports de réunion</span>
+</div>
+<div class="header-actions">
+<button class="text-btn" id="logout-btn">Déconnexion</button>
+</div>
+</header>
+<main>
+<div id="loading-view" class="loading">Vérification de l'authentification…</div>
+<div id="content-view" style="display:none;display:none;flex-direction:column;gap:1rem">
+<div class="view-bar">
+<div class="view-toggle">
+<button id="vCal" class="on">Calendrier</button>
+<button id="vList">Liste</button>
+</div>
+</div>
+<div id="filters" class="filters" style="display:none">
+<div class="form-field"><label>Date début</label><input type="date" id="fStart"></div>
+<div class="form-field"><label>Date fin</label><input type="date" id="fEnd"></div>
+<div class="form-field"><label>Recherche</label><input type="text" id="fText" placeholder="ex: 11-11-26"></div>
+<button class="reset-btn" id="fReset">Réinitialiser</button>
+</div>
+<div id="calView"></div>
+<div id="listView" style="display:none"></div>
+</div>
+</main>
+<footer class="footer">MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés</footer>
+<div class="modal-backdrop" id="modal">
+<div class="modal" role="dialog" aria-modal="true">
+<div class="modal-header">
+<div class="modal-header-info">
+<div class="modal-title" id="mTitle"></div>
+<div class="modal-sub" id="mSub"></div>
+</div>
+<div class="modal-header-actions">
+<button class="btn primary" id="mDl">📦 Télécharger le dossier</button>
+<button class="btn secondary" id="mSh">🔗 Partager</button>
+<button class="modal-close" id="mClose">✕</button>
+</div>
+</div>
+<div class="modal-body">
+<div class="files-side" id="mFiles"></div>
+<div class="viewer" id="mViewer"><div class="placeholder">Sélectionnez un fichier pour l'afficher ici</div></div>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+import{getAuth,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+import{getFirestore,doc,getDoc}from"https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",authDomain:"mdl-et-cvl-2027.firebaseapp.com",projectId:"mdl-et-cvl-2027",storageBucket:"mdl-et-cvl-2027.firebasestorage.app",messagingSenderId:"142816093888",appId:"1:142816093888:web:9f7c3632732a526b7c2f25",measurementId:"G-FBKEPBY0CQ"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+const LOGIN_URL="https://account.honore-romane.fr/login/";
+const CURRENT_URL="https://account.honore-romane.fr/tools/rapports/";
+const REPO="Lost-Cyrano/rapports2027";
+const API="https://api.github.com/repos/"+REPO+"/contents/";
+let DATA={mdl:{},cvl:{}},AUTH="mdl",VIEW="cal",CAL=new Date(),CUR=null;
+const BLOB_CACHE={};
+const M=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+const p2=n=>String(n).padStart(2,"0");
+const parseD=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(2000+c,a-1,b)};
+const fmtD=d=>p2(d.getDate())+"-"+p2(d.getMonth()+1)+"-"+p2(d.getFullYear()%100);
+const fmtL=d=>d.getDate()+" "+M[d.getMonth()]+" "+d.getFullYear();
+const goToLogin=()=>{window.location.replace(LOGIN_URL+"?redirect="+encodeURIComponent(CURRENT_URL))};
+onAuthStateChanged(auth,async user=>{
+  if(!user){goToLogin();return}
+  try{
+    const snap=await getDoc(doc(db,"users",user.uid));
+    if(!snap.exists()||snap.data().status!=="active"){await signOut(auth);goToLogin();return}
+    const data=snap.data();
+    const role=data.role;
+    if(role!=="mdl"&&role!=="cvl"){await signOut(auth);goToLogin();return}
+    AUTH=role;
+    await initApp();
+  }catch(e){console.error(e);await signOut(auth).catch(()=>{});goToLogin()}
+});
+document.getElementById("logout-btn").addEventListener("click",async()=>{
+  try{await signOut(auth)}catch(e){console.error(e)}finally{window.location.replace(LOGIN_URL)}
+});
+async function api(path){const r=await fetch(API+path);if(!r.ok)return null;return r.json()}
+async function scanCat(cat){
+  const dirs=await api(cat);
+  if(!dirs||!Array.isArray(dirs))return{};
+  const out={};
+  for(const d of dirs){
+    if(d.type!=="dir")continue;
+    const files=await api(cat+"/"+d.name);
+    if(!Array.isArray(files))continue;
+    const pdfs=files.filter(f=>f.name.toLowerCase().endsWith(".pdf")).map(f=>({name:f.name,url:f.download_url,path:f.path}));
+    if(pdfs.length)out[d.name]=pdfs;
+  }
+  return out;
+}
+async function loadPdfBlob(path){
+  if(BLOB_CACHE[path])return BLOB_CACHE[path];
+  const r=await fetch(API+encodeURI(path).replace(/^%2F/,""),{headers:{Accept:"application/vnd.github.raw"}});
+  if(!r.ok)throw new Error("fetch "+path+" -> "+r.status);
+  const buf=await r.arrayBuffer();
+  const blob=new Blob([buf],{type:"application/pdf"});
+  const url=URL.createObjectURL(blob);
+  BLOB_CACHE[path]=url;
+  return url;
+}
+function merge(){const r={...DATA.mdl};if(AUTH==="cvl")for(const k in DATA.cvl){r[k]=[...(r[k]||[]),...DATA.cvl[k]]}return r}
+function datesSorted(){const m=merge();return Object.keys(m).sort((a,b)=>parseD(b)-parseD(a))}
+function catsFor(date){const c=[];if(DATA.mdl[date])c.push({cat:"mdl",files:DATA.mdl[date]});if(AUTH==="cvl"&&DATA.cvl[date])c.push({cat:"cvl",files:DATA.cvl[date]});return c}
+function dateInRange(k,s,e){const d=parseD(k);if(s){const[a,b,c]=s.split("-").map(Number);if(d<new Date(a,b-1,c))return false}if(e){const[a,b,c]=e.split("-").map(Number);if(d>new Date(a,b-1,c))return false}return true}
+function matchText(k,t){if(!t)return true;t=t.trim().toLowerCase();const d=parseD(k);const fr=d.getDate()+" "+M[d.getMonth()]+" "+d.getFullYear();return[k,fmtD(d),fr].some(x=>x.toLowerCase().includes(t))}
+function getFilters(){return{s:document.getElementById("fStart").value,e:document.getElementById("fEnd").value,t:document.getElementById("fText").value}}
+function filteredDates(){const f=getFilters();return datesSorted().filter(k=>dateInRange(k,f.s,f.e)&&matchText(k,f.t))}
+function renderCal(){
+  const wrap=document.getElementById("calView");
+  const y=CAL.getFullYear(),mo=CAL.getMonth();
+  const first=new Date(y,mo,1),start=(first.getDay()+6)%7;
+  const days=new Date(y,mo+1,0).getDate();
+  const m=merge();
+  const prev=new Date(y,mo,-start+1);
+  let h='<div class="month-bar"><div class="month-title">'+M[mo]+' '+y+'</div><div class="month-nav"><button id="prevM" aria-label="Mois précédent">‹</button><button id="nextM" aria-label="Mois suivant">›</button></div></div><div class="cal"><div class="weekdays"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div><div class="days">';
+  for(let i=0;i<42;i++){
+    const d=new Date(y,mo,1-start+i);
+    const k=fmtD(d);
+    const other=d.getMonth()!==mo;
+    const isToday=fmtD(new Date())===k;
+    let ev="";
+    if(m[k]){catsFor(k).forEach(c=>{ev+='<div class="day-event cat-'+c.cat+'">'+c.cat.toUpperCase()+' · '+c.files.length+'</div>'})}
+    h+='<div class="day'+(other?" other-month":"")+(isToday?" today":"")+'" data-d="'+k+'"><div class="day-number">'+d.getDate()+'</div>'+(ev?'<div class="day-events">'+ev+'</div>':'')+'</div>';
+  }
+  h+='</div></div>';
+  wrap.innerHTML=h;
+  document.getElementById("prevM").onclick=()=>{CAL.setMonth(CAL.getMonth()-1);renderCal()};
+  document.getElementById("nextM").onclick=()=>{CAL.setMonth(CAL.getMonth()+1);renderCal()};
+  wrap.querySelectorAll(".day[data-d]").forEach(el=>{el.onclick=()=>{const k=el.dataset.d;if(m[k])openReport(k)}});
+}
+function renderList(){
+  const wrap=document.getElementById("listView");
+  const ds=filteredDates();
+  if(!ds.length){wrap.innerHTML='<div class="empty">Aucun rapport ne correspond.</div>';return}
+  let h='<div class="list">';
+  ds.forEach(k=>{
+    const cs=catsFor(k);const main=cs[0].cat;const total=cs.reduce((s,c)=>s+c.files.length,0);
+    h+='<div class="date-item '+main+'" data-d="'+k+'"><span class="d">'+fmtL(parseD(k))+'</span>';
+    cs.forEach(c=>h+='<span class="badge b-'+c.cat+'">'+c.cat.toUpperCase()+' · '+c.files.length+'</span>');
+    h+='<span class="n">'+total+' fichier(s)</span></div>';
+  });
+  h+='</div>';
+  wrap.innerHTML=h;
+  wrap.querySelectorAll(".date-item").forEach(el=>el.onclick=()=>openReport(el.dataset.d));
+}
+function openReport(k){
+  CUR=k;
+  history.replaceState(null,"","?date="+k+"&view="+VIEW);
+  const cs=catsFor(k);
+  document.getElementById("mTitle").textContent="Rapport du "+fmtL(parseD(k));
+  document.getElementById("mSub").textContent=cs.map(c=>c.cat.toUpperCase()).join(" + ")+" · "+cs.reduce((s,c)=>s+c.files.length,0)+" fichier(s)";
+  let h="";
+  cs.forEach(c=>{
+    c.files.forEach(f=>{
+      h+='<div class="file" data-url="'+f.url+'" data-path="'+f.path+'" data-name="'+f.name+'"><div class="file-cat">'+c.cat.toUpperCase()+'</div><div class="file-name">'+f.name+'</div><div class="file-actions"><a href="'+f.url+'" download onclick="event.stopPropagation()">⬇ Télécharger</a></div></div>';
+    });
+  });
+  document.getElementById("mFiles").innerHTML=h;
+  document.getElementById("mViewer").innerHTML='<div class="placeholder">Sélectionnez un fichier pour l\'afficher ici</div>';
+  document.querySelectorAll("#mFiles .file").forEach(el=>{
+    el.onclick=async()=>{
+      document.querySelectorAll("#mFiles .file").forEach(x=>x.classList.remove("on"));
+      el.classList.add("on");
+      const viewer=document.getElementById("mViewer");
+      viewer.innerHTML='<div class="placeholder">Chargement…</div>';
+      try{
+        const blobUrl=await loadPdfBlob(el.dataset.path);
+        viewer.innerHTML='<iframe src="'+blobUrl+'#toolbar=1&navpanes=0&view=FitH"></iframe>';
+      }catch(e){
+        console.error(e);
+        viewer.innerHTML='<div class="placeholder">Erreur d\'aperçu.<br><a href="'+el.dataset.url+'" target="_blank" rel="noopener">Ouvrir dans un onglet</a></div>';
+      }
+    };
+  });
+  document.getElementById("mDl").onclick=()=>downloadFolder(k);
+  document.getElementById("mSh").onclick=async()=>{
+    const url=location.origin+location.pathname+"?date="+k+"&view="+VIEW;
+    try{await navigator.clipboard.writeText(url);toast("🔗 Lien copié !")}catch(e){prompt("Copiez le lien :",url)}
+  };
+  document.getElementById("modal").classList.add("visible");
+}
+async function downloadFolder(k){
+  const cs=catsFor(k);const all=[];
+  cs.forEach(c=>c.files.forEach(f=>all.push({url:f.url,name:f.name,cat:c.cat,path:f.path})));
+  if(!all.length){toast("Aucun fichier");return}
+  if(typeof JSZip==="undefined"){
+    await new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s)});
+  }
+  toast("📦 Préparation…");
+  try{
+    const zip=new JSZip();
+    for(const f of all){
+      const blob=await loadPdfBlob(f.path);
+      const r=await fetch(blob);
+      const b=await r.blob();
+      zip.file(f.cat.toUpperCase()+"/"+f.name,b);
+    }
+    const out=await zip.generateAsync({type:"blob"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(out);
+    a.download="rapport-"+k+".zip";
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+    toast("✅ ZIP téléchargé");
+  }catch(e){
+    console.error(e);
+    toast("⚠️ Erreur, téléchargement individuel");
+    all.forEach(f=>{const a=document.createElement("a");a.href=f.url;a.download=f.name;document.body.appendChild(a);a.click();a.remove()});
+  }
+}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2500)}
+function setView(v){
+  VIEW=v;
+  document.getElementById("vCal").classList.toggle("on",v==="cal");
+  document.getElementById("vList").classList.toggle("on",v==="list");
+  document.getElementById("calView").style.display=v==="cal"?"":"none";
+  document.getElementById("listView").style.display=v==="list"?"":"none";
+  document.getElementById("filters").style.display=v==="list"?"":"none";
+  if(v==="cal")renderCal();else renderList();
+  history.replaceState(null,"","?view="+v+(CUR?"&date="+CUR:""));
+}
+function bindFilters(){
+  ["fStart","fEnd","fText"].forEach(id=>document.getElementById(id).addEventListener("input",()=>renderList()));
+  document.getElementById("fReset").onclick=()=>{document.getElementById("fStart").value="";document.getElementById("fEnd").value="";document.getElementById("fText").value="";renderList()};
+}
+async function initApp(){
+  document.getElementById("loading-view").style.display="none";
+  document.getElementById("content-view").style.display="flex";
+  document.getElementById("vCal").onclick=()=>setView("cal");
+  document.getElementById("vList").onclick=()=>setView("list");
+  document.getElementById("mClose").onclick=()=>document.getElementById("modal").classList.remove("visible");
+  document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")document.getElementById("modal").classList.remove("visible")};
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")document.getElementById("modal").classList.remove("visible")});
+  bindFilters();
+  document.getElementById("calView").innerHTML='<div class="loading">Chargement des rapports…</div>';
+  const p=new URLSearchParams(location.search);
+  if(p.get("view")==="list")VIEW="list";
+  const promises=[scanCat("mdl")];
+  if(AUTH==="cvl")promises.push(scanCat("cvl"));
+  const results=await Promise.all(promises);
+  DATA.mdl=results[0]||{};
+  DATA.cvl=AUTH==="cvl"?(results[1]||{}):{};
+  setView(VIEW);
+  if(p.get("date")&&merge()[p.get("date")])openReport(p.get("date"));
+}
+</script>
 </body>
 </html>

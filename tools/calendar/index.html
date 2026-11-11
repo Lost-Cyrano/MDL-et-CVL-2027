@@ -311,6 +311,13 @@
         .day-event.role-commission { border-left-color: #b45309; background: color-mix(in srgb, #b45309 15%, transparent); }
         .day-event.role-tous { border-left-color: #6b6b6b; background: color-mix(in srgb, #6b6b6b 15%, transparent); }
 
+        .day-event .report-badge {
+            display: inline-block;
+            font-size: 0.85em;
+            margin-left: 0.2rem;
+            opacity: 0.85;
+        }
+
         .day-more {
             font-size: 0.68em;
             color: var(--text-muted);
@@ -512,9 +519,11 @@
             gap: 0.4rem;
             margin-top: 0.35rem;
             flex-wrap: wrap;
+            align-items: center;
         }
 
-        .detail-item-actions button {
+        .detail-item-actions button,
+        .detail-item-actions a.btn-report {
             font-family: inherit;
             font-size: 0.78em;
             padding: 0.35rem 0.7rem;
@@ -523,12 +532,64 @@
             background: transparent;
             color: var(--text-muted);
             cursor: pointer;
-            transition: color .15s, border-color .15s;
+            transition: color .15s, border-color .15s, background .15s;
+            text-decoration: none;
+            display: inline-block;
+            line-height: 1.4;
         }
 
-        .detail-item-actions button:hover {
+        .detail-item-actions button:hover:not(:disabled):not(.disabled),
+        .detail-item-actions a.btn-report:hover {
             color: var(--text);
             border-color: var(--text);
+        }
+
+        /* --- Bouton "Voir le rapport" --- */
+        .detail-item-actions a.btn-report,
+        .detail-item-actions button.btn-report {
+            font-weight: 600;
+            background: var(--accent);
+            color: var(--accent-text);
+            border-color: var(--accent);
+        }
+
+        .detail-item-actions a.btn-report:hover,
+        .detail-item-actions button.btn-report:hover:not(:disabled) {
+            opacity: 0.85;
+            color: var(--accent-text);
+            border-color: var(--accent);
+        }
+
+        .detail-item-actions button.btn-report.disabled,
+        .detail-item-actions button.btn-report:disabled {
+            background: color-mix(in srgb, var(--text-muted) 18%, transparent);
+            color: var(--text-muted);
+            border-color: var(--border);
+            opacity: 0.55;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* --- Bouton admin "Confirmer le rapport" --- */
+        .detail-item-actions button.btn-confirm-report {
+            font-weight: 600;
+            border-color: color-mix(in srgb, var(--success) 50%, transparent);
+            color: var(--success);
+            background: transparent;
+        }
+
+        .detail-item-actions button.btn-confirm-report:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--success) 12%, transparent);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .detail-item-actions button.btn-confirm-report.is-confirmed,
+        .detail-item-actions button.btn-confirm-report:disabled {
+            opacity: 0.6;
+            cursor: default;
+            pointer-events: none;
+            background: transparent;
         }
 
         /* --- Empty state --- */
@@ -734,6 +795,7 @@
 
         const LOGIN_URL = 'https://account.honore-romane.fr/login/';
         const CURRENT_URL = 'https://account.honore-romane.fr/tools/calendar/';
+        const REPORT_URL = 'https://account.honore-romane.fr/tools/report/';
 
         const ROLE_LABELS = {
             cvl: 'CVL',
@@ -850,6 +912,14 @@
                 .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
         }
 
+        // Convertit une date "YYYY-MM-DD" en paramètre "JJ-MM-AA" pour la page rapport.
+        // (Si votre page rapport attend "MM-JJ-AA", inversez ici : mm puis jj)
+        function toReportDateParam(dateKey) {
+            if (!dateKey) return '';
+            const [y, m, d] = dateKey.split('-');
+            return `${d}-${m}-${y.slice(2)}`;
+        }
+
         // --- Rendu grille ---
         function render() {
             const y = currentMonth.getFullYear();
@@ -884,7 +954,13 @@
                 if (shown.length) {
                     html += '<div class="day-events">';
                     for (const ev of shown) {
-                        html += `<div class="day-event role-${esc(ev.role || 'tous')}" title="${esc(ev.title)}">${esc(ev.title)}</div>`;
+                        const badge = ev.reportConfirmed
+                            ? ' <span class="report-badge">📄</span>'
+                            : '';
+                        const titleAttr = ev.reportConfirmed
+                            ? `${esc(ev.title)} (rapport disponible)`
+                            : esc(ev.title);
+                        html += `<div class="day-event role-${esc(ev.role || 'tous')}" title="${titleAttr}">${esc(ev.title)}${badge}</div>`;
                     }
                     if (rest > 0) {
                         html += `<div class="day-more">+${rest} autre${rest > 1 ? 's' : ''}</div>`;
@@ -908,6 +984,7 @@
             dayModalTitle.textContent = dateObj.toLocaleDateString('fr-FR', {
                 weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
             });
+            dayModalTitle.dataset.key = key;
 
             if (!evts.length) {
                 dayModalList.innerHTML = '<div class="empty">Aucun événement ce jour.</div>';
@@ -925,6 +1002,29 @@
             if (ev.location) parts.push(`📍 ${esc(ev.location)}`);
             parts.push(`👥 ${esc(ROLE_LABELS[ev.role] || ev.role || 'Tous')}`);
 
+            const reportDate = toReportDateParam(ev.date);
+            const reportUrl = REPORT_URL + '?date=' + encodeURIComponent(reportDate);
+            const reportConfirmed = ev.reportConfirmed === true;
+
+            // Bouton "Voir le rapport" : lien actif si confirmé, sinon bouton grisé.
+            let reportBtn;
+            if (reportConfirmed) {
+                reportBtn = `<a href="${esc(reportUrl)}" class="btn-report"
+                    title="Voir le rapport de réunion">Voir le rapport</a>`;
+            } else {
+                reportBtn = `<button type="button" class="btn-report disabled" disabled
+                    title="Le rapport n'est pas encore confirmé">Voir le rapport</button>`;
+            }
+
+            // Bouton admin de confirmation
+            const confirmBtn = isAdmin
+                ? `<button data-confirm-report="${esc(ev.id)}"
+                    class="btn-confirm-report${reportConfirmed ? ' is-confirmed' : ''}"
+                    ${reportConfirmed ? 'disabled' : ''}>
+                    ${reportConfirmed ? '✓ Rapport confirmé' : 'Confirmer le rapport'}
+                   </button>`
+                : '';
+
             return `
                 <div class="detail-item role-${esc(ev.role || 'tous')}">
                     <div class="detail-item-title">${esc(ev.title)}</div>
@@ -933,6 +1033,8 @@
                         ${ev.description ? `<span>${esc(ev.description)}</span>` : ''}
                     </div>
                     <div class="detail-item-actions">
+                        ${reportBtn}
+                        ${confirmBtn}
                         <button data-ics="${esc(ev.id)}">Ajouter à mon calendrier (.ics)</button>
                         ${isAdmin ? `<button data-edit="${esc(ev.id)}">Modifier</button>` : ''}
                     </div>
@@ -948,6 +1050,34 @@
                 btn.addEventListener('click', () => {
                     closeAllModals();
                     openEditModal(btn.dataset.edit);
+                });
+            });
+            dayModalList.querySelectorAll('[data-confirm-report]').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    if (!isAdmin) return;
+                    const id = btn.dataset.confirmReport;
+                    btn.disabled = true;
+                    const original = btn.textContent;
+                    btn.textContent = 'Confirmation…';
+                    try {
+                        await updateDoc(doc(db, 'events', id), {
+                            reportConfirmed: true,
+                            reportConfirmedAt: serverTimestamp(),
+                            reportConfirmedBy: auth.currentUser.uid
+                        });
+                        await loadEvents();
+                        render();
+                        // Rouvre le modal sur le même jour pour rafraîchir l'affichage
+                        const activeKey = dayModalTitle.dataset.key;
+                        if (activeKey) {
+                            openDayModal(activeKey);
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Erreur : ' + (err.message || 'confirmation impossible.'));
+                        btn.disabled = false;
+                        btn.textContent = original;
+                    }
                 });
             });
         }
@@ -1070,6 +1200,7 @@
                 } else {
                     payload.createdAt = serverTimestamp();
                     payload.createdBy = auth.currentUser.uid;
+                    payload.reportConfirmed = false;
                     await addDoc(collection(db, 'events'), payload);
                 }
                 closeAllModals();

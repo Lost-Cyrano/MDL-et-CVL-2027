@@ -179,7 +179,7 @@ let DATA={mdl:{},cvl:{}},AUTH="mdl",VIEW="cal",CAL=new Date(),CUR=null;
 const BLOB_CACHE={};
 const M=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 const p2=n=>String(n).padStart(2,"0");
-const parseD=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(2000+c,a-1,b)};
+const parseD=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(2000+c,b-1,a)};
 const fmtD=d=>p2(d.getDate())+"-"+p2(d.getMonth()+1)+"-"+p2(d.getFullYear()%100);
 const fmtL=d=>d.getDate()+" "+M[d.getMonth()]+" "+d.getFullYear();
 const goToLogin=()=>{window.location.replace(LOGIN_URL+"?redirect="+encodeURIComponent(CURRENT_URL))};

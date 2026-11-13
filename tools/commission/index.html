@@ -4,17 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
-    <title>Accès restreint — Honoré Romane</title>
+    <title>Commissions — Honoré Romane</title>
     <style>
         :root {
             --bg: #f5f3ef;
             --card: #ffffff;
+            --card-hover: #fafaf8;
+            --border: #e5e2dc;
             --text: #1a1a1a;
             --text-muted: #6b6b6b;
             --accent: #1a1a1a;
-            --accent-hover: #000000;
             --accent-text: #ffffff;
-            --radius: 0.75rem;
+            --star: #c9a227;
+            --radius: 1rem;
             --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
@@ -22,11 +24,13 @@
             :root {
                 --bg: #0e0e0e;
                 --card: #1a1a1a;
+                --card-hover: #232323;
+                --border: #2e2e2e;
                 --text: #f2f2f2;
                 --text-muted: #9a9a9a;
                 --accent: #f2f2f2;
-                --accent-hover: #ffffff;
                 --accent-text: #0e0e0e;
+                --star: #e3c04b;
             }
         }
 
@@ -51,83 +55,628 @@
         body {
             display: flex;
             flex-direction: column;
+            min-height: 100dvh;
+        }
+
+        header {
+            display: flex;
             align-items: center;
-            justify-content: center;
-            padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-                     max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+            justify-content: space-between;
             gap: 1rem;
+            padding: max(1rem, env(safe-area-inset-top)) clamp(1rem, 4vw, 2.5rem) 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
-        .container {
-            width: 100%;
-            max-width: 32rem;
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: clamp(1.5rem, 4vw, 2.25rem);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            text-align: center;
-            margin: auto 0;
+        .user {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            min-width: 0;
+            flex: 1;
         }
 
-        @media (prefers-color-scheme: dark) {
-            .container {
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            }
-        }
-
-        .code {
-            font-size: clamp(2.5rem, 8vw, 4rem);
-            font-weight: 700;
-            line-height: 1;
-            margin-bottom: 0.5rem;
-        }
-
-        p {
-            color: var(--text-muted);
-            font-size: 0.95em;
-            margin-bottom: 1.75rem;
-        }
-
-        p + p {
-            margin-top: -1rem;
-        }
-
-        a.button {
-            display: block;
-            text-decoration: none;
+        .avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
             background: var(--accent);
             color: var(--accent-text);
-            font-weight: 600;
-            padding: 0.85rem;
-            border-radius: 0.5rem;
-            transition: background .15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.95em;
+            flex-shrink: 0;
+            user-select: none;
         }
 
-        a.button:hover {
-            background: var(--accent-hover);
+        .user-text {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.95em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .user-meta {
+            font-size: 0.78em;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .logout-btn {
+            font-family: inherit;
+            font-size: 0.82em;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            padding: 0.5rem 0.9rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s, background .15s;
+            flex-shrink: 0;
+            text-decoration: none;
+        }
+
+        .logout-btn:hover:not(:disabled) {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .logout-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 72rem;
+            margin: 0 auto;
+            padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 2.5rem);
+        }
+
+        h1 {
+            font-size: clamp(1.4rem, 2.5vw + 1rem, 2rem);
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            margin-bottom: 0.4rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.95em;
+            margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+        }
+
+        .section {
+            margin-bottom: clamp(1.75rem, 3vw, 2.5rem);
+        }
+
+        .section-title {
+            font-size: 0.78em;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.85rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+            gap: clamp(0.85rem, 2vw, 1.15rem);
+        }
+
+        .card-wrap {
+            position: relative;
+            display: flex;
+        }
+
+        .card {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 1.5rem;
+            min-height: 9rem;
+            padding: 1.25rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-decoration: none;
+            color: var(--text);
+            transition: background .15s, border-color .15s, transform .15s;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .card:hover {
+            background: var(--card-hover);
+            border-color: var(--text-muted);
+            transform: translateY(-2px);
+        }
+
+        .card:active {
+            transform: translateY(0);
+        }
+
+        .card-icon {
+            width: 2.25rem;
+            height: 2.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+        }
+
+        .card-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.7;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 1em;
+            line-height: 1.3;
+            padding-right: 1.9rem;
+        }
+
+        .card-desc {
+            font-size: 0.82em;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+            line-height: 1.4;
+        }
+
+        .fav-btn {
+            position: absolute;
+            top: 0.6rem;
+            right: 0.6rem;
+            z-index: 2;
+            width: 2rem;
+            height: 2rem;
+            border: none;
+            background: transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: color .15s, background .15s, transform .15s;
+        }
+
+        .fav-btn:hover {
+            background: rgba(128, 128, 128, 0.14);
+            color: var(--star);
+        }
+
+        .fav-btn:active {
+            transform: scale(0.9);
+        }
+
+        .fav-btn svg {
+            width: 1.05rem;
+            height: 1.05rem;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.7;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .fav-btn.is-fav {
+            color: var(--star);
+        }
+
+        .fav-btn.is-fav svg {
+            fill: var(--star);
+        }
+
+        .empty-hint {
+            color: var(--text-muted);
+            font-size: 0.85em;
+            grid-column: 1 / -1;
+            padding: 0.9rem 1rem;
+            border: 1px dashed var(--border);
+            border-radius: var(--radius);
         }
 
         .footer {
-            width: 100%;
             text-align: center;
             color: var(--text-muted);
             font-size: 0.72em;
-            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+            padding: 1.25rem 1rem max(1.25rem, env(safe-area-inset-bottom));
             opacity: 0.7;
             user-select: none;
+        }
+
+        @media (max-height: 520px) and (orientation: landscape) {
+            header {
+                padding-top: max(0.6rem, env(safe-area-inset-top));
+                padding-bottom: 0.6rem;
+            }
+            main {
+                padding-top: 1rem;
+            }
+            .card {
+                min-height: 7rem;
+                padding: 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <main class="container" role="main">
-        <div class="code">🔒</div>
-        <p>Cette fonctionnalité n'est pas encore disponible.</p>
-        <p>Vous n'avez pas l'autorisation d'y accéder pour le moment.</p>
-        <a href="https://account.honore-romane.fr/account/" class="button">Retour à la page d'accueil</a>
+
+    <header>
+        <div class="user">
+            <div class="avatar" id="avatar">…</div>
+            <div class="user-text">
+                <span class="user-name" id="user-name">Chargement…</span>
+                <span class="user-meta" id="user-meta"></span>
+            </div>
+        </div>
+        <a class="logout-btn" id="home-btn" href="https://account.honore-romane.fr/account/">Accueil</a>
+    </header>
+
+    <main>
+        <h1>Commissions</h1>
+        <p class="subtitle">Sélectionnez une commission pour continuer.</p>
+
+        <!-- Favoris -->
+        <section class="section" id="fav-section">
+            <div class="section-title">Favoris</div>
+            <div class="grid" id="fav-grid"></div>
+        </section>
+
+        <!-- CVL -->
+        <section class="section" id="section-cvl" style="display: none;">
+            <div class="section-title">CVL</div>
+            <div class="grid" id="grid-cvl"></div>
+        </section>
+
+        <!-- MDL -->
+        <section class="section" id="section-mdl" style="display: none;">
+            <div class="section-title">MDL</div>
+            <div class="grid" id="grid-mdl"></div>
+        </section>
+
+        <!-- Éco-délégués -->
+        <section class="section" id="section-eco_delegues" style="display: none;">
+            <div class="section-title">Éco-délégués</div>
+            <div class="grid" id="grid-eco_delegues"></div>
+        </section>
+
+        <!-- Commission -->
+        <section class="section" id="section-commission" style="display: none;">
+            <div class="section-title">Commission</div>
+            <div class="grid" id="grid-commission"></div>
+        </section>
     </main>
 
     <footer class="footer">
         MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
     </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+        import {
+            getAuth,
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            getDoc,
+            setDoc,
+            updateDoc,
+            arrayUnion,
+            arrayRemove
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
+            authDomain: "mdl-et-cvl-2027.firebaseapp.com",
+            projectId: "mdl-et-cvl-2027",
+            storageBucket: "mdl-et-cvl-2027.firebasestorage.app",
+            messagingSenderId: "142816093888",
+            appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
+            measurementId: "G-FBKEPBY0CQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const LOGIN_URL = 'https://account.honore-romane.fr/login/';
+        const ACCOUNT_URL = 'https://account.honore-romane.fr/account/';
+        const CURRENT_URL = 'https://account.honore-romane.fr/tools/commission/';
+
+        // Hiérarchie des rôles (du plus bas au plus haut niveau d'accès)
+        const ROLE_HIERARCHY = ['utilisateur', 'commission', 'eco_delegues', 'mdl', 'cvl'];
+        const ROLE_ORDER_DISPLAY = ['cvl', 'mdl', 'eco_delegues', 'commission'];
+        const ROLE_LABELS = {
+            cvl: 'CVL',
+            mdl: 'MDL',
+            eco_delegues: 'Éco-délégués',
+            commission: 'Commission'
+        };
+
+        const avatarEl = document.getElementById('avatar');
+        const nameEl = document.getElementById('user-name');
+        const metaEl = document.getElementById('user-meta');
+
+        let currentUser = null;
+        let userRoleLevel = -1; // index dans ROLE_HIERARCHY
+        let favorites = [];     // tableau d'identifiants "role/id"
+        let cardCache = {};     // { role: [cards] }
+
+        const goToLogin = () => {
+            window.location.replace(
+                LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL)
+            );
+        };
+
+        function initials(fullName) {
+            if (!fullName) return '?';
+            const parts = fullName.trim().split(/\s+/).filter(Boolean);
+            if (parts.length === 0) return '?';
+            if (parts.length === 1) return parts[0][0].toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
+        function roleLevel(role) {
+            const idx = ROLE_HIERARCHY.indexOf(role);
+            return idx === -1 ? 0 : idx;
+        }
+
+        function canAccessRole(role) {
+            // L'utilisateur accède à un rôle si son niveau est >= à celui du rôle
+            // mais aussi seulement si le rôle fait partie des rôles "commission"
+            if (!ROLE_ORDER_DISPLAY.includes(role)) return false;
+            return userRoleLevel >= roleLevel(role);
+        }
+
+        // Un identifiant de favori est "role/id" (stable même si la carte change de titre)
+        function favKey(role, id) {
+            return role + '/' + id;
+        }
+
+        // Échappement basique pour éviter les injections dans innerHTML
+        function esc(str) {
+            return String(str == null ? '' : str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        const STAR_PATH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 20.9l1.1-6.5L2.6 9.8l6.5-.9z"/></svg>';
+
+        function buildCard(role, card) {
+            const key = favKey(role, card.id);
+            const isFav = favorites.includes(key);
+            const wrap = document.createElement('div');
+            wrap.className = 'card-wrap';
+
+            const a = document.createElement('a');
+            a.className = 'card';
+            a.href = './' + role + '/' + encodeURIComponent(card.id) + '/index.html';
+            a.innerHTML =
+                '<div class="card-icon" aria-hidden="true">' + (card.icon || '') + '</div>' +
+                '<div>' +
+                    '<div class="card-title">' + esc(card.title) + '</div>' +
+                    '<div class="card-desc">' + esc(card.description) + '</div>' +
+                '</div>';
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'fav-btn' + (isFav ? ' is-fav' : '');
+            btn.setAttribute('aria-label', isFav ? 'Retirer des favoris' : 'Ajouter aux favoris');
+            btn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+            btn.innerHTML = STAR_PATH;
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFavorite(role, card.id);
+            });
+
+            wrap.appendChild(a);
+            wrap.appendChild(btn);
+            return wrap;
+        }
+
+        function renderGrid(gridEl, role, cards, isFavGrid) {
+            gridEl.innerHTML = '';
+            if (!cards || cards.length === 0) {
+                if (isFavGrid) {
+                    const hint = document.createElement('div');
+                    hint.className = 'empty-hint';
+                    hint.textContent = 'Aucun favori pour le moment. Cliquez sur l\'étoile d\'une carte pour l\'ajouter ici.';
+                    gridEl.appendChild(hint);
+                }
+                return;
+            }
+            for (const card of cards) {
+                gridEl.appendChild(buildCard(role, card));
+            }
+        }
+
+        async function toggleFavorite(role, id) {
+            if (!currentUser) return;
+            const key = favKey(role, id);
+            const userRef = doc(db, 'users', currentUser.uid);
+            const isFav = favorites.includes(key);
+
+            // Optimiste : on met à jour l'état local puis on rend
+            if (isFav) {
+                favorites = favorites.filter(k => k !== key);
+            } else {
+                favorites = favorites.concat(key);
+            }
+            renderAll();
+
+            try {
+                // Structure optimisée : tableau de chaînes "role/id" dans users.favorites
+                if (isFav) {
+                    await updateDoc(userRef, { favorites: arrayRemove(key) });
+                } else {
+                    await updateDoc(userRef, { favorites: arrayUnion(key) });
+                }
+            } catch (err) {
+                console.error(err);
+                // Rollback en cas d'échec
+                if (isFav) {
+                    favorites = favorites.concat(key);
+                } else {
+                    favorites = favorites.filter(k => k !== key);
+                }
+                renderAll();
+            }
+        }
+
+        async function fetchCardList(role) {
+            // Fichier "./{role}.html" contenant la liste des cartes au format JSON
+            const res = await fetch('./' + role + '.html', { cache: 'no-cache' });
+            if (!res.ok) throw new Error('Impossible de charger la liste ' + role);
+            const text = await res.text();
+
+            // Extrait le contenu JSON éventuellement entouré de balises HTML
+            let jsonText = text.trim();
+            const start = jsonText.indexOf('[');
+            const end = jsonText.lastIndexOf(']');
+            if (start !== -1 && end !== -1 && end > start) {
+                jsonText = jsonText.slice(start, end + 1);
+            }
+            const parsed = JSON.parse(jsonText);
+            if (!Array.isArray(parsed)) throw new Error('Format invalide pour ' + role);
+            return parsed;
+        }
+
+        function renderAll() {
+            // Favoris : on reconstruit la liste des cartes favorites à partir de cardCache
+            const favCards = [];
+            for (const key of favorites) {
+                const sep = key.indexOf('/');
+                if (sep === -1) continue;
+                const role = key.slice(0, sep);
+                const id = key.slice(sep + 1);
+                if (!canAccessRole(role)) continue;
+                const list = cardCache[role];
+                if (!list) continue;
+                const card = list.find(c => c.id === id);
+                if (card) {
+                    favCards.push({ role, card });
+                }
+            }
+
+            // Rendu de la grille favoris (en gardant la distinction de rôle pour le lien)
+            const favGrid = document.getElementById('fav-grid');
+            favGrid.innerHTML = '';
+            if (favCards.length === 0) {
+                const hint = document.createElement('div');
+                hint.className = 'empty-hint';
+                hint.textContent = 'Aucun favori pour le moment. Cliquez sur l\'étoile d\'une carte pour l\'ajouter ici.';
+                favGrid.appendChild(hint);
+            } else {
+                for (const { role, card } of favCards) {
+                    favGrid.appendChild(buildCard(role, card));
+                }
+            }
+
+            // Rendu de chaque catégorie accessible
+            for (const role of ROLE_ORDER_DISPLAY) {
+                const section = document.getElementById('section-' + role);
+                const grid = document.getElementById('grid-' + role);
+                if (!section || !grid) continue;
+                if (!canAccessRole(role)) {
+                    section.style.display = 'none';
+                    continue;
+                }
+                section.style.display = '';
+                const cards = cardCache[role] || [];
+                renderGrid(grid, role, cards, false);
+            }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                goToLogin();
+                return;
+            }
+            currentUser = user;
+
+            try {
+                const snap = await getDoc(doc(db, 'users', user.uid));
+                if (!snap.exists() || snap.data().status !== 'active') {
+                    await signOut(auth);
+                    goToLogin();
+                    return;
+                }
+
+                const data = snap.data();
+                const role = data.role || 'utilisateur';
+                userRoleLevel = roleLevel(role);
+
+                // Accès refusé pour les simples utilisateurs
+                if (userRoleLevel <= roleLevel('utilisateur')) {
+                    window.location.replace(ACCOUNT_URL);
+                    return;
+                }
+
+                const displayName = data.name || user.email || 'Utilisateur';
+                nameEl.textContent = displayName;
+                metaEl.textContent = [data.classe, data.email].filter(Boolean).join(' · ');
+                avatarEl.textContent = initials(displayName);
+
+                // Favoris stockés dans le document utilisateur (tableau de "role/id")
+                favorites = Array.isArray(data.favorites) ? data.favorites.slice() : [];
+
+                // Charge les listes de cartes des rôles accessibles
+                const rolesToLoad = ROLE_ORDER_DISPLAY.filter(canAccessRole);
+                const results = await Promise.allSettled(
+                    rolesToLoad.map(async (r) => {
+                        const cards = await fetchCardList(r);
+                        return { r, cards };
+                    })
+                );
+
+                for (const res of results) {
+                    if (res.status === 'fulfilled') {
+                        cardCache[res.value.r] = res.value.cards;
+                    } else {
+                        console.error(res.reason);
+                        cardCache[res.value ? res.value.r : '?'] = [];
+                    }
+                }
+
+                renderAll();
+            } catch (err) {
+                console.error(err);
+                await signOut(auth).catch(() => {});
+                goToLogin();
+            }
+        });
+    </script>
 </body>
 </html>

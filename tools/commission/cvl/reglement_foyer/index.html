@@ -1,1 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <title>Règlement du foyer — Honoré Romane</title>
+    <style>
+        :root {
+            --bg: #f5f3ef;
+            --card: #ffffff;
+            --border: #e5e2dc;
+            --text: #1a1a1a;
+            --text-muted: #6b6b6b;
+            --accent: #1a1a1a;
+            --accent-text: #ffffff;
+            --radius: 1rem;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
 
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0e0e0e;
+                --card: #1a1a1a;
+                --border: #2e2e2e;
+                --text: #f2f2f2;
+                --text-muted: #9a9a9a;
+                --accent: #f2f2f2;
+                --accent-text: #0e0e0e;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: clamp(14px, 1vw + 12px, 17px);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: max(0.85rem, env(safe-area-inset-top)) clamp(1rem, 4vw, 2.5rem) 0.85rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+            font-size: 0.85em;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            padding: 0.5rem 0.9rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: color .15s, border-color .15s;
+            flex-shrink: 0;
+        }
+
+        .back-btn:hover {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .back-btn svg {
+            width: 1em;
+            height: 1em;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .header-titles {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .header-eyebrow {
+            font-size: 0.72em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 600;
+        }
+
+        .header-title {
+            font-size: 1em;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Bouton discret pour ouvrir dans un nouvel onglet */
+        .external-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.3rem;
+            height: 2.3rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: color .15s, border-color .15s, background .15s;
+            flex-shrink: 0;
+            opacity: 0.75;
+        }
+
+        .external-btn:hover {
+            opacity: 1;
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .external-btn svg {
+            width: 1.05rem;
+            height: 1.05rem;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: clamp(0.75rem, 2vw, 1.25rem) clamp(0.75rem, 3vw, 2rem) clamp(0.75rem, 2vw, 1.25rem);
+        }
+
+        .doc-frame-wrap {
+            flex: 1;
+            display: flex;
+            position: relative;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            min-height: 70vh;
+        }
+
+        iframe {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: var(--card);
+            min-height: 70vh;
+        }
+
+        /* Écran de chargement affiché avant que l'iframe ne prenne le relais */
+        .loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 0.75rem;
+            color: var(--text-muted);
+            font-size: 0.9em;
+            background: var(--card);
+            z-index: 1;
+            pointer-events: none;
+            transition: opacity .3s;
+        }
+
+        .loading.hidden {
+            opacity: 0;
+        }
+
+        .spinner {
+            width: 1.6rem;
+            height: 1.6rem;
+            border: 2px solid var(--border);
+            border-top-color: var(--text);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.72em;
+            padding: 0.75rem 1rem max(0.75rem, env(safe-area-inset-bottom));
+            opacity: 0.7;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a class="back-btn" href="https://account.honore-romane.fr/tools/commission/" id="back-btn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            Retour
+        </a>
+
+        <div class="header-titles">
+            <span class="header-eyebrow">CVL</span>
+            <span class="header-title">Règlement du foyer</span>
+        </div>
+
+        <!-- Bouton discret pour ouvrir dans un nouvel onglet -->
+        <a class="external-btn"
+           id="external-btn"
+           href="https://docs.google.com/document/d/1cwipHgncx4Z5DQ9XJGvrjjh-_RRAGyob94oIHq2XNQY/edit?usp=drivesdk"
+           target="_blank"
+           rel="noopener noreferrer"
+           title="Ouvrir dans un nouvel onglet"
+           aria-label="Ouvrir dans un nouvel onglet">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+        </a>
+    </header>
+
+    <main>
+        <div class="doc-frame-wrap">
+            <div class="loading" id="loading">
+                <div class="spinner" aria-hidden="true"></div>
+                <span>Chargement du document…</span>
+            </div>
+            <iframe
+                id="doc-frame"
+                src="https://docs.google.com/document/d/1cwipHgncx4Z5DQ9XJGvrjjh-_RRAGyob94oIHq2XNQY/edit?embedded=true&rm=minimal"
+                title="Règlement du foyer — Google Docs"
+                allowfullscreen
+                referrerpolicy="no-referrer">
+            </iframe>
+        </div>
+    </main>
+
+    <footer class="footer">
+        MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
+    </footer>
+
+    <script>
+        // Masque l'écran de chargement une fois l'iframe prête
+        const frame = document.getElementById('doc-frame');
+        const loading = document.getElementById('loading');
+
+        frame.addEventListener('load', () => {
+            loading.classList.add('hidden');
+            setTimeout(() => loading.remove(), 350);
+        });
+
+        // Filet de sécurité si l'événement load ne se déclenche pas (certains navigateurs)
+        setTimeout(() => {
+            if (loading.parentNode) {
+                loading.classList.add('hidden');
+                setTimeout(() => loading.remove(), 350);
+            }
+        }, 4000);
+    </script>
+</body>
+</html>

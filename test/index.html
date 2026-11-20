@@ -25,7 +25,6 @@
 
 <main>
 
-  <!-- ================== CALENDRIER MENSUEL ================== -->
   <section id="calendarView">
     <div class="month-bar">
       <div class="month-title" id="calLabel">—</div>
@@ -46,7 +45,6 @@
     </div>
   </section>
 
-  <!-- ================== VUE JOUR ================== -->
   <section class="day-view" id="dayView">
     <div class="day-view-header">
       <button class="text-btn" id="btnBack">← Retour</button>
@@ -66,12 +64,9 @@
     </div>
   </section>
 
-  <!-- ================== MON PLANNING ================== -->
   <section class="calendar-view" id="myPlanningView">
     <div class="gcal-nav">
-      <button class="month-nav btn" style="padding:0;border:none;background:transparent;width:auto;height:auto;">
-        <button class="text-btn" id="mpPrev">‹</button>
-      </button>
+      <button class="text-btn" id="mpPrev">‹</button>
       <h2 id="mpLabel">—</h2>
       <button class="text-btn" id="mpNext">›</button>
     </div>
@@ -91,7 +86,6 @@
   MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
 </footer>
 
-<!-- ================== MODAL ================== -->
 <div class="modal-backdrop" id="modal">
   <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-header">
@@ -104,9 +98,6 @@
 </div>
 
 <script type="module">
-/* =====================================================================
-   IMPORTS FIREBASE + GARDE D'ACCÈS (identique à ton app)
-   ===================================================================== */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
 import {
   getAuth,
@@ -116,9 +107,13 @@ import {
 import {
   getFirestore,
   doc,
-  getDoc
+  getDoc,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
+/* =====================================================================
+   FIREBASE
+   ===================================================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
   authDomain: "mdl-et-cvl-2027.firebaseapp.com",
@@ -128,7 +123,6 @@ const firebaseConfig = {
   appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
   measurementId: "G-FBKEPBY0CQ"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -137,42 +131,17 @@ const LOGIN_URL = 'https://account.honore-romane.fr/login/';
 const CURRENT_URL = 'https://account.honore-romane.fr/tools/planning/';
 
 /* =====================================================================
-   CONSTANTES
+   STATE
    ===================================================================== */
-const CURRENT_USER = { id: 'u1', name: 'Vous' };
-const USERS = {
-  u1: 'Vous', u2: 'Alice', u3: 'Bob', u4: 'Chloé', u5: 'David', u6: 'Emma'
-};
-
+let ME = null;
 let EVENTS = [];
-let bookings = {};
-let _id = 0;
-const nextId = () => `s${++_id}`;
-
-/* Seed démo */
-(function seed() {
-  const add = (dateStr, missionId, userId, sH, sM, eH, eM) => {
-    const key = `${dateStr}|${missionId}`;
-    if (!bookings[key]) bookings[key] = [];
-    bookings[key].push({ id: nextId(), userId, start: sH*60+sM, end: eH*60+eM });
-  };
-  const t = new Date();
-  const dOff = n => { const d = new Date(t); d.setDate(d.getDate()+n); return fmtDate(d); };
-
-  add(dOff(2), 'pain-vendeur', 'u2', 10, 0, 11, 0);
-  add(dOff(2), 'pain-vendeur', 'u3', 9, 0, 10, 0);
-  add(dOff(2), 'pain-vendeur', 'u4', 11, 30, 12, 0);
-  add(dOff(3), 'pain-vendeur', 'u5', 9, 0, 10, 30);
-  add(dOff(3), 'pain-vendeur', 'u6', 10, 30, 12, 0);
-  add(dOff(3), 'pain-vendeur', 'u1', 14, 0, 15, 0);
-
-  add('2026-11-23', 'loto-buvette', 'u2', 8, 0, 12, 0);
-  add('2026-11-23', 'loto-caissier', 'u3', 8, 0, 17, 0);
-  add('2026-11-23', 'loto-present', 'u4', 14, 0, 17, 0);
-})();
+let ARCHIVE = {};                             // gardes.json en mémoire (statique, 1 fetch)
+const bookingsCache = {};                     // dateStr → { missionId: [[id,uid,start,end],...] } (fusionné)
+const daysLoaded = new Set();
+const daysPending = {};
 
 /* =====================================================================
-   UTILITAIRES
+   UTILITAIRES DATE
    ===================================================================== */
 function fmtDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -185,19 +154,91 @@ function isLocked(dateStr) {
   const t = new Date(); t.setHours(0,0,0,0);
   return (parseDate(dateStr) - t) / 86400000 <= 1;
 }
+function fmtHMfull(min) {
+  return `${String(Math.floor(min/60)).padStart(2,'0')}:${String(min%60).padStart(2,'0')}`;
+}
 function fmtHM(min) {
   const h = Math.floor(min/60);
   const m = min % 60;
   return `${String(h).padStart(2,'0')}h${m ? String(m).padStart(2,'0') : ''}`;
 }
-function fmtHMfull(min) {
-  return `${String(Math.floor(min/60)).padStart(2,'0')}:${String(min%60).padStart(2,'0')}`;
-}
-function minToTimeStr(m) { return fmtHMfull(m); }
 function timeStrToMin(s) { const [h,m] = s.split(':').map(Number); return h*60+m; }
 
 /* =====================================================================
-   LOGIQUE
+   FUSION ARCHIVE + FIREBASE
+   =====================================================================
+   Règle : pour chaque (date, missionId), si Firestore contient la mission,
+   Firestore écrase ENTIÈREMENT l'archive. Sinon on prend l'archive.
+   ===================================================================== */
+function mergeDay(dateStr, firestoreData) {
+  const archive = ARCHIVE[dateStr] || {};
+  const fire = firestoreData && firestoreData.s ? firestoreData.s : {};
+  const merged = {};
+
+  // 1. Copier l'archive
+  for (const [missionId, arr] of Object.entries(archive)) {
+    if (Array.isArray(arr) && arr.length) merged[missionId] = arr.map(s => [...s]);
+  }
+  // 2. Firestore écrase mission par mission
+  for (const [missionId, arr] of Object.entries(fire)) {
+    if (Array.isArray(arr)) {
+      // même vide, Firestore gagne (mission "vidée" explicitement)
+      merged[missionId] = arr.map(s => [...s]);
+    }
+  }
+  return merged;
+}
+
+async function ensureDayLoaded(dateStr) {
+  if (daysLoaded.has(dateStr)) return;
+  if (daysPending[dateStr]) return daysPending[dateStr];
+  const p = (async () => {
+    let firestoreData = null;
+    try {
+      const snap = await getDoc(doc(db, 'plannings_gardes', dateStr));
+      if (snap.exists()) firestoreData = snap.data();
+    } catch (e) {
+      console.error('Firestore getDoc', dateStr, e);
+      // En cas d'erreur Firestore, on garde quand même l'archive
+    }
+    bookingsCache[dateStr] = mergeDay(dateStr, firestoreData);
+    daysLoaded.add(dateStr);
+    delete daysPending[dateStr];
+  })();
+  daysPending[dateStr] = p;
+  return p;
+}
+
+async function ensureRangeLoaded(dates) {
+  const toLoad = dates.filter(d => !daysLoaded.has(d));
+  if (!toLoad.length) return;
+  await Promise.all(toLoad.map(ensureDayLoaded));
+}
+
+/* =====================================================================
+   ÉCRITURE FIRESTORE — une seule write par action
+   ===================================================================== */
+async function persistDay(dateStr) {
+  const day = bookingsCache[dateStr] || {};
+  const compact = {};
+  for (const [missionId, arr] of Object.entries(day)) {
+    if (!arr || !arr.length) {
+      // Pour "vider" une mission côté Firestore, on écrit un tableau vide.
+      // Cela garantit que Firestore gagne sur l'archive pour cette mission.
+      compact[missionId] = [];
+      continue;
+    }
+    compact[missionId] = arr.map(s => [s[0], s[1], s[2], s[3]]);
+  }
+  await setDoc(doc(db, 'plannings_gardes', dateStr), { d: dateStr, s: compact });
+}
+
+function shortId() {
+  return Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2,6);
+}
+
+/* =====================================================================
+   LOGIQUE ÉVÉNEMENTS
    ===================================================================== */
 function eventsForDate(dateStr) {
   const d = parseDate(dateStr);
@@ -210,8 +251,7 @@ function eventsForDate(dateStr) {
 }
 
 function missionRangesForDate(mission, dateStr) {
-  const d = parseDate(dateStr);
-  const dayNum = jsDayToOur(d);
+  const dayNum = jsDayToOur(parseDate(dateStr));
   const out = [];
   (mission.ranges || []).forEach(r => {
     if (r.excludeOn && r.excludeOn.includes(dayNum)) return;
@@ -228,25 +268,26 @@ function missionRangesForDate(mission, dateStr) {
 }
 
 function getShifts(dateStr, missionId) {
-  return bookings[`${dateStr}|${missionId}`] || [];
+  const day = bookingsCache[dateStr];
+  if (!day) return [];
+  return day[missionId] || [];
 }
 
 function coverAt(dateStr, missionId, minute) {
   let total = 0;
-  getShifts(dateStr, missionId).forEach(s => {
-    if (minute >= s.start && minute < s.end) total++;
-  });
+  for (const s of getShifts(dateStr, missionId)) {
+    if (minute >= s[2] && minute < s[3]) total++;
+  }
   return total;
 }
 
 function userHasOverlapAnyMission(dateStr, userId, start, end, excludeShiftId) {
-  const evs = eventsForDate(dateStr);
-  for (const ev of evs) {
+  for (const ev of eventsForDate(dateStr)) {
     for (const mission of ev.missions) {
       for (const s of getShifts(dateStr, mission.id)) {
-        if (s.userId !== userId) continue;
-        if (excludeShiftId && s.id === excludeShiftId) continue;
-        if (!(end <= s.start || start >= s.end)) {
+        if (s[1] !== userId) continue;
+        if (excludeShiftId && s[0] === excludeShiftId) continue;
+        if (!(end <= s[2] || start >= s[3])) {
           return { ev, mission, shift: s };
         }
       }
@@ -275,19 +316,17 @@ function missionDayStatus(dateStr, mission) {
 }
 
 function eventDayStatus(dateStr, ev) {
-  const statuses = ev.missions
-    .map(m => missionDayStatus(dateStr, m))
-    .filter(s => s !== 'empty');
+  const statuses = ev.missions.map(m => missionDayStatus(dateStr, m)).filter(s => s !== 'empty');
   if (statuses.length === 0) return 'empty';
   if (statuses.every(s => s === 'full')) return 'full';
   return 'partial';
 }
 
 function getStatusColor(status) {
-  const rootStyles = getComputedStyle(document.documentElement);
-  if (status === 'full') return rootStyles.getPropertyValue('--complete').trim() || '#1e7d4a';
-  if (status === 'partial') return rootStyles.getPropertyValue('--partial').trim() || '#b45309';
-  return rootStyles.getPropertyValue('--empty').trim() || '#c0392b';
+  const rs = getComputedStyle(document.documentElement);
+  if (status === 'full') return rs.getPropertyValue('--complete').trim() || '#1e7d4a';
+  if (status === 'partial') return rs.getPropertyValue('--partial').trim() || '#b45309';
+  return rs.getPropertyValue('--empty').trim() || '#c0392b';
 }
 
 function shade(hex, factor) {
@@ -303,36 +342,48 @@ function shade(hex, factor) {
 }
 
 /* =====================================================================
-   ÉTAT
+   ÉTAT VUE
    ===================================================================== */
 let calMonth = new Date();
 let currentDay = null;
 let myPlanningDate = new Date();
 
 /* =====================================================================
-   CHARGEMENT EVENTS.JSON
+   CHARGEMENT DES JSON
    ===================================================================== */
-async function loadEvents() {
+async function loadEventsJSON() {
   try {
     const res = await fetch('./events.json');
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    EVENTS = data.events || [];
+    EVENTS = (await res.json()).events || [];
   } catch (err) {
-    console.error('Impossible de charger events.json', err);
+    console.error('events.json', err);
     document.getElementById('calendarGrid').innerHTML =
       '<div class="empty">Impossible de charger les événements.</div>';
-    return;
+    throw err;
   }
-  renderCalendar();
+}
+
+async function loadArchiveJSON() {
+  try {
+    const res = await fetch('./gardes.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    ARCHIVE = await res.json();
+    if (!ARCHIVE || typeof ARCHIVE !== 'object') ARCHIVE = {};
+  } catch (err) {
+    // Archive absente = situation normale (rien n'est encore archivé)
+    console.info('gardes.json absent ou illisible — mode Firestore seul.', err.message);
+    ARCHIVE = {};
+  }
 }
 
 /* =====================================================================
    CALENDRIER MENSUEL
    ===================================================================== */
-function renderCalendar() {
+async function renderCalendar() {
   const grid = document.getElementById('calendarGrid');
-  grid.innerHTML = '';
+  grid.innerHTML = '<div class="loader">Chargement…</div>';
+
   const year = calMonth.getFullYear();
   const month = calMonth.getMonth();
   const firstDay = new Date(year, month, 1);
@@ -340,10 +391,18 @@ function renderCalendar() {
   document.getElementById('calLabel').textContent =
     firstDay.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 
-  // En-têtes déjà dans le HTML, on ne rend que les 42 cases
   let startOffset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
   const startDate = new Date(year, month, 1 - startOffset);
+
+  const monthDates = [];
+  for (let i = 0; i < 42; i++) {
+    const d = addDays(startDate, i);
+    if (d.getMonth() === month) monthDates.push(fmtDate(d));
+  }
+  await ensureRangeLoaded(monthDates);
+
   const tStr = todayStr();
+  grid.innerHTML = '';
 
   for (let i = 0; i < 42; i++) {
     const d = addDays(startDate, i);
@@ -357,11 +416,10 @@ function renderCalendar() {
     const evs = eventsForDate(dateStr);
     let eventsHTML = '';
     evs.slice(0, 3).forEach(ev => {
-      eventsHTML += `<div class="day-event" style="background:color-mix(in srgb, ${ev.color || '#3498db'} 15%, transparent); border-left-color:${ev.color || '#3498db'};">${ev.name}</div>`;
+      const color = ev.color || '#3498db';
+      eventsHTML += `<div class="day-event" style="background:color-mix(in srgb, ${color} 15%, transparent); border-left-color:${color};">${ev.name}</div>`;
     });
-    if (evs.length > 3) {
-      eventsHTML += `<div class="day-more">+${evs.length-3} autre(s)</div>`;
-    }
+    if (evs.length > 3) eventsHTML += `<div class="day-more">+${evs.length-3} autre(s)</div>`;
 
     cell.innerHTML = `
       <div class="day-number">${d.getDate()}</div>
@@ -375,7 +433,7 @@ function renderCalendar() {
 /* =====================================================================
    VUE JOUR
    ===================================================================== */
-function openDayView(dateStr) {
+async function openDayView(dateStr) {
   currentDay = dateStr;
   document.getElementById('calendarView').style.display = 'none';
   document.getElementById('myPlanningView').classList.remove('active');
@@ -388,6 +446,8 @@ function openDayView(dateStr) {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
   document.getElementById('lockedBanner').style.display = isLocked(dateStr) ? 'block' : 'none';
+
+  await ensureDayLoaded(dateStr);
   renderDayGrid();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -444,11 +504,9 @@ function renderDayGrid() {
   const contentH = ((rowEnd - rowStart) / 60) * HOUR_H;
   grid.style.gridTemplateRows = `auto auto auto ${contentH}px`;
 
-  /* Niveau 1 : Événement */
   const h1 = document.createElement('div');
   h1.className = 'head-ev';
-  h1.style.gridRow = '1';
-  h1.style.gridColumn = '1';
+  h1.style.gridRow = '1'; h1.style.gridColumn = '1';
   h1.style.background = 'var(--text-muted)';
   h1.textContent = 'Heure';
   grid.appendChild(h1);
@@ -467,19 +525,14 @@ function renderDayGrid() {
     el.style.gridRow = '1';
     el.style.gridColumn = `${colIdx} / span ${span}`;
     el.style.background = ev.color || '#3498db';
-    el.innerHTML = `
-      <span class="ev-status-dot" style="background:${getStatusColor(status)};"></span>
-      ${ev.name}
-    `;
+    el.innerHTML = `<span class="ev-status-dot" style="background:${getStatusColor(status)};"></span>${ev.name}`;
     grid.appendChild(el);
     colIdx += span;
   });
 
-  /* Niveau 2 : Mission + statut */
   const h2 = document.createElement('div');
   h2.className = 'head-mi';
-  h2.style.gridRow = '2';
-  h2.style.gridColumn = '1';
+  h2.style.gridRow = '2'; h2.style.gridColumn = '1';
   h2.style.background = 'var(--card-hover)';
   grid.appendChild(h2);
 
@@ -491,19 +544,14 @@ function renderDayGrid() {
     el.style.gridRow = '2';
     el.style.gridColumn = `${colIdx} / span ${c.mission.quota}`;
     el.style.background = shade(c.mission.color || c.ev.color || '#3498db', 0.8);
-    el.innerHTML = `
-      <span class="mi-status-dot" style="background:${getStatusColor(status)};"></span>
-      ${c.mission.name} · ${c.mission.quota}
-    `;
+    el.innerHTML = `<span class="mi-status-dot" style="background:${getStatusColor(status)};"></span>${c.mission.name} · ${c.mission.quota}`;
     grid.appendChild(el);
     colIdx += c.mission.quota;
   });
 
-  /* Niveau 3 : M1..Mn */
   const h3 = document.createElement('div');
   h3.className = 'head-person';
-  h3.style.gridRow = '3';
-  h3.style.gridColumn = '1';
+  h3.style.gridRow = '3'; h3.style.gridColumn = '1';
   grid.appendChild(h3);
 
   colIdx = 2;
@@ -520,16 +568,11 @@ function renderDayGrid() {
     }
   });
 
-  /* Colonne horaire */
   const hourCol = document.createElement('div');
   hourCol.className = 'hour-track';
-  hourCol.style.gridRow = '4';
-  hourCol.style.gridColumn = '1';
-  hourCol.style.position = 'sticky';
-  hourCol.style.left = '0';
-  hourCol.style.zIndex = '5';
-  hourCol.style.height = contentH + 'px';
-
+  hourCol.style.gridRow = '4'; hourCol.style.gridColumn = '1';
+  hourCol.style.position = 'sticky'; hourCol.style.left = '0';
+  hourCol.style.zIndex = '5'; hourCol.style.height = contentH + 'px';
   for (let h = startH; h <= endH; h++) {
     const top = (h - startH) * HOUR_H;
     const tick = document.createElement('div');
@@ -540,17 +583,16 @@ function renderDayGrid() {
   }
   grid.appendChild(hourCol);
 
-  /* Colonnes missions */
   const timelineByCol = cols.map(col => {
     const totalMinutes = rowEnd - rowStart;
     const arr = new Array(totalMinutes);
     for (let i = 0; i < totalMinutes; i++) arr[i] = new Array(col.mission.quota).fill(null);
     getShifts(dateStr, col.mission.id).forEach(shift => {
-      const from = Math.max(shift.start, rowStart) - rowStart;
-      const to = Math.min(shift.end, rowEnd) - rowStart;
+      const from = Math.max(shift[2], rowStart) - rowStart;
+      const to = Math.min(shift[3], rowEnd) - rowStart;
       for (let m = from; m < to; m++) {
         for (let p = 0; p < col.mission.quota; p++) {
-          if (arr[m][p] === null) { arr[m][p] = { userId: shift.userId, shiftId: shift.id }; break; }
+          if (arr[m][p] === null) { arr[m][p] = { uid: shift[1], sid: shift[0] }; break; }
         }
       }
     });
@@ -575,7 +617,6 @@ function renderDayGrid() {
       colEl.style.setProperty('--hour-h', HOUR_H + 'px');
       colEl.style.height = contentH + 'px';
 
-      // Hachures hors plage sur toutes les sous-colonnes
       outSegments.forEach(seg => {
         const top = ((seg.start - rowStart) / 60) * HOUR_H;
         const height = ((seg.end - seg.start) / 60) * HOUR_H;
@@ -593,11 +634,11 @@ function renderDayGrid() {
         const minute = rowStart + i;
         const inRange = col.ranges.some(r => minute >= r.start && minute < r.end);
         const state = !inRange ? 'out' : (slot ? 'taken' : 'free');
-        const userId = slot ? slot.userId : null;
-        const shiftId = slot ? slot.shiftId : null;
-        if (!cur || cur.state !== state || cur.userId !== userId || cur.shiftId !== shiftId) {
+        const uid = slot ? slot.uid : null;
+        const sid = slot ? slot.sid : null;
+        if (!cur || cur.state !== state || cur.uid !== uid || cur.sid !== sid) {
           if (cur) segments.push(cur);
-          cur = { start: minute, end: minute + 1, state, userId, shiftId };
+          cur = { start: minute, end: minute + 1, state, uid, sid };
         } else cur.end = minute + 1;
       }
       if (cur) segments.push(cur);
@@ -609,14 +650,14 @@ function renderDayGrid() {
         const block = document.createElement('div');
         block.className = 'block ' + (
           seg.state === 'taken'
-            ? (seg.userId === CURRENT_USER.id ? 'mine' : 'taken')
+            ? (seg.uid === ME.uid ? 'mine' : 'taken')
             : 'free'
         );
         if (locked) block.classList.add('locked');
         block.style.top = top + 'px';
         block.style.height = height + 'px';
 
-        const label = seg.state === 'taken' ? (USERS[seg.userId] || '?') : 'Libre';
+        const label = seg.state === 'taken' ? (seg.uid === ME.uid ? 'Vous' : 'Réservé') : 'Libre';
         const timeLabel = `${fmtHMfull(seg.start)}–${fmtHMfull(seg.end)}`;
         block.innerHTML = `
           <div class="block-label">${label}</div>
@@ -647,69 +688,84 @@ function openSlotModal(dateStr, col, clickedMinute) {
   const body = document.getElementById('modalBody');
   const actions = document.getElementById('modalActions');
 
-  const myShiftHere = getShifts(dateStr, mission.id)
-    .find(s => s.userId === CURRENT_USER.id && clickedMinute >= s.start && clickedMinute < s.end);
+  const myShift = getShifts(dateStr, mission.id)
+    .find(s => s[1] === ME.uid && clickedMinute >= s[2] && clickedMinute < s[3]);
+
   const dateObj = parseDate(dateStr);
   const dateLabel = dateObj.toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long'
   });
 
-  // CAS 1 : modification directe
-  if (myShiftHere) {
+  if (myShift) {
     title.textContent = 'Mon créneau';
     body.innerHTML = `
       <div class="slot-info">
         <strong>${col.ev.name}</strong><br>
         ${mission.name} · ${dateLabel}<br>
-        <span style="color:var(--mine);font-weight:700;">${fmtHMfull(myShiftHere.start)} → ${fmtHMfull(myShiftHere.end)}</span>
+        <span style="color:var(--mine);font-weight:700;">${fmtHMfull(myShift[2])} → ${fmtHMfull(myShift[3])}</span>
       </div>
       <div class="form-field">
         <label for="inputStart">Heure de début</label>
-        <input type="time" id="inputStart" value="${minToTimeStr(myShiftHere.start)}" min="${minToTimeStr(ranges[0].start)}" max="${minToTimeStr(ranges[ranges.length-1].end)}" step="60">
+        <input type="time" id="inputStart" value="${fmtHMfull(myShift[2])}" min="${fmtHMfull(ranges[0].start)}" max="${fmtHMfull(ranges[ranges.length-1].end)}" step="60">
       </div>
       <div class="form-field">
         <label for="inputEnd">Heure de fin</label>
-        <input type="time" id="inputEnd" value="${minToTimeStr(myShiftHere.end)}" min="${minToTimeStr(ranges[0].start)}" max="${minToTimeStr(ranges[ranges.length-1].end)}" step="60">
+        <input type="time" id="inputEnd" value="${fmtHMfull(myShift[3])}" min="${fmtHMfull(ranges[0].start)}" max="${fmtHMfull(ranges[ranges.length-1].end)}" step="60">
       </div>
       <div class="error" id="modalError"></div>
     `;
     actions.innerHTML = '';
+
     const btnSave = document.createElement('button');
     btnSave.className = 'btn primary';
     btnSave.textContent = 'Enregistrer';
-    btnSave.onclick = () => {
+    btnSave.onclick = async () => {
       const ns = timeStrToMin(document.getElementById('inputStart').value);
       const ne = timeStrToMin(document.getElementById('inputEnd').value);
-      if (ne <= ns) { showErr('Fin doit être après début.'); return; }
-      if (!shiftWithinRanges(ns, ne, ranges)) { showErr('Hors plage autorisée.'); return; }
-      const conflict = userHasOverlapAnyMission(dateStr, CURRENT_USER.id, ns, ne, myShiftHere.id);
-      if (conflict) {
-        showErr(`Conflit avec ${conflict.mission.name} (${conflict.ev.name}) ${fmtHMfull(conflict.shift.start)}→${fmtHMfull(conflict.shift.end)}.`);
-        return;
-      }
+      if (ne <= ns) return showErr('Fin doit être après début.');
+      if (!shiftWithinRanges(ns, ne, ranges)) return showErr('Hors plage autorisée.');
+      const conflict = userHasOverlapAnyMission(dateStr, ME.uid, ns, ne, myShift[0]);
+      if (conflict) return showErr(`Conflit avec ${conflict.mission.name} (${conflict.ev.name}).`);
       for (let mm = ns; mm < ne; mm++) {
         let count = 0;
-        getShifts(dateStr, mission.id).forEach(s => {
-          if (s.id === myShiftHere.id) return;
-          if (mm >= s.start && mm < s.end) count++;
-        });
-        if (count >= mission.quota) { showErr(`Capacité atteinte à ${fmtHMfull(mm)}.`); return; }
+        for (const s of getShifts(dateStr, mission.id)) {
+          if (s[0] === myShift[0]) continue;
+          if (mm >= s[2] && mm < s[3]) count++;
+        }
+        if (count >= mission.quota) return showErr(`Capacité atteinte à ${fmtHMfull(mm)}.`);
       }
-      myShiftHere.start = ns; myShiftHere.end = ne;
-      closeModal();
-      renderDayGrid();
+
+      btnSave.disabled = true; btnSave.textContent = 'Enregistrement…';
+      myShift[2] = ns; myShift[3] = ne;
+      try {
+        await persistDay(dateStr);
+        closeModal();
+        renderDayGrid();
+      } catch (e) {
+        console.error(e);
+        showErr('Erreur d\'enregistrement.');
+        btnSave.disabled = false; btnSave.textContent = 'Enregistrer';
+      }
     };
     actions.appendChild(btnSave);
 
     const btnDel = document.createElement('button');
     btnDel.className = 'btn danger';
     btnDel.textContent = 'Supprimer';
-    btnDel.onclick = () => {
+    btnDel.onclick = async () => {
       if (!confirm('Supprimer ce créneau ?')) return;
-      const key = `${dateStr}|${mission.id}`;
-      bookings[key] = getShifts(dateStr, mission.id).filter(s => s.id !== myShiftHere.id);
-      closeModal();
-      renderDayGrid();
+      btnDel.disabled = true; btnDel.textContent = 'Suppression…';
+      const arr = bookingsCache[dateStr][mission.id] || [];
+      bookingsCache[dateStr][mission.id] = arr.filter(s => s[0] !== myShift[0]);
+      try {
+        await persistDay(dateStr);
+        closeModal();
+        renderDayGrid();
+      } catch (e) {
+        console.error(e);
+        showErr('Erreur de suppression.');
+        btnDel.disabled = false; btnDel.textContent = 'Supprimer';
+      }
     };
     actions.appendChild(btnDel);
 
@@ -723,12 +779,11 @@ function openSlotModal(dateStr, col, clickedMinute) {
     return;
   }
 
-  // CAS 2 : création
   const containingRange = ranges.find(r => clickedMinute >= r.start && clickedMinute < r.end)
     || ranges.find(r => clickedMinute < r.end) || ranges[0];
   let defaultStart = Math.max(containingRange.start, clickedMinute);
   if (defaultStart >= containingRange.end) defaultStart = containingRange.start;
-  let defaultEnd = Math.min(containingRange.end, defaultStart + 60);
+  const defaultEnd = Math.min(containingRange.end, defaultStart + 60);
 
   title.textContent = 'Prendre une garde';
   body.innerHTML = `
@@ -740,11 +795,11 @@ function openSlotModal(dateStr, col, clickedMinute) {
     </div>
     <div class="form-field">
       <label for="inputStart">Heure de début</label>
-      <input type="time" id="inputStart" value="${minToTimeStr(defaultStart)}" min="${minToTimeStr(containingRange.start)}" max="${minToTimeStr(containingRange.end)}" step="60">
+      <input type="time" id="inputStart" value="${fmtHMfull(defaultStart)}" min="${fmtHMfull(containingRange.start)}" max="${fmtHMfull(containingRange.end)}" step="60">
     </div>
     <div class="form-field">
       <label for="inputEnd">Heure de fin</label>
-      <input type="time" id="inputEnd" value="${minToTimeStr(defaultEnd)}" min="${minToTimeStr(containingRange.start)}" max="${minToTimeStr(containingRange.end)}" step="60">
+      <input type="time" id="inputEnd" value="${fmtHMfull(defaultEnd)}" min="${fmtHMfull(containingRange.start)}" max="${fmtHMfull(containingRange.end)}" step="60">
     </div>
     <div class="error" id="modalError"></div>
   `;
@@ -753,26 +808,33 @@ function openSlotModal(dateStr, col, clickedMinute) {
   const btnTake = document.createElement('button');
   btnTake.className = 'btn primary';
   btnTake.textContent = "Je m'inscris";
-  btnTake.onclick = () => {
+  btnTake.onclick = async () => {
     const start = timeStrToMin(document.getElementById('inputStart').value);
     const end = timeStrToMin(document.getElementById('inputEnd').value);
-    if (end <= start) { showErr('Fin doit être après début.'); return; }
-    if (!shiftWithinRanges(start, end, ranges)) { showErr('Hors plage autorisée.'); return; }
-    const conflict = userHasOverlapAnyMission(dateStr, CURRENT_USER.id, start, end, null);
-    if (conflict) {
-      showErr(`Vous avez déjà ${conflict.mission.name} (${conflict.ev.name}) sur ${fmtHMfull(conflict.shift.start)}→${fmtHMfull(conflict.shift.end)}.`);
-      return;
-    }
+    if (end <= start) return showErr('Fin doit être après début.');
+    if (!shiftWithinRanges(start, end, ranges)) return showErr('Hors plage autorisée.');
+    const conflict = userHasOverlapAnyMission(dateStr, ME.uid, start, end, null);
+    if (conflict) return showErr(`Vous avez déjà ${conflict.mission.name} (${conflict.ev.name}).`);
     for (let mm = start; mm < end; mm++) {
       if (coverAt(dateStr, mission.id, mm) >= mission.quota) {
-        showErr(`Capacité atteinte à ${fmtHMfull(mm)}.`); return;
+        return showErr(`Capacité atteinte à ${fmtHMfull(mm)}.`);
       }
     }
-    const key = `${dateStr}|${mission.id}`;
-    if (!bookings[key]) bookings[key] = [];
-    bookings[key].push({ id: nextId(), userId: CURRENT_USER.id, start, end });
-    closeModal();
-    renderDayGrid();
+
+    btnTake.disabled = true; btnTake.textContent = 'Inscription…';
+    if (!bookingsCache[dateStr]) bookingsCache[dateStr] = {};
+    if (!bookingsCache[dateStr][mission.id]) bookingsCache[dateStr][mission.id] = [];
+    bookingsCache[dateStr][mission.id].push([shortId(), ME.uid, start, end]);
+
+    try {
+      await persistDay(dateStr);
+      closeModal();
+      renderDayGrid();
+    } catch (e) {
+      console.error(e);
+      showErr('Erreur d\'enregistrement.');
+      btnTake.disabled = false; btnTake.textContent = "Je m'inscris";
+    }
   };
   actions.appendChild(btnTake);
 
@@ -796,14 +858,14 @@ function closeModal() {
 /* =====================================================================
    MON PLANNING
    ===================================================================== */
-function openMyPlanning() {
+async function openMyPlanning() {
   document.getElementById('calendarView').style.display = 'none';
   document.getElementById('dayView').classList.remove('active');
   document.getElementById('myPlanningView').classList.add('active');
   document.getElementById('tabPlanning').classList.remove('active');
   document.getElementById('tabMyPlanning').classList.add('active');
   myPlanningDate = new Date();
-  renderMyPlanning();
+  await renderMyPlanning();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function closeMyPlanning() {
@@ -814,9 +876,9 @@ function closeMyPlanning() {
   renderCalendar();
 }
 
-function renderMyPlanning() {
+async function renderMyPlanning() {
   const grid = document.getElementById('gcalGrid');
-  grid.innerHTML = '';
+  grid.innerHTML = '<div class="loader">Chargement…</div>';
 
   const monday = (() => {
     const d = new Date(myPlanningDate);
@@ -831,21 +893,25 @@ function renderMyPlanning() {
     `${monday.toLocaleDateString('fr-FR', { day:'numeric', month:'short' })} → ` +
     `${sunday.toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' })}`;
 
+  const weekDates = [];
+  for (let i = 0; i < 7; i++) weekDates.push(fmtDate(addDays(monday, i)));
+  await ensureRangeLoaded(weekDates);
+
   const shiftsByDay = {};
-  for (let i = 0; i < 7; i++) {
-    const dateStr = fmtDate(addDays(monday, i));
+  for (const dateStr of weekDates) {
     shiftsByDay[dateStr] = [];
     EVENTS.forEach(ev => ev.missions.forEach(m => {
-      getShifts(dateStr, m.id).forEach(s => {
-        if (s.userId !== CURRENT_USER.id) return;
+      for (const s of getShifts(dateStr, m.id)) {
+        if (s[1] !== ME.uid) continue;
         shiftsByDay[dateStr].push({ shift: s, mission: m, ev });
-      });
+      }
     }));
   }
 
   const isMobile = window.matchMedia('(max-width: 640px)').matches;
   const hourH = isMobile ? 40 : 60;
 
+  grid.innerHTML = '';
   grid.style.gridTemplateColumns = `60px repeat(7, minmax(110px, 1fr))`;
   grid.style.gridTemplateRows = `auto 1fr`;
 
@@ -865,8 +931,7 @@ function renderMyPlanning() {
 
   const hourCol = document.createElement('div');
   hourCol.className = 'gcal-hour-col';
-  hourCol.style.gridRow = '2';
-  hourCol.style.gridColumn = '1';
+  hourCol.style.gridRow = '2'; hourCol.style.gridColumn = '1';
   for (let h = 0; h < 24; h++) {
     const c = document.createElement('div');
     c.className = 'gcal-hour-cell';
@@ -881,23 +946,22 @@ function renderMyPlanning() {
     const dateStr = fmtDate(d);
     const col = document.createElement('div');
     col.className = 'gcal-day-col';
-    col.style.gridRow = '2';
-    col.style.gridColumn = `${i+2}`;
+    col.style.gridRow = '2'; col.style.gridColumn = `${i+2}`;
 
     const slots = document.createElement('div');
     slots.className = 'gcal-slots';
     slots.style.height = (24 * hourH) + 'px';
 
     shiftsByDay[dateStr].forEach(({ shift, mission, ev }) => {
-      const top = (shift.start / 60) * hourH;
-      const height = Math.max(20, ((shift.end - shift.start) / 60) * hourH - 1);
+      const top = (shift[2] / 60) * hourH;
+      const height = Math.max(20, ((shift[3] - shift[2]) / 60) * hourH - 1);
       const el = document.createElement('div');
       el.className = 'gcal-event';
       el.style.top = top + 'px';
       el.style.height = height + 'px';
       el.style.background = mission.color || ev.color || '#3498db';
       el.innerHTML = `
-        <div class="ev-time">${fmtHMfull(shift.start)}–${fmtHMfull(shift.end)}</div>
+        <div class="ev-time">${fmtHMfull(shift[2])}–${fmtHMfull(shift[3])}</div>
         <div class="ev-title">${ev.name}</div>
         <div class="ev-role">${mission.name}</div>
       `;
@@ -911,11 +975,10 @@ function renderMyPlanning() {
 }
 
 function openShiftActions(dateStr, mission, ev, shift) {
-  openDayView(dateStr);
-  setTimeout(() => {
+  openDayView(dateStr).then(() => {
     const ranges = missionRangesForDate(mission, dateStr);
-    openSlotModal(dateStr, { ev, mission, ranges }, shift.start);
-  }, 200);
+    openSlotModal(dateStr, { ev, mission, ranges }, shift[2]);
+  });
 }
 
 /* =====================================================================
@@ -967,8 +1030,12 @@ onAuthStateChanged(auth, async (user) => {
       goToLogin();
       return;
     }
-    // Connecté + actif → on charge les événements
-    loadEvents();
+    ME = { uid: user.uid, name: snap.data().name || user.displayName || user.email || 'Vous' };
+
+    // Charger l'archive statique UNE SEULE FOIS avant tout rendu
+    await loadArchiveJSON();
+    await loadEventsJSON();
+    renderCalendar();
   } catch (err) {
     console.error(err);
     await signOut(auth).catch(() => {});
@@ -976,7 +1043,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-/* Déconnexion */
 document.getElementById('logout-btn').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
   btn.disabled = true;

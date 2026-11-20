@@ -185,15 +185,6 @@ function coverAt(dateStr, missionId, minute) {
   return total;
 }
 
-function userHasOverlap(dateStr, missionId, userId, start, end) {
-  return getShifts(dateStr, missionId).some(s =>
-    s.userId === userId && !(end <= s.start || start >= s.end)
-  );
-}
-
-/* Vérifie si l'utilisateur a un shift sur N'IMPORTE QUELLE mission
-   du jour qui chevauche [start,end) — pour interdire double inscription
-   sur la même plage horaire, tous événements confondus. */
 function userHasOverlapAnyMission(dateStr, userId, start, end, excludeShiftId) {
   const evs = eventsForDate(dateStr);
   for (const ev of evs) {
@@ -215,7 +206,6 @@ function shiftWithinRanges(start, end, ranges) {
   return ranges.some(r => start >= r.start && end <= r.end);
 }
 
-/* Calcule le statut d'une mission sur la journée (complète/partielle/vide) */
 function missionDayStatus(dateStr, mission) {
   const ranges = missionRangesForDate(mission, dateStr);
   if (ranges.length === 0) return 'empty';
@@ -266,7 +256,7 @@ async function loadEvents() {
 }
 
 /* =====================================================================
-   CALENDRIER MENSUEL — affiche directement les noms d'événements
+   CALENDRIER MENSUEL
    ===================================================================== */
 function renderCalendar() {
   const grid = document.getElementById('calendarGrid');
@@ -301,7 +291,6 @@ function renderCalendar() {
     const evs = eventsForDate(dateStr);
     let chipsHTML = '';
     evs.slice(0, 3).forEach(ev => {
-      const status = eventDayStatus(dateStr, ev);
       chipsHTML += `<span class="ev-chip" style="background:${ev.color || '#3498db'}">${ev.name}</span>`;
     });
     if (evs.length > 3) {
@@ -376,11 +365,9 @@ function renderDayGrid() {
     maxMin = Math.max(maxMin, r.end);
   }));
   const startH = Math.max(0, Math.floor(minMin/60));
-  const endH = Math.min(24, Math.ceil(maxMax(maxMin)/60));
+  const endH = Math.min(24, Math.ceil(maxMin/60));
   const rowStart = startH * 60;
   const rowEnd = endH * 60;
-
-  function maxMax(x) { return Math.max(0, x); }
 
   const HOUR_H = window.matchMedia('(max-width: 640px)').matches ? 40
                 : window.matchMedia('(min-width: 900px)').matches ? 60
@@ -488,7 +475,10 @@ function renderDayGrid() {
   }
   grid.appendChild(hourCol);
 
-  /* ---------- Colonnes missions : blocs ---------- */
+  /* ---------- Colonnes missions : blocs + hachures ---------- */
+
+  // 1. On construit la timeline "occupation" par mission
+  //    (répartition des shifts dans les sous-colonnes M1..Mn)
   const timelineByCol = cols.map(col => {
     const totalMinutes = rowEnd - rowStart;
     const arr = new Array(totalMinutes);
@@ -509,8 +499,18 @@ function renderDayGrid() {
     return { ...col, timeline: arr };
   });
 
+  // 2. On rend chaque sous-colonne M1..Mn pour chaque mission
   let subColIdx = 2;
   timelineByCol.forEach(col => {
+    // Segments hors plage (communs à toutes les sous-colonnes)
+    const outSegments = [];
+    let cursor = rowStart;
+    col.ranges.forEach(r => {
+      if (r.start > cursor) outSegments.push({ start: cursor, end: r.start });
+      cursor = Math.max(cursor, r.end);
+    });
+    if (cursor < rowEnd) outSegments.push({ start: cursor, end: rowEnd });
+
     for (let p = 0; p < col.mission.quota; p++) {
       const colEl = document.createElement('div');
       colEl.className = 'mission-col';
@@ -519,33 +519,18 @@ function renderDayGrid() {
       colEl.style.setProperty('--hour-h', HOUR_H + 'px');
       colEl.style.height = contentH + 'px';
 
-      // Zones hors plage (hachurées) — un bloc par intervalle hors plage
-      const allRangeBounds = [];
-      col.ranges.forEach(r => { allRangeBounds.push(r.start, r.end); });
-      const sortedBounds = [...new Set(allRangeBounds)].sort((a,b)=>a-b);
-      // Hors plage = entre rowStart et rowEnd, hors des ranges autorisées
-      const outSegments = [];
-      let cursor = rowStart;
-      col.ranges.forEach(r => {
-        if (r.start > cursor) outSegments.push({ start: cursor, end: r.start });
-        cursor = Math.max(cursor, r.end);
+      // Arrière-plan hachuré sur TOUTES les sous-colonnes
+      outSegments.forEach(seg => {
+        const top = ((seg.start - rowStart) / 60) * HOUR_H;
+        const height = ((seg.end - seg.start) / 60) * HOUR_H;
+        const o = document.createElement('div');
+        o.className = 'out-of-range';
+        o.style.top = top + 'px';
+        o.style.height = height + 'px';
+        colEl.appendChild(o);
       });
-      if (cursor < rowEnd) outSegments.push({ start: cursor, end: rowEnd });
 
-      // Afficher les segments hors plage uniquement sur la 1re sous-colonne
-      if (p === 0) {
-        outSegments.forEach(seg => {
-          const top = ((seg.start - rowStart) / 60) * HOUR_H;
-          const height = ((seg.end - seg.start) / 60) * HOUR_H;
-          const o = document.createElement('div');
-          o.className = 'out-of-range';
-          o.style.top = top + 'px';
-          o.style.height = height + 'px';
-          colEl.appendChild(o);
-        });
-      }
-
-      // Construire les segments d'occupation
+      // Construire les segments d'occupation pour cette sous-colonne
       const segments = [];
       let cur = null;
       for (let i = 0; i < col.timeline.length; i++) {
@@ -565,10 +550,9 @@ function renderDayGrid() {
       }
       if (cur) segments.push(cur);
 
+      // Rendu : chaque sous-colonne affiche SES propres blocs (libre ou pris)
       segments.forEach(seg => {
         if (seg.state === 'out') return;
-        // Pour les zones "free", on n'affiche le bloc QUE sur la 1re sous-colonne
-        if (seg.state === 'free' && p !== 0) return;
 
         const top = ((seg.start - rowStart) / 60) * HOUR_H;
         const height = Math.max(3, ((seg.end - seg.start) / 60) * HOUR_H - 1);
@@ -621,7 +605,7 @@ function shade(hex, factor) {
 }
 
 /* =====================================================================
-   MODAL — création directe / modification directe si clic sur "mine"
+   MODAL
    ===================================================================== */
 function openSlotModal(dateStr, col, clickedMinute) {
   const { mission, ranges } = col;
@@ -630,7 +614,6 @@ function openSlotModal(dateStr, col, clickedMinute) {
   const body = document.getElementById('modalBody');
   const actions = document.getElementById('modalActions');
 
-  // Vérifier si l'utilisateur a un shift ici (mission courante)
   const myShiftHere = getShifts(dateStr, mission.id)
     .find(s => s.userId === CURRENT_USER.id && clickedMinute >= s.start && clickedMinute < s.end);
 
@@ -639,7 +622,7 @@ function openSlotModal(dateStr, col, clickedMinute) {
     weekday: 'long', day: 'numeric', month: 'long'
   });
 
-  // ---- CAS 1 : clic sur MON propre shift -> modification directe
+  // ---- CAS 1 : clic sur MON propre shift
   if (myShiftHere) {
     title.textContent = 'Mon créneau';
     body.innerHTML = `
@@ -664,13 +647,11 @@ function openSlotModal(dateStr, col, clickedMinute) {
       const ne = timeStrToMin(document.getElementById('inputEnd').value);
       if (ne <= ns) { showErr('Fin doit être après début.'); return; }
       if (!shiftWithinRanges(ns, ne, ranges)) { showErr('Hors plage autorisée.'); return; }
-      // Vérif conflit avec autres missions du jour
       const conflict = userHasOverlapAnyMission(dateStr, CURRENT_USER.id, ns, ne, myShiftHere.id);
       if (conflict) {
         showErr(`Conflit avec ${conflict.mission.name} (${conflict.ev.name}) ${fmtHMfull(conflict.shift.start)}→${fmtHMfull(conflict.shift.end)}.`);
         return;
       }
-      // Vérif capacité sur la mission
       for (let mm = ns; mm < ne; mm++) {
         let count = 0;
         getShifts(dateStr, mission.id).forEach(s => {
@@ -709,7 +690,7 @@ function openSlotModal(dateStr, col, clickedMinute) {
     return;
   }
 
-  // ---- CAS 2 : clic sur une zone libre -> création
+  // ---- CAS 2 : création
   const containingRange = ranges.find(r => clickedMinute >= r.start && clickedMinute < r.end)
     || ranges.find(r => clickedMinute < r.end) || ranges[0];
   let defaultStart = Math.max(containingRange.start, clickedMinute);
@@ -741,14 +722,12 @@ function openSlotModal(dateStr, col, clickedMinute) {
     if (end <= start) { showErr('Fin doit être après début.'); return; }
     if (!shiftWithinRanges(start, end, ranges)) { showErr('Hors plage autorisée.'); return; }
 
-    // NOUVEAU : conflit avec N'IMPORTE QUELLE autre mission du jour
     const conflict = userHasOverlapAnyMission(dateStr, CURRENT_USER.id, start, end, null);
     if (conflict) {
       showErr(`Vous avez déjà ${conflict.mission.name} (${conflict.ev.name}) sur ${fmtHMfull(conflict.shift.start)}→${fmtHMfull(conflict.shift.end)}.`);
       return;
     }
 
-    // Capacité de la mission
     for (let mm = start; mm < end; mm++) {
       if (coverAt(dateStr, mission.id, mm) >= mission.quota) {
         showErr(`Capacité atteinte à ${fmtHMfull(mm)}.`); return;
@@ -898,7 +877,6 @@ function renderMyPlanning() {
 }
 
 function openShiftActions(dateStr, mission, ev, shift) {
-  // Ouvre la vue jour + le modal du shift directement
   openDayView(dateStr);
   setTimeout(() => {
     const ranges = missionRangesForDate(mission, dateStr);

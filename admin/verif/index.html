@@ -267,6 +267,7 @@
         .user-card.pending { border-left: 3px solid var(--warning); }
         .user-card.active { border-left: 3px solid var(--success); }
         .user-card.rejected { border-left: 3px solid var(--error); }
+        .user-card.editing { border-color: var(--accent); }
 
         .user-card-head {
             display: flex;
@@ -424,6 +425,11 @@
             border-color: var(--error);
         }
 
+        .action-btn.small {
+            padding: 0.35rem 0.7rem;
+            font-size: 0.8em;
+        }
+
         /* Champ numéro de siège */
         .seat-field {
             display: flex;
@@ -432,14 +438,16 @@
             min-width: 9rem;
         }
 
-        .seat-field label {
+        .seat-field label,
+        .edit-field label {
             font-size: 0.75em;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
-        .seat-field input {
+        .seat-field input,
+        .edit-field input {
             font-family: inherit;
             font-size: 0.9em;
             width: 100%;
@@ -452,18 +460,46 @@
             transition: border-color .15s;
         }
 
-        .seat-field input:focus {
+        .seat-field input:focus,
+        .edit-field input:focus {
             border-color: var(--text);
         }
 
-        .seat-field input.invalid {
+        .seat-field input.invalid,
+        .edit-field input.invalid {
             border-color: var(--error);
         }
 
-        .seat-error {
+        .seat-error,
+        .edit-error {
             color: var(--error);
             font-size: 0.75em;
             min-height: 1em;
+        }
+
+        /* Formulaire d'édition */
+        .edit-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+            gap: 0.6rem 1.25rem;
+            padding: 0.75rem;
+            background: var(--card-hover);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+        }
+
+        .edit-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 0;
+        }
+
+        .edit-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.25rem;
         }
 
         .footer {
@@ -518,6 +554,7 @@
         @media (max-width: 640px) {
             .user-card-head { flex-direction: column; align-items: stretch; }
             .info-grid { grid-template-columns: 1fr; }
+            .edit-form { grid-template-columns: 1fr; }
             .page-title { display: none; }
         }
 
@@ -643,6 +680,7 @@
         let allUsers = [];
         let currentFilter = 'pending';
         let currentSearch = '';
+        let editingUid = null; // UID de la carte en cours d'édition
 
         const goToLogin = () => {
             window.location.replace(
@@ -708,8 +746,6 @@
 
         // --- Gestion des sièges ---
 
-        // Renvoie la liste des sièges déjà attribués (peu importe le statut,
-        // dès lors que le champ seatNumber existe).
         function getUsedSeats(exceptUid = null) {
             const used = new Set();
             for (const u of allUsers) {
@@ -720,7 +756,6 @@
             return used;
         }
 
-        // Prochain siège proposé : max(sieges existants) + 1, ou 1 si aucun.
         function getNextSeat() {
             let max = 0;
             for (const u of allUsers) {
@@ -730,8 +765,6 @@
             return max + 1;
         }
 
-        // Vérifie qu'un numéro de siège est valide et libre.
-        // Retourne null si ok, sinon un message d'erreur.
         function checkSeat(seatRaw, uid) {
             const seat = Number(seatRaw);
             if (!Number.isInteger(seat) || seat < 1) {
@@ -773,6 +806,7 @@
             const isActive = u.status === 'active';
             const isRejected = u.status === 'rejected';
             const isAdmin = u.isAdmin === true;
+            const isEditing = editingUid === u.id && !isAdmin;
 
             const roleLabel = ROLE_LABELS[u.role] || u.role || '—';
             const statusClass = isPending ? 'pending' : isActive ? 'active' : isRejected ? 'rejected' : '';
@@ -788,8 +822,37 @@
                 ? u.createdAt.toDate().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
                 : '—';
 
-            // Champ de saisie du siège, uniquement pour un compte pending sans siège attribué.
-            const showSeatInput = isPending && !isAdmin && !hasSeat;
+            // Formulaire d'édition (nom, classe, siège)
+            let editFormHtml = '';
+            if (isEditing) {
+                const currentSeat = hasSeat ? Number(u.seatNumber) : '';
+                editFormHtml = `
+                    <div class="edit-form" data-edit-form>
+                        <div class="edit-field">
+                            <label for="edit-name-${esc(u.id)}">Nom Prénom</label>
+                            <input type="text" id="edit-name-${esc(u.id)}" value="${esc(u.name || '')}" data-edit-name placeholder="Nom Prénom">
+                            <span class="edit-error" data-edit-name-error></span>
+                        </div>
+                        <div class="edit-field">
+                            <label for="edit-classe-${esc(u.id)}">Classe</label>
+                            <input type="text" id="edit-classe-${esc(u.id)}" value="${esc(u.classe || '')}" data-edit-classe placeholder="Classe">
+                            <span class="edit-error" data-edit-classe-error></span>
+                        </div>
+                        <div class="edit-field">
+                            <label for="edit-seat-${esc(u.id)}">N° de siège</label>
+                            <input type="number" id="edit-seat-${esc(u.id)}" min="1" step="1" value="${esc(currentSeat)}" data-edit-seat inputmode="numeric" placeholder="Ex : 12">
+                            <span class="edit-error" data-edit-seat-error></span>
+                        </div>
+                        <div class="edit-actions">
+                            <button class="action-btn primary small" data-action="save-edit">Enregistrer</button>
+                            <button class="action-btn small" data-action="cancel-edit">Annuler</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Champ de saisie du siège lors de la validation (pending sans siège)
+            const showSeatInput = isPending && !isAdmin && !hasSeat && !isEditing;
             const proposedSeat = showSeatInput ? getNextSeat() : null;
             const seatFieldHtml = showSeatInput ? `
                 <div class="seat-field">
@@ -808,28 +871,31 @@
             ` : '';
 
             let actionsHtml = '';
-            if (!isAdmin) {
+            if (!isAdmin && !isEditing) {
                 if (isPending) {
                     actionsHtml = `
                         ${seatFieldHtml}
                         <button class="action-btn primary" data-action="activate">Valider</button>
                         <button class="action-btn danger" data-action="reject">Refuser</button>
+                        <button class="action-btn" data-action="edit">✎ Modifier</button>
                     `;
                 } else if (isActive) {
                     actionsHtml = `
                         <button class="action-btn" data-action="deactivate">Remettre en attente</button>
                         <button class="action-btn danger" data-action="reject">Refuser</button>
+                        <button class="action-btn" data-action="edit">✎ Modifier</button>
                     `;
                 } else if (isRejected) {
                     actionsHtml = `
                         <button class="action-btn primary" data-action="activate">Valider</button>
                         <button class="action-btn" data-action="deactivate">Remettre en attente</button>
+                        <button class="action-btn" data-action="edit">✎ Modifier</button>
                     `;
                 }
             }
 
             return `
-                <article class="user-card ${statusClass}" data-uid="${esc(u.id)}">
+                <article class="user-card ${statusClass} ${isEditing ? 'editing' : ''}" data-uid="${esc(u.id)}">
                     <div class="user-card-head">
                         <div class="user-card-title">
                             <span class="name">${esc(u.name || 'Sans nom')}</span>
@@ -876,6 +942,7 @@
                         </div>
                     </div>
 
+                    ${editFormHtml}
                     ${actionsHtml ? `<div class="actions">${actionsHtml}</div>` : ''}
                 </article>
             `;
@@ -907,7 +974,7 @@
                 });
             });
 
-            // Validation en direct du champ siège (feedback visuel)
+            // Validation en direct du champ siège (création)
             listEl.querySelectorAll('[data-seat-input]').forEach(input => {
                 input.addEventListener('input', () => {
                     const card = input.closest('.user-card');
@@ -917,6 +984,45 @@
                     if (err) {
                         input.classList.add('invalid');
                         if (errEl) errEl.textContent = err;
+                    } else {
+                        input.classList.remove('invalid');
+                        if (errEl) errEl.textContent = '';
+                    }
+                });
+            });
+
+            // Validation en direct du champ siège (édition)
+            listEl.querySelectorAll('[data-edit-seat]').forEach(input => {
+                input.addEventListener('input', () => {
+                    const card = input.closest('.user-card');
+                    const uid = card.dataset.uid;
+                    const errEl = card.querySelector('[data-edit-seat-error]');
+                    const val = input.value.trim();
+                    let err = null;
+                    if (val === '') {
+                        err = null; // champ optionnel, on peut laisser vide
+                    } else {
+                        err = checkSeat(val, uid);
+                    }
+                    if (err) {
+                        input.classList.add('invalid');
+                        if (errEl) errEl.textContent = err;
+                    } else {
+                        input.classList.remove('invalid');
+                        if (errEl) errEl.textContent = '';
+                    }
+                });
+            });
+
+            // Validation du nom
+            listEl.querySelectorAll('[data-edit-name]').forEach(input => {
+                input.addEventListener('input', () => {
+                    const card = input.closest('.user-card');
+                    const errEl = card.querySelector('[data-edit-name-error]');
+                    const val = input.value.trim();
+                    if (!val) {
+                        input.classList.add('invalid');
+                        if (errEl) errEl.textContent = 'Le nom est obligatoire.';
                     } else {
                         input.classList.remove('invalid');
                         if (errEl) errEl.textContent = '';
@@ -937,9 +1043,25 @@
                         return;
                     }
 
+                    if (action === 'edit') {
+                        editingUid = uid;
+                        render();
+                        return;
+                    }
+
+                    if (action === 'cancel-edit') {
+                        editingUid = null;
+                        render();
+                        return;
+                    }
+
+                    if (action === 'save-edit') {
+                        await saveEdition(card, uid, user, btn);
+                        return;
+                    }
+
                     if (action === 'activate') {
                         const seatInput = card.querySelector('[data-seat-input]');
-                        // Si un champ siège est affiché, on l'utilise ; sinon on garde l'existant.
                         let seat = null;
                         if (seatInput) {
                             const err = checkSeat(seatInput.value, uid);
@@ -964,6 +1086,77 @@
             });
         }
 
+        async function saveEdition(card, uid, user, btn) {
+            const nameInput = card.querySelector('[data-edit-name]');
+            const classeInput = card.querySelector('[data-edit-classe]');
+            const seatInput = card.querySelector('[data-edit-seat]');
+            const nameErrEl = card.querySelector('[data-edit-name-error]');
+            const seatErrEl = card.querySelector('[data-edit-seat-error]');
+
+            const newName = nameInput.value.trim();
+            const newClasse = classeInput.value.trim();
+            const seatRaw = seatInput.value.trim();
+
+            // Validation du nom
+            if (!newName) {
+                nameInput.classList.add('invalid');
+                if (nameErrEl) nameErrEl.textContent = 'Le nom est obligatoire.';
+                showToast('Le nom est obligatoire.', 'error');
+                return;
+            }
+
+            // Validation du siège (optionnel)
+            let newSeat = null;
+            if (seatRaw !== '') {
+                const err = checkSeat(seatRaw, uid);
+                if (err) {
+                    seatInput.classList.add('invalid');
+                    if (seatErrEl) seatErrEl.textContent = err;
+                    showToast(err, 'error');
+                    return;
+                }
+                newSeat = Number(seatRaw);
+            }
+
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = '…';
+
+            try {
+                const payload = {
+                    name: newName,
+                    classe: newClasse
+                };
+                if (newSeat !== null) {
+                    payload.seatNumber = newSeat;
+                } else {
+                    // Si le champ est vide, on supprime le siège s'il existait
+                    if (Number.isInteger(Number(user.seatNumber)) && Number(user.seatNumber) >= 1) {
+                        payload.seatNumber = null;
+                    }
+                }
+
+                await updateDoc(doc(db, 'users', uid), payload);
+
+                // Mise à jour locale
+                user.name = newName;
+                user.classe = newClasse;
+                if (payload.seatNumber !== undefined) {
+                    user.seatNumber = payload.seatNumber;
+                }
+
+                editingUid = null;
+                updateCounts();
+                render();
+                showToast('Informations mises à jour avec succès.', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('Erreur lors de la mise à jour : ' + (err.message || 'action impossible.'), 'error');
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
         async function changeStatus(uid, status, btn, seatNumber = null) {
             btn.disabled = true;
             const original = btn.textContent;
@@ -973,7 +1166,6 @@
 
             try {
                 const payload = { status };
-                // Attribution du siège uniquement à la première validation
                 if (status === 'active' && seatNumber !== null) {
                     payload.seatNumber = seatNumber;
                 }
@@ -987,6 +1179,7 @@
                     }
                 }
 
+                editingUid = null;
                 updateCounts();
                 render();
 
@@ -1012,7 +1205,6 @@
 
         // --- Export sieges.json ---
 
-        // Découpe "Nom Prénom" sur le premier espace.
         function splitName(fullName) {
             const trimmed = String(fullName || '').trim();
             if (!trimmed) return { nom: '', prenom: '' };
@@ -1026,7 +1218,6 @@
             return { nom, prenom };
         }
 
-        // "Monsieur" → "M", "Madame" → "F", sinon "".
         function genderToSex(gender) {
             if (gender === 'Madame') return 'F';
             if (gender === 'Monsieur') return 'M';
@@ -1216,6 +1407,7 @@ anaelmaire.pro@gmail.com`;
                 filterBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentFilter = btn.dataset.filter;
+                editingUid = null;
                 render();
             });
         });

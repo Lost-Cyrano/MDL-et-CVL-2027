@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Administration — Archivage & Événements</title>
+<link rel="stylesheet" href="./style.css">
+<style>
+  .admin-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .admin-panel h3 { font-size: 1em; font-weight: 700; margin-bottom: 0.25rem; }
+  .admin-panel .hint { font-size: 0.85em; color: var(--text-muted); }
+  .admin-panel .hint code {
+    background: var(--card-hover);
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+  .stat {
+    background: var(--card-hover);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+  }
+  .stat-label {
+    font-size: 0.75em; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
+  }
+  .stat-value {
+    font-size: 1.6em; font-weight: 700;
+    margin-top: 0.2rem; color: var(--text);
+  }
+  .stat-value.small { font-size: 1em; }
+
+  .log {
+    background: var(--field);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.78em;
+    max-height: 280px;
+    overflow-y: auto;
+    line-height: 1.5;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .log .ok { color: var(--success); }
+  .log .warn { color: var(--warning); }
+  .log .err { color: var(--error); }
+  .log .muted { color: var(--text-muted); }
+
+  .actions-row {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;
+  }
+  .actions-row .btn { min-width: 180px; }
+
+  .progress-bar {
+    width: 100%; height: 8px;
+    background: var(--border); border-radius: 4px;
+    overflow: hidden; margin-top: 0.5rem;
+  }
+  .progress-bar > div {
+    height: 100%; background: var(--accent);
+    transition: width 0.2s; width: 0%;
+  }
+
+  /* ---- Events editor ---- */
+  .events-toolbar {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;
+    justify-content: space-between;
+  }
+  .events-list {
+    display: flex; flex-direction: column; gap: 0.75rem;
+  }
+  .event-card {
+    background: var(--card-hover);
+    border: 1px solid var(--border);
+    border-left-width: 4px;
+    border-radius: 0.5rem;
+    padding: 0.85rem 1rem;
+    display: flex; flex-direction: column; gap: 0.35rem;
+  }
+  .event-card-header {
+    display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 0.5rem; flex-wrap: wrap;
+  }
+  .event-card-title {
+    font-weight: 700; font-size: 1em;
+    display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
+  }
+  .event-card-badge {
+    font-size: 0.68em; font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .badge-recurring { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--text); }
+  .badge-punctual  { background: color-mix(in srgb, var(--warning) 20%, transparent); color: var(--warning); }
+  .event-card-meta {
+    font-size: 0.82em; color: var(--text-muted);
+    display: flex; flex-direction: column; gap: 0.15rem;
+  }
+  .event-card-missions {
+    display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.35rem;
+  }
+  .mission-chip {
+    background: var(--field);
+    border: 1px solid var(--border);
+    border-radius: 0.35rem;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.75em;
+    display: inline-flex; gap: 0.35rem; align-items: center;
+  }
+  .mission-chip .quota {
+    font-weight: 700;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    padding: 0.05rem 0.35rem;
+    border-radius: 999px;
+    font-size: 0.9em;
+  }
+  .event-card-actions {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.5rem;
+  }
+  .event-card-actions button {
+    font-size: 0.78em; padding: 0.35rem 0.7rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--border);
+    background: transparent; color: var(--text-muted);
+    cursor: pointer; transition: color .15s, border-color .15s, background .15s;
+  }
+  .event-card-actions button:hover { color: var(--text); border-color: var(--text); }
+  .event-card-actions button.danger {
+    color: var(--error);
+    border-color: color-mix(in srgb, var(--error) 40%, transparent);
+  }
+  .event-card-actions button.danger:hover {
+    background: color-mix(in srgb, var(--error) 12%, transparent);
+    border-color: var(--error);
+  }
+
+  /* ---- Modal éditeur événement ---- */
+  .ev-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none; align-items: flex-start; justify-content: center;
+    padding: 1rem; z-index: 100; overflow-y: auto;
+  }
+  .ev-modal-backdrop.visible { display: flex; }
+  .ev-modal {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+    width: 100%; max-width: 52rem;
+    display: flex; flex-direction: column; gap: 1rem;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    margin: 1rem auto;
+  }
+  .ev-modal-header {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  }
+  .ev-modal-title { font-size: 1.1em; font-weight: 700; }
+  .ev-modal-close {
+    font-size: 1.2em; background: transparent; border: none;
+    color: var(--text-muted); cursor: pointer;
+    padding: 0.25rem 0.5rem; border-radius: 0.35rem;
+  }
+  .ev-modal-close:hover { color: var(--text); background: var(--card-hover); }
+  .ev-modal-actions {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;
+    margin-top: 0.5rem; padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .weekdays-selector {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem;
+  }
+  .weekdays-selector label {
+    display: flex; align-items: center; justify-content: center;
+    padding: 0.4rem 0.2rem;
+    border: 1px solid var(--border);
+    border-radius: 0.35rem;
+    background: var(--field);
+    cursor: pointer;
+    font-size: 0.78em;
+    font-weight: 600;
+    user-select: none;
+    transition: background .15s, border-color .15s;
+  }
+  .weekdays-selector input { display: none; }
+  .weekdays-selector input:checked + span { color: var(--accent-text); }
+  .weekdays-selector label:has(input:checked) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-text);
+  }
+
+  .missions-editor {
+    display: flex; flex-direction: column; gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--field);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+  }
+  .mission-edit {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.65rem 0.85rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .mission-edit-header {
+    display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+  }
+  .mission-edit-header input[type="text"] { flex: 1; min-width: 140px; }
+  .mission-edit-header input[type="number"] { width: 80px; }
+  .mission-edit-header input[type="color"] {
+    width: 44px; height: 38px;
+    padding: 0; cursor: pointer; border-radius: 0.4rem;
+  }
+  .ranges-list {
+    display: flex; flex-direction: column; gap: 0.35rem;
+  }
+  .range-row {
+    display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;
+    font-size: 0.85em;
+  }
+  .range-row input[type="number"] { width: 70px; }
+  .range-row .exclude-label { font-size: 0.9em; color: var(--text-muted); }
+  .range-row button.remove-range {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--error); cursor: pointer;
+    border-radius: 0.35rem; padding: 0.2rem 0.5rem; font-size: 0.85em;
+  }
+  .range-row button.remove-range:hover {
+    background: color-mix(in srgb, var(--error) 12%, transparent);
+  }
+
+  .toggle-tabs {
+    display: flex; gap: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.2rem; background: var(--field);
+    width: fit-content;
+  }
+  .toggle-tabs button {
+    padding: 0.4rem 0.9rem;
+    border-radius: 0.35rem;
+    font-size: 0.85em; font-weight: 600;
+    border: none; background: transparent; color: var(--text-muted);
+    cursor: pointer;
+  }
+  .toggle-tabs button.active {
+    background: var(--accent); color: var(--accent-text);
+  }
+
+  .form-field { display: flex; flex-direction: column; gap: 0.35rem; }
+  .form-field label {
+    font-size: 0.82em; color: var(--text-muted); font-weight: 500;
+  }
+  .form-field input, .form-field select, .form-field textarea {
+    font-family: inherit; font-size: 1em;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--field); color: var(--text);
+    outline: none; transition: border-color .15s; width: 100%;
+  }
+  .form-field input:focus, .form-field select:focus { border-color: var(--accent); }
+  .form-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+  }
+  @media (max-width: 640px) {
+    .form-row { grid-template-columns: 1fr; }
+    .weekdays-selector { grid-template-columns: repeat(7, 1fr); }
+    .weekdays-selector label { font-size: 0.68em; padding: 0.35rem 0.1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <a href="https://account.honore-romane.fr/account/" class="back-link">← Accueil</a>
+    <span class="page-title">Administration — Planning</span>
+  </div>
+  <div class="header-actions">
+    <button class="text-btn" id="logout-btn">Déconnexion</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============================================================= -->
+  <!-- PANNEAU ÉVÉNEMENTS -->
+  <!-- ============================================================= -->
+  <div class="admin-panel">
+    <div>
+      <h3>🗓️ Événements (events.json)</h3>
+      <p class="hint">
+        Modifiez les événements puis téléchargez le nouveau
+        <code>events.json</code> à déployer sur le serveur.
+        Les disponibilités des utilisateurs ne sont <strong>pas</strong>
+        impactées par la suppression d'un événement existant.
+      </p>
+    </div>
+
+    <div class="events-toolbar">
+      <button class="text-btn primary" id="btnNewEvent">+ Nouvel événement</button>
+      <button class="text-btn" id="btnDownloadEvents">⬇️ Télécharger events.json</button>
+    </div>
+
+    <div id="events-state" class="hint">Chargement…</div>
+    <div id="events-list" class="events-list"></div>
+    <div class="log" id="log-events" style="display:none;"></div>
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- PANNEAU ARCHIVE -->
+  <!-- ============================================================= -->
+  <div class="admin-panel">
+    <div>
+      <h3>📦 État de l'archive</h3>
+      <p class="hint">
+        Cette section fusionne <code>gardes.json</code> avec les données Firestore
+        (Firestore prioritaire), télécharge la nouvelle archive, puis supprime
+        les documents Firestore pour libérer de l'espace.
+      </p>
+    </div>
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="stat-label">Archive actuelle</div>
+        <div class="stat-value small" id="stat-archive">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Jours Firestore</div>
+        <div class="stat-value" id="stat-fs-days">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Shifts Firestore</div>
+        <div class="stat-value" id="stat-fs-shifts">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Jours à mettre à jour</div>
+        <div class="stat-value" id="stat-to-update">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-panel">
+    <h3>🔍 Étape 1 — Analyser</h3>
+    <p class="hint">
+      Charge l'archive statique et liste tous les documents Firestore pour
+      calculer ce qui va être ajouté ou mis à jour.
+    </p>
+    <div class="actions-row">
+      <button class="text-btn primary" id="btnAnalyse">Analyser</button>
+      <button class="text-btn" id="btnReset" style="display:none;">Réinitialiser</button>
+    </div>
+    <div id="analyse-progress" class="progress-bar" style="display:none;">
+      <div></div>
+    </div>
+    <div class="log" id="log-analyse" style="display:none;"></div>
+  </div>
+
+  <div class="admin-panel" id="panel-download" style="display:none;">
+    <h3>⬇️ Étape 2 — Télécharger l'archive</h3>
+    <p class="hint">
+      Télécharge le fichier <code>gardes.json</code> fusionné. Placez-le à côté
+      de <code>index.html</code> <strong>avant</strong> de passer à l'étape 3.
+    </p>
+    <div class="actions-row">
+      <button class="text-btn primary" id="btnDownload">Télécharger gardes.json</button>
+    </div>
+    <div class="log" id="log-download" style="display:none;"></div>
+  </div>
+
+  <div class="admin-panel" id="panel-purge" style="display:none;">
+    <h3>🗑️ Étape 3 — Purger Firestore</h3>
+    <p class="hint" style="color:var(--error);">
+      ⚠️ Action irréversible. Ne cliquer qu'après avoir téléchargé ET déployé
+      <code>gardes.json</code> sur le serveur. Les documents Firestore seront
+      supprimés définitivement.
+    </p>
+    <div class="actions-row">
+      <button class="text-btn" id="btnPurge" style="
+        color: var(--error);
+        border-color: color-mix(in srgb, var(--error) 40%, transparent);
+      ">Supprimer tous les documents Firestore</button>
+    </div>
+    <div class="log" id="log-purge" style="display:none;"></div>
+  </div>
+
+</main>
+
+<footer class="footer">
+  MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
+</footer>
+
+<!-- ============================================================= -->
+<!-- MODAL ÉDITEUR D'ÉVÉNEMENT -->
+<!-- ============================================================= -->
+<div class="ev-modal-backdrop" id="evModal">
+  <div class="ev-modal" role="dialog" aria-modal="true">
+    <div class="ev-modal-header">
+      <div class="ev-modal-title" id="evModalTitle">Nouvel événement</div>
+      <button class="ev-modal-close" id="evModalClose">✕</button>
+    </div>
+    <div id="evModalBody"></div>
+    <div class="ev-modal-actions">
+      <button class="text-btn" id="evCancel">Annuler</button>
+      <button class="text-btn primary" id="evSave">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  getDocs,
+  deleteDoc,
+  collection
+} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+/* =====================================================================
+   FIREBASE
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
+  authDomain: "mdl-et-cvl-2027.firebaseapp.com",
+  projectId: "mdl-et-cvl-2027",
+  storageBucket: "mdl-et-cvl-2027.firebasestorage.app",
+  messagingSenderId: "142816093888",
+  appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
+  measurementId: "G-FBKEPBY0CQ"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const LOGIN_URL = 'https://account.honore-romane.fr/login/';
+const CURRENT_URL = 'https://account.honore-romane.fr/tools/planning/admin/';
+const COLLECTION = 'plannings_gardes';
+
+const DAY_LABELS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+let ME = null;
+let ARCHIVE = {};
+let MERGED = {};
+let FIRESTORE_DAYS = [];
+let FIRESTORE_DATA = {};
+let PURGED = false;
+
+// Événements
+let EVENTS_DATA = { events: [] };
+let EVENTS_DIRTY = false;          // modifs non téléchargées
+let editingEventIndex = -1;        // -1 = création
+
+/* =====================================================================
+   UI HELPERS
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+const setText = (id, txt) => { $(id).textContent = txt; };
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[c]));
+
+function log(elId, msg, cls = '') {
+  const el = $(elId);
+  el.style.display = 'block';
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog(elId) { $(elId).innerHTML = ''; }
+
+function download(filename, content, type = 'application/json') {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return blob.size;
+}
+
+/* =====================================================================
+   GARDE D'ACCÈS
+   ===================================================================== */
+const goToLogin = () => {
+  window.location.replace(LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL));
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { goToLogin(); return; }
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (!snap.exists() || snap.data().status !== 'active') {
+      await signOut(auth);
+      goToLogin();
+      return;
+    }
+    ME = {
+      uid: user.uid,
+      name: snap.data().name || user.displayName || user.email || 'Admin'
+    };
+    initPage();
+  } catch (err) {
+    console.error(err);
+    await signOut(auth).catch(() => {});
+    goToLogin();
+  }
+});
+
+/* =====================================================================
+   INIT
+   ===================================================================== */
+async function initPage() {
+  ['log-events','log-analyse','log-download','log-purge'].forEach(clearLog);
+  ['log-events','log-analyse','log-download','log-purge'].forEach(id => {
+    $(id).style.display = 'none';
+  });
+  $('analyse-progress').style.display = 'none';
+  $('panel-download').style.display = 'none';
+  $('panel-purge').style.display = 'none';
+  $('btnReset').style.display = 'none';
+  $('btnAnalyse').disabled = false;
+
+  await Promise.all([loadArchive(), loadEventsFile()]);
+  setText('stat-archive', ARCHIVE && Object.keys(ARCHIVE).length
+    ? `${Object.keys(ARCHIVE).length} jour(s)`
+    : 'Absent / vide');
+  setText('stat-fs-days', '—');
+  setText('stat-fs-shifts', '—');
+  setText('stat-to-update', '—');
+}
+
+/* =====================================================================
+   ARCHIVE
+   ===================================================================== */
+async function loadArchive() {
+  try {
+    const res = await fetch('./gardes.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    ARCHIVE = (data && typeof data === 'object' && !Array.isArray(data)) ? data : {};
+  } catch (err) {
+    console.info('gardes.json introuvable — archive vide.', err.message);
+    ARCHIVE = {};
+  }
+}
+
+function normalizeFirestoreData(data) {
+  if (!data || typeof data !== 'object') return null;
+  const s = data.s;
+  if (!s || typeof s !== 'object') return {};
+  const out = {};
+  for (const [missionId, arr] of Object.entries(s)) {
+    if (!Array.isArray(arr)) continue;
+    out[missionId] = arr.map(row => {
+      if (!Array.isArray(row) || row.length < 4) return null;
+      return [String(row[0] || ''), String(row[1] || ''), Number(row[2]) || 0, Number(row[3]) || 0];
+    }).filter(Boolean);
+  }
+  return out;
+}
+
+function mergeDay(dateStr, firestoreMissions) {
+  const archive = ARCHIVE[dateStr] || {};
+  const fire = firestoreMissions || {};
+  const merged = {};
+  for (const [missionId, arr] of Object.entries(archive)) {
+    if (Array.isArray(arr)) merged[missionId] = arr.map(s => [...s]);
+  }
+  for (const [missionId, arr] of Object.entries(fire)) {
+    merged[missionId] = arr.map(s => [...s]);
+  }
+  return merged;
+}
+
+async function analyse() {
+  const btn = $('btnAnalyse');
+  btn.disabled = true;
+  $('analyse-progress').style.display = 'block';
+  const progress = $('analyse-progress').firstElementChild;
+  progress.style.width = '5%';
+
+  clearLog('log-analyse');
+  $('log-analyse').style.display = 'block';
+  log('log-analyse', '▶ Démarrage de l\'analyse…', 'muted');
+
+  try {
+    log('log-analyse', 'Lecture de la collection Firestore…');
+    const colSnap = await getDocs(collection(db, COLLECTION));
+    FIRESTORE_DAYS = [];
+    FIRESTORE_DATA = {};
+    let totalShifts = 0;
+    let processed = 0;
+    const total = colSnap.size;
+
+    for (const d of colSnap.docs) {
+      const dayId = d.id;
+      const missions = normalizeFirestoreData(d.data());
+      if (missions === null) {
+        log('log-analyse', `⚠ Doc ignoré (invalide) : ${dayId}`, 'warn');
+      } else {
+        FIRESTORE_DAYS.push(dayId);
+        FIRESTORE_DATA[dayId] = missions;
+        let count = 0;
+        for (const arr of Object.values(missions)) count += arr.length;
+        totalShifts += count;
+        log('log-analyse', `  • ${dayId} — ${Object.keys(missions).length} mission(s), ${count} shift(s)`, 'muted');
+      }
+      processed++;
+      progress.style.width = `${5 + Math.round((processed/Math.max(total,1))*90)}%`;
+    }
+
+    setText('stat-fs-days', FIRESTORE_DAYS.length);
+    setText('stat-fs-shifts', totalShifts);
+
+    MERGED = {};
+    for (const [k, v] of Object.entries(ARCHIVE)) {
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        MERGED[k] = {};
+        for (const [mid, arr] of Object.entries(v)) {
+          if (Array.isArray(arr)) MERGED[k][mid] = arr.map(s => [...s]);
+        }
+      }
+    }
+    let updatedDays = 0;
+    for (const [dateStr, missions] of Object.entries(FIRESTORE_DATA)) {
+      MERGED[dateStr] = mergeDay(dateStr, missions);
+      updatedDays++;
+    }
+    setText('stat-to-update', `${updatedDays} jour(s)`);
+    setText('stat-archive', `${Object.keys(MERGED).length} jour(s)`);
+
+    progress.style.width = '100%';
+    log('log-analyse', `✓ Terminé : ${FIRESTORE_DAYS.length} jour(s) Firestore, ${updatedDays} jour(s) fusionnés.`, 'ok');
+
+    $('panel-download').style.display = '';
+    $('panel-purge').style.display = '';
+    $('btnReset').style.display = '';
+
+    if (FIRESTORE_DAYS.length === 0) {
+      log('log-analyse', 'Aucune donnée Firestore à archiver.', 'warn');
+    } else {
+      log('log-analyse', '→ Passez à l\'étape 2 pour télécharger gardes.json', 'muted');
+    }
+  } catch (err) {
+    console.error(err);
+    log('log-analyse', `✗ Erreur : ${err.message || err}`, 'err');
+  } finally {
+    btn.disabled = false;
+    setTimeout(() => { $('analyse-progress').style.display = 'none'; }, 800);
+  }
+}
+
+function downloadArchive() {
+  clearLog('log-download');
+  $('log-download').style.display = 'block';
+  try {
+    const sortedKeys = Object.keys(MERGED).sort();
+    const sorted = {};
+    for (const k of sortedKeys) sorted[k] = MERGED[k];
+    const json = JSON.stringify(sorted, null, 2);
+    const size = download('gardes.json', json);
+    log('log-download', `✓ Téléchargé : gardes.json (${sortedKeys.length} jour(s), ${(size/1024).toFixed(1)} Ko)`, 'ok');
+    log('log-download', '→ Déployez ce fichier à côté de index.html avant l\'étape 3.', 'muted');
+  } catch (err) {
+    console.error(err);
+    log('log-download', `✗ Erreur : ${err.message || err}`, 'err');
+  }
+}
+
+async function purge() {
+  if (PURGED) {
+    log('log-purge', '⚠ Purge déjà effectuée dans cette session.', 'warn');
+    return;
+  }
+  if (FIRESTORE_DAYS.length === 0) {
+    log('log-purge', 'Aucun document à supprimer.', 'muted');
+    return;
+  }
+  if (!confirm(
+    `⚠️ ATTENTION ⚠️\n\n` +
+    `Suppression DÉFINITIVE de ${FIRESTORE_DAYS.length} document(s) Firestore.\n\n` +
+    `Avez-vous bien :\n` +
+    `  1. Téléchargé gardes.json (étape 2)\n` +
+    `  2. Déployé ce fichier sur le serveur\n` +
+    `  3. Vérifié que l'application fonctionne ?`
+  )) return;
+  if (!confirm(`Dernière confirmation : taper OK pour supprimer ${FIRESTORE_DAYS.length} document(s).`)) return;
+
+  clearLog('log-purge');
+  $('log-purge').style.display = 'block';
+  log('log-purge', `▶ Suppression de ${FIRESTORE_DAYS.length} document(s)…`, 'muted');
+
+  const btn = $('btnPurge');
+  btn.disabled = true;
+  let ok = 0, err = 0;
+
+  for (const dayId of FIRESTORE_DAYS) {
+    try {
+      await deleteDoc(doc(db, COLLECTION, dayId));
+      ok++;
+      log('log-purge', `  ✓ ${dayId} supprimé`, 'ok');
+    } catch (e) {
+      console.error(e);
+      err++;
+      log('log-purge', `  ✗ ${dayId} — ${e.message || e}`, 'err');
+    }
+  }
+
+  log('log-purge', `✓ Terminé : ${ok} supprimé(s), ${err} erreur(s).`, err === 0 ? 'ok' : 'warn');
+  if (err === 0) {
+    PURGED = true;
+    setText('stat-fs-days', '0');
+    setText('stat-fs-shifts', '0');
+    log('log-purge', '→ Firestore nettoyé. L\'archive statique prend le relais.', 'muted');
+  }
+  btn.disabled = false;
+}
+
+async function reset() {
+  MERGED = {};
+  FIRESTORE_DAYS = [];
+  FIRESTORE_DATA = {};
+  PURGED = false;
+  await initPage();
+}
+
+/* =====================================================================
+   ÉVÉNEMENTS — chargement & rendu
+   ===================================================================== */
+async function loadEventsFile() {
+  const stateEl = $('events-state');
+  try {
+    const res = await fetch('./events.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    EVENTS_DATA = (data && Array.isArray(data.events)) ? data : { events: [] };
+    stateEl.textContent = `${EVENTS_DATA.events.length} événement(s) chargé(s).`;
+    stateEl.style.color = '';
+  } catch (err) {
+    EVENTS_DATA = { events: [] };
+    stateEl.textContent = `⚠ events.json introuvable — un nouveau fichier sera créé.`;
+    stateEl.style.color = 'var(--warning)';
+  }
+  EVENTS_DIRTY = false;
+  renderEventsList();
+}
+
+function renderEventsList() {
+  const list = $('events-list');
+  list.innerHTML = '';
+  if (!EVENTS_DATA.events.length) {
+    list.innerHTML = '<div class="empty">Aucun événement. Cliquez sur "+ Nouvel événement".</div>';
+    return;
+  }
+  EVENTS_DATA.events.forEach((ev, idx) => {
+    list.appendChild(renderEventCard(ev, idx));
+  });
+}
+
+function renderEventCard(ev, idx) {
+  const card = document.createElement('div');
+  card.className = 'event-card';
+  card.style.borderLeftColor = ev.color || '#3498db';
+
+  const isRec = ev.type === 'recurring';
+  const meta = [];
+
+  if (isRec) {
+    const days = (ev.recurrence && ev.recurrence.days) || [];
+    const dayLabels = days.map(d => DAY_LABELS[d-1]).join(', ');
+    meta.push(`📅 Récurent : ${dayLabels || 'aucun jour'}`);
+  } else {
+    meta.push(`📅 Ponctuel : ${ev.specificDate || '—'}`);
+  }
+
+  const missions = ev.missions || [];
+  const missionsHTML = missions.map(m => {
+    const rangesStr = (m.ranges || []).map(r => {
+      const exclude = (r.excludeOn || []).length
+        ? ` (sauf ${r.excludeOn.map(d => DAY_LABELS[d-1]).join(',')})`
+        : '';
+      return `${r.start}h→${r.end}h${exclude}`;
+    }).join(', ');
+    return `<span class="mission-chip" style="border-left:3px solid ${m.color || ev.color || '#3498db'}">
+      <strong>${esc(m.name)}</strong>
+      <span class="quota">${m.quota} pers.</span>
+      <span style="color:var(--text-muted);font-size:0.9em;">${esc(rangesStr)}</span>
+    </span>`;
+  }).join('');
+
+  card.innerHTML = `
+    <div class="event-card-header">
+      <div class="event-card-title">
+        <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${ev.color || '#3498db'};"></span>
+        ${esc(ev.name)}
+        <span class="event-card-badge ${isRec ? 'badge-recurring' : 'badge-punctual'}">
+          ${isRec ? 'Récurent' : 'Ponctuel'}
+        </span>
+      </div>
+    </div>
+    <div class="event-card-meta">
+      ${meta.map(m => `<span>${m}</span>`).join('')}
+      <span style="color:var(--text-muted);font-size:0.9em;">ID : <code>${esc(ev.id)}</code></span>
+    </div>
+    <div class="event-card-missions">${missionsHTML || '<em style="color:var(--text-muted);font-size:0.85em;">Aucune mission</em>'}</div>
+    <div class="event-card-actions">
+      <button data-edit="${idx}">Modifier</button>
+      <button data-dup="${idx}">Dupliquer</button>
+      <button class="danger" data-del="${idx}">Supprimer</button>
+    </div>
+  `;
+
+  card.querySelector('[data-edit]').onclick = () => openEventEditor(idx);
+  card.querySelector('[data-dup]').onclick = () => duplicateEvent(idx);
+  card.querySelector('[data-del]').onclick = () => deleteEvent(idx);
+
+  return card;
+}
+
+/* =====================================================================
+   ÉVÉNEMENTS — actions
+   ===================================================================== */
+function deleteEvent(idx) {
+  const ev = EVENTS_DATA.events[idx];
+  if (!ev) return;
+  if (!confirm(`Supprimer l'événement "${ev.name}" ?\n\nLes disponibilités Firestore/archive existantes ne seront pas supprimées automatiquement.`)) return;
+  EVENTS_DATA.events.splice(idx, 1);
+  EVENTS_DIRTY = true;
+  renderEventsList();
+  $('events-state').textContent = `${EVENTS_DATA.events.length} événement(s). ⚠ Modifications non téléchargées.`;
+  $('events-state').style.color = 'var(--warning)';
+}
+
+function duplicateEvent(idx) {
+  const src = EVENTS_DATA.events[idx];
+  if (!src) return;
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.id = generateEventId(copy.name);
+  copy.name = copy.name + ' (copie)';
+  EVENTS_DATA.events.push(copy);
+  EVENTS_DIRTY = true;
+  renderEventsList();
+  $('events-state').textContent = `${EVENTS_DATA.events.length} événement(s). ⚠ Modifications non téléchargées.`;
+  $('events-state').style.color = 'var(--warning)';
+}
+
+function generateEventId(name) {
+  const base = (name || 'event')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 24) || 'event';
+  let id = base;
+  let i = 1;
+  while (EVENTS_DATA.events.some(e => e.id === id)) {
+    id = `${base}-${++i}`;
+  }
+  return id;
+}
+
+/* =====================================================================
+   ÉVÉNEMENTS — éditeur modal
+   ===================================================================== */
+function openEventEditor(idx) {
+  editingEventIndex = idx;
+  const isNew = idx === -1;
+  const ev = isNew ? createEmptyEvent() : JSON.parse(JSON.stringify(EVENTS_DATA.events[idx]));
+
+  $('evModalTitle').textContent = isNew ? 'Nouvel événement' : `Modifier : ${ev.name}`;
+  $('evModalBody').innerHTML = buildEditorHTML(ev, isNew);
+  $('evModal').classList.add('visible');
+
+  bindEditorEvents(isNew);
+}
+
+function createEmptyEvent() {
+  return {
+    id: '',
+    name: '',
+    color: '#3498db',
+    type: 'recurring',
+    recurrence: { days: [1,2,3,4,5] },
+    specificDate: '',
+    missions: [createEmptyMission()]
+  };
+}
+
+function createEmptyMission() {
+  return {
+    id: '',
+    name: 'Vendeurs',
+    quota: 2,
+    color: '#3498db',
+    ranges: [{ start: 9, end: 17 }]
+  };
+}
+
+function buildEditorHTML(ev, isNew) {
+  const isRec = ev.type !== 'punctual';
+  const days = (ev.recurrence && ev.recurrence.days) || [];
+
+  const daysSelector = DAY_LABELS.map((label, i) => `
+    <label>
+      <input type="checkbox" data-day="${i+1}" ${days.includes(i+1) ? 'checked' : ''}>
+      <span>${label}</span>
+    </label>
+  `).join('');
+
+  const missionsHTML = (ev.missions || []).map((m, mi) => renderMissionEditor(m, mi)).join('');
+
+  return `
+    <div class="form-field">
+      <label>Nom de l'événement *</label>
+      <input type="text" id="ev-name" value="${esc(ev.name)}" maxlength="120" placeholder="Ex : Vente de Pains au Chocolat">
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label>Identifiant (généré si vide)</label>
+        <input type="text" id="ev-id" value="${esc(ev.id)}" placeholder="auto" ${isNew ? '' : 'readonly'} style="${isNew ? '' : 'opacity:0.6;'}">
+      </div>
+      <div class="form-field">
+        <label>Couleur</label>
+        <input type="color" id="ev-color" value="${ev.color || '#3498db'}" style="height:38px;padding:2px;">
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Type d'événement</label>
+      <div class="toggle-tabs" id="ev-type-tabs">
+        <button type="button" data-type="recurring" class="${isRec ? 'active' : ''}">Récurent</button>
+        <button type="button" data-type="punctual" class="${!isRec ? 'active' : ''}">Ponctuel</button>
+      </div>
+    </div>
+
+    <div id="ev-recurring-section" style="${isRec ? '' : 'display:none;'}">
+      <div class="form-field">
+        <label>Jours de la semaine</label>
+        <div class="weekdays-selector">${daysSelector}</div>
+      </div>
+    </div>
+
+    <div id="ev-punctual-section" style="${!isRec ? '' : 'display:none;'}">
+      <div class="form-field">
+        <label>Date spécifique *</label>
+        <input type="date" id="ev-date" value="${esc(ev.specificDate || '')}">
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Missions / rôles</span>
+        <button type="button" class="text-btn" id="btn-add-mission" style="font-size:0.85em;padding:0.35rem 0.75rem;">+ Ajouter une mission</button>
+      </label>
+      <div class="missions-editor" id="missions-editor">
+        ${missionsHTML || '<div class="empty" style="padding:1rem;font-size:0.85em;">Aucune mission</div>'}
+      </div>
+    </div>
+  `;
+}
+
+function renderMissionEditor(m, mi) {
+  const rangesHTML = (m.ranges || []).map((r, ri) => renderRangeRow(r, mi, ri)).join('');
+
+  return `
+    <div class="mission-edit" data-mi="${mi}">
+      <div class="mission-edit-header">
+        <input type="text" data-mfield="name" data-mi="${mi}" value="${esc(m.name)}" placeholder="Nom du rôle" maxlength="60">
+        <input type="number" data-mfield="quota" data-mi="${mi}" value="${m.quota || 1}" min="1" max="99" title="Quota" placeholder="Qté">
+        <input type="color" data-mfield="color" data-mi="${mi}" value="${m.color || '#3498db'}" title="Couleur">
+        <button type="button" class="text-btn" data-remove-mission="${mi}" style="font-size:0.75em;padding:0.3rem 0.6rem;color:var(--error);border-color:color-mix(in srgb,var(--error) 40%,transparent);">Suppr.</button>
+      </div>
+      <input type="text" data-mfield="id" data-mi="${mi}" value="${esc(m.id)}" placeholder="ID mission (auto si vide)" style="font-size:0.82em;">
+      <div class="ranges-list" data-mi="${mi}">
+        <div style="font-size:0.78em;color:var(--text-muted);font-weight:600;">Plages horaires (heures pleines 0-24)</div>
+        ${rangesHTML || '<div style="font-size:0.8em;color:var(--text-muted);">Aucune plage</div>'}
+      </div>
+      <button type="button" class="text-btn" data-add-range="${mi}" style="font-size:0.75em;padding:0.3rem 0.6rem;align-self:flex-start;">+ Ajouter une plage</button>
+    </div>
+  `;
+}
+
+function renderRangeRow(r, mi, ri) {
+  const exclude = r.excludeOn || [];
+  const excludeChecks = DAY_LABELS.map((label, i) => `
+    <label style="display:inline-flex;align-items:center;gap:0.15rem;font-size:0.85em;color:var(--text-muted);cursor:pointer;">
+      <input type="checkbox" data-excl-day="${i+1}" data-mi="${mi}" data-ri="${ri}" ${exclude.includes(i+1) ? 'checked' : ''} style="width:auto;">
+      ${label}
+    </label>
+  `).join('');
+
+  return `
+    <div class="range-row" data-ri="${ri}" data-mi="${mi}">
+      <input type="number" data-rfield="start" data-mi="${mi}" data-ri="${ri}" value="${r.start}" min="0" max="24" step="1" placeholder="Début">
+      <span>→</span>
+      <input type="number" data-rfield="end" data-mi="${mi}" data-ri="${ri}" value="${r.end}" min="0" max="24" step="1" placeholder="Fin">
+      <span class="exclude-label">sauf :</span>
+      ${excludeChecks}
+      <button type="button" class="remove-range" data-remove-range="${mi}|${ri}">×</button>
+    </div>
+  `;
+}
+
+/* =====================================================================
+   ÉVÉNEMENTS — binding éditeur
+   ===================================================================== */
+function bindEditorEvents(isNew) {
+  const body = $('evModalBody');
+
+  // Onglets récurrent / ponctuel
+  body.querySelectorAll('#ev-type-tabs button').forEach(btn => {
+    btn.onclick = () => {
+      body.querySelectorAll('#ev-type-tabs button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const type = btn.dataset.type;
+      body.querySelector('#ev-recurring-section').style.display = type === 'recurring' ? '' : 'none';
+      body.querySelector('#ev-punctual-section').style.display = type === 'punctual' ? '' : 'none';
+    };
+  });
+
+  // Ajouter une mission
+  body.querySelector('#btn-add-mission').onclick = () => {
+    const editor = body.querySelector('#missions-editor');
+    if (editor.querySelector('.empty')) editor.innerHTML = '';
+    const newMission = createEmptyMission();
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = renderMissionEditor(newMission, editor.children.length);
+    editor.appendChild(wrapper.firstElementChild);
+    bindMissionEditor(body);
+  };
+
+  bindMissionEditor(body);
+}
+
+function bindMissionEditor(body) {
+  // Supprimer une mission
+  body.querySelectorAll('[data-remove-mission]').forEach(btn => {
+    btn.onclick = () => {
+      const mi = btn.dataset.removeMission;
+      const editor = body.querySelector('#missions-editor');
+      const missionEl = editor.querySelector(`.mission-edit[data-mi="${mi}"]`);
+      if (missionEl) missionEl.remove();
+      reindexMissions(editor);
+      bindMissionEditor(body);
+    };
+  });
+
+  // Ajouter une plage
+  body.querySelectorAll('[data-add-range]').forEach(btn => {
+    btn.onclick = () => {
+      const mi = btn.dataset.addRange;
+      const rangesList = body.querySelector(`.ranges-list[data-mi="${mi}"]`);
+      const count = rangesList.querySelectorAll('.range-row').length;
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = renderRangeRow({ start: 9, end: 17 }, mi, count);
+      rangesList.appendChild(wrapper.firstElementChild);
+      bindMissionEditor(body);
+    };
+  });
+
+  // Supprimer une plage
+  body.querySelectorAll('[data-remove-range]').forEach(btn => {
+    btn.onclick = () => {
+      const [mi, ri] = btn.dataset.removeRange.split('|');
+      const row = body.querySelector(`.range-row[data-mi="${mi}"][data-ri="${ri}"]`);
+      if (row) row.remove();
+      reindexRanges(body, mi);
+      bindMissionEditor(body);
+    };
+  });
+}
+
+function reindexMissions(editor) {
+  const missions = editor.querySelectorAll('.mission-edit');
+  missions.forEach((el, i) => {
+    el.dataset.mi = i;
+    el.querySelectorAll('[data-mi]').forEach(child => {
+      child.dataset.mi = i;
+    });
+    el.querySelectorAll('[data-remove-mission]').forEach(btn => {
+      btn.dataset.removeMission = i;
+    });
+    el.querySelectorAll('[data-add-range]').forEach(btn => {
+      btn.dataset.addRange = i;
+    });
+  });
+}
+
+function reindexRanges(body, mi) {
+  const rangesList = body.querySelector(`.ranges-list[data-mi="${mi}"]`);
+  if (!rangesList) return;
+  const rows = rangesList.querySelectorAll('.range-row');
+  rows.forEach((row, ri) => {
+    row.dataset.ri = ri;
+    row.querySelectorAll('[data-ri]').forEach(child => {
+      child.dataset.ri = ri;
+    });
+    row.querySelectorAll('[data-remove-range]').forEach(btn => {
+      btn.dataset.removeRange = `${mi}|${ri}`;
+    });
+  });
+}
+
+/* =====================================================================
+   ÉVÉNEMENTS — lecture de l'éditeur et sauvegarde
+   ===================================================================== */
+function readEventFromEditor(isNew) {
+  const body = $('evModalBody');
+
+  const name = body.querySelector('#ev-name').value.trim();
+  if (!name) throw new Error('Le nom de l\'événement est obligatoire.');
+
+  const id = isNew
+    ? (body.querySelector('#ev-id').value.trim() || generateEventId(name))
+    : body.querySelector('#ev-id').value.trim();
+
+  if (isNew && EVENTS_DATA.events.some(e => e.id === id)) {
+    throw new Error(`L'identifiant "${id}" existe déjà.`);
+  }
+
+  const color = body.querySelector('#ev-color').value;
+  const activeType = body.querySelector('#ev-type-tabs button.active').dataset.type;
+  const type = activeType === 'punctual' ? 'punctual' : 'recurring';
+
+  let recurrence = null;
+  let specificDate = '';
+
+  if (type === 'recurring') {
+    const days = [...body.querySelectorAll('#ev-recurring-section input[data-day]:checked')]
+      .map(cb => parseInt(cb.dataset.day, 10));
+    if (!days.length) throw new Error('Sélectionnez au moins un jour de la semaine.');
+    recurrence = { days };
+  } else {
+    specificDate = body.querySelector('#ev-date').value;
+    if (!specificDate) throw new Error('La date spécifique est obligatoire.');
+  }
+
+  // Missions
+  const missions = [];
+  const missionEls = body.querySelectorAll('.mission-edit');
+  if (!missionEls.length) throw new Error('Ajoutez au moins une mission.');
+
+  missionEls.forEach((el, mi) => {
+    const mName = el.querySelector('[data-mfield="name"]').value.trim();
+    const mQuota = parseInt(el.querySelector('[data-mfield="quota"]').value, 10);
+    const mColor = el.querySelector('[data-mfield="color"]').value;
+    let mId = el.querySelector('[data-mfield="id"]').value.trim();
+
+    if (!mName) throw new Error(`Mission #${mi+1} : nom obligatoire.`);
+    if (!mQuota || mQuota < 1) throw new Error(`Mission "${mName}" : quota ≥ 1 requis.`);
+
+    if (!mId) {
+      mId = id + '-' + mName.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 20);
+    }
+
+    // Vérifier doublons d'ID mission dans cet événement
+    if (missions.some(m => m.id === mId)) {
+      throw new Error(`Mission "${mName}" : ID "${mId}" déjà utilisé dans cet événement.`);
+    }
+
+    // Plages
+    const ranges = [];
+    const rangeRows = el.querySelectorAll('.range-row');
+    if (!rangeRows.length) throw new Error(`Mission "${mName}" : au moins une plage horaire requise.`);
+
+    rangeRows.forEach(row => {
+      const start = parseInt(row.querySelector('[data-rfield="start"]').value, 10);
+      const end = parseInt(row.querySelector('[data-rfield="end"]').value, 10);
+      if (isNaN(start) || isNaN(end)) throw new Error(`Mission "${mName}" : plage invalide.`);
+      if (start < 0 || start > 24 || end < 0 || end > 24) throw new Error(`Mission "${mName}" : heures entre 0 et 24.`);
+      if (end <= start) throw new Error(`Mission "${mName}" : la fin doit être après le début.`);
+
+      const excludeOn = [...row.querySelectorAll('input[data-excl-day]:checked')]
+        .map(cb => parseInt(cb.dataset.exclDay, 10));
+
+      const range = { start, end };
+      if (excludeOn.length) range.excludeOn = excludeOn;
+      ranges.push(range);
+    });
+
+    missions.push({ id: mId, name: mName, quota: mQuota, color: mColor, ranges });
+  });
+
+  const event = { id, name, color, type, missions };
+  if (type === 'recurring') event.recurrence = recurrence;
+  else event.specificDate = specificDate;
+
+  return event;
+}
+
+function saveEvent() {
+  try {
+    const isNew = editingEventIndex === -1;
+    const ev = readEventFromEditor(isNew);
+
+    if (isNew) {
+      EVENTS_DATA.events.push(ev);
+    } else {
+      EVENTS_DATA.events[editingEventIndex] = ev;
+    }
+
+    EVENTS_DIRTY = true;
+    closeEventEditor();
+    renderEventsList();
+    $('events-state').textContent = `${EVENTS_DATA.events.length} événement(s). ⚠ Modifications non téléchargées.`;
+    $('events-state').style.color = 'var(--warning)';
+    clearLog('log-events');
+    $('log-events').style.display = 'none';
+  } catch (err) {
+    alert(err.message || String(err));
+  }
+}
+
+function closeEventEditor() {
+  $('evModal').classList.remove('visible');
+  editingEventIndex = -1;
+}
+
+/* =====================================================================
+   ÉVÉNEMENTS — téléchargement
+   ===================================================================== */
+function downloadEvents() {
+  clearLog('log-events');
+  $('log-events').style.display = 'block';
+  try {
+    const json = JSON.stringify(EVENTS_DATA, null, 2);
+    const size = download('events.json', json);
+    log('log-events', `✓ Téléchargé : events.json (${EVENTS_DATA.events.length} événement(s), ${(size/1024).toFixed(1)} Ko)`, 'ok');
+    log('log-events', '→ Déployez ce fichier à côté de index.html.', 'muted');
+    EVENTS_DIRTY = false;
+    $('events-state').textContent = `${EVENTS_DATA.events.length} événement(s) chargé(s).`;
+    $('events-state').style.color = '';
+  } catch (err) {
+    console.error(err);
+    log('log-events', `✗ Erreur : ${err.message || err}`, 'err');
+  }
+}
+
+/* =====================================================================
+   UI EVENTS
+   ===================================================================== */
+$('btnNewEvent').onclick = () => openEventEditor(-1);
+$('btnDownloadEvents').onclick = downloadEvents;
+$('evModalClose').onclick = closeEventEditor;
+$('evCancel').onclick = closeEventEditor;
+$('evSave').onclick = saveEvent;
+$('evModal').addEventListener('click', e => {
+  if (e.target.id === 'evModal') closeEventEditor();
+});
+
+$('btnAnalyse').onclick = analyse;
+$('btnDownload').onclick = downloadArchive;
+$('btnPurge').onclick = purge;
+$('btnReset').onclick = reset;
+
+$('logout-btn').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  btn.textContent = 'Déconnexion…';
+  try { await signOut(auth); }
+  catch (err) { console.error(err); }
+  finally { window.location.replace(LOGIN_URL); }
+});
+
+// Alerte de fermeture si modifications non téléchargées
+window.addEventListener('beforeunload', (e) => {
+  if (EVENTS_DIRTY) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && $('evModal').classList.contains('visible')) {
+    closeEventEditor();
+  }
+});
+</script>
+</body>
+</html>

@@ -9,11 +9,12 @@
 <body>
 
 <header class="app-header">
-  <div><h1>📅 Planning des Gardes</h1></div>
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-    <span class="user-info">👤 Vous</span>
-    <button class="my-planning-btn" id="btnMyPlanning">🗂 Mon planning</button>
-  </div>
+  <h1>📅 Planning des Gardes</h1>
+  <nav class="nav-tabs">
+    <button class="nav-tab active" id="tabPlanning">📋 Planning</button>
+    <button class="nav-tab" id="tabMyPlanning">🗂 Mon planning</button>
+  </nav>
+  <span class="user-badge">👤 Vous</span>
 </header>
 
 <!-- CALENDRIER MENSUEL -->
@@ -38,6 +39,14 @@
   <div class="locked-banner" id="lockedBanner" style="display:none;">
     🔒 Ce jour est passé, aujourd'hui, ou demain → modifications impossibles.
   </div>
+
+  <div class="legend">
+    <span class="lg-item"><span class="lg-swatch lg-free"></span>À combler</span>
+    <span class="lg-item"><span class="lg-swatch lg-taken"></span>Pris</span>
+    <span class="lg-item"><span class="lg-swatch lg-mine"></span>Vous</span>
+    <span class="lg-item"><span class="lg-swatch lg-past"></span>Hors plage</span>
+  </div>
+
   <div class="grid-scroll">
     <div class="day-grid" id="dayGrid"></div>
   </div>
@@ -128,9 +137,7 @@ function fmtHM(min) {
   return `${String(h).padStart(2,'0')}h${m ? String(m).padStart(2,'0') : ''}`;
 }
 function fmtHMfull(min) {
-  const h = Math.floor(min/60);
-  const m = min % 60;
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  return `${String(Math.floor(min/60)).padStart(2,'0')}:${String(min%60).padStart(2,'0')}`;
 }
 function minToTimeStr(m) { return fmtHMfull(m); }
 function timeStrToMin(s) { const [h,m] = s.split(':').map(Number); return h*60+m; }
@@ -184,59 +191,56 @@ function userHasOverlap(dateStr, missionId, userId, start, end) {
   );
 }
 
+/* Vérifie si l'utilisateur a un shift sur N'IMPORTE QUELLE mission
+   du jour qui chevauche [start,end) — pour interdire double inscription
+   sur la même plage horaire, tous événements confondus. */
+function userHasOverlapAnyMission(dateStr, userId, start, end, excludeShiftId) {
+  const evs = eventsForDate(dateStr);
+  for (const ev of evs) {
+    for (const mission of ev.missions) {
+      const shifts = getShifts(dateStr, mission.id);
+      for (const s of shifts) {
+        if (s.userId !== userId) continue;
+        if (excludeShiftId && s.id === excludeShiftId) continue;
+        if (!(end <= s.start || start >= s.end)) {
+          return { ev, mission, shift: s };
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function shiftWithinRanges(start, end, ranges) {
   return ranges.some(r => start >= r.start && end <= r.end);
 }
 
-/* =====================================================================
-   CONSTRUCTION DES "SEGMENTS" (BLOCS)
-   =====================================================================
-   Découpe une mission en blocs continus où la situation ne change pas.
-   Pour chaque plage autorisée de la mission, on prend tous les points
-   de rupture (début/fin de la plage + débuts/fins des shifts), puis on
-   crée un bloc entre chaque paire de points consécutifs.
-   Chaque bloc est ensuite affecté à une SOUS-COLONNE (missionnaire 1..N)
-   si son statut est "occupé", ou bien reste "libre".
-*/
-function buildBlocks(dateStr, mission) {
+/* Calcule le statut d'une mission sur la journée (complète/partielle/vide) */
+function missionDayStatus(dateStr, mission) {
   const ranges = missionRangesForDate(mission, dateStr);
-  const shifts = getShifts(dateStr, mission.id);
-  const blocks = [];
-
-  ranges.forEach(range => {
-    // Points de rupture
-    const points = new Set([range.start, range.end]);
-    shifts.forEach(s => {
-      if (s.end <= range.start || s.start >= range.end) return;
-      points.add(Math.max(s.start, range.start));
-      points.add(Math.min(s.end, range.end));
-    });
-    const sorted = [...points].sort((a,b)=>a-b);
-
-    for (let i = 0; i < sorted.length - 1; i++) {
-      const start = sorted[i];
-      const end = sorted[i+1];
-      if (end <= start) continue;
-
-      // Shifts actifs sur tout [start,end)
-      const present = shifts.filter(s =>
-        s.start <= start && s.end >= end
-      );
-
-      let status;
-      if (present.length === 0) status = 'free';
-      else if (present.length >= mission.quota) status = 'full';
-      else status = 'partial';
-
-      blocks.push({
-        start, end, status,
-        present: present.map(s => ({ id: s.id, userId: s.userId }))
-      });
+  if (ranges.length === 0) return 'empty';
+  let totalMin = 0, coveredMin = 0;
+  ranges.forEach(r => {
+    for (let m = r.start; m < r.end; m++) {
+      totalMin++;
+      if (coverAt(dateStr, mission.id, m) >= mission.quota) coveredMin++;
     }
   });
-
-  return blocks;
+  if (coveredMin === 0) return 'empty';
+  if (coveredMin === totalMin) return 'full';
+  return 'partial';
 }
+
+function eventDayStatus(dateStr, ev) {
+  const statuses = ev.missions
+    .map(m => missionDayStatus(dateStr, m))
+    .filter(s => s !== 'empty');
+  if (statuses.length === 0) return 'empty';
+  if (statuses.every(s => s === 'full')) return 'full';
+  return 'partial';
+}
+
+const STATUS_COLOR = { full: '#27ae60', partial: '#f39c12', empty: '#c0392b' };
 
 /* =====================================================================
    ÉTAT
@@ -246,7 +250,7 @@ let currentDay = null;
 let myPlanningDate = new Date();
 
 /* =====================================================================
-   CHARGEMENT EVENTS
+   CHARGEMENT
    ===================================================================== */
 async function loadEvents() {
   try {
@@ -262,7 +266,7 @@ async function loadEvents() {
 }
 
 /* =====================================================================
-   CALENDRIER MENSUEL
+   CALENDRIER MENSUEL — affiche directement les noms d'événements
    ===================================================================== */
 function renderCalendar() {
   const grid = document.getElementById('calendarGrid');
@@ -293,8 +297,21 @@ function renderCalendar() {
     if (d.getMonth() !== month) cell.classList.add('other-month');
     if (dateStr === tStr) cell.classList.add('today');
     if (isLocked(dateStr)) cell.classList.add('locked');
-    const hasEv = eventsForDate(dateStr).length > 0;
-    cell.innerHTML = `<span class="day-num">${d.getDate()}</span>${hasEv ? '<span class="dot"></span>' : ''}`;
+
+    const evs = eventsForDate(dateStr);
+    let chipsHTML = '';
+    evs.slice(0, 3).forEach(ev => {
+      const status = eventDayStatus(dateStr, ev);
+      chipsHTML += `<span class="ev-chip" style="background:${ev.color || '#3498db'}">${ev.name}</span>`;
+    });
+    if (evs.length > 3) {
+      chipsHTML += `<span class="ev-chip" style="background:#7f8c8d">+${evs.length-3}</span>`;
+    }
+
+    cell.innerHTML = `
+      <span class="day-num">${d.getDate()}</span>
+      <div class="ev-chips">${chipsHTML}</div>
+    `;
     cell.addEventListener('click', () => openDayView(dateStr));
     grid.appendChild(cell);
   }
@@ -308,6 +325,8 @@ function openDayView(dateStr) {
   document.getElementById('calendarView').style.display = 'none';
   document.getElementById('myPlanningView').classList.remove('active');
   document.getElementById('dayView').classList.add('active');
+  document.getElementById('tabMyPlanning').classList.remove('active');
+  document.getElementById('tabPlanning').classList.add('active');
 
   const d = parseDate(dateStr);
   document.getElementById('dayTitle').textContent = d.toLocaleDateString('fr-FR', {
@@ -326,13 +345,7 @@ function closeDayView() {
 }
 
 /* =====================================================================
-   RENDU DE LA GRILLE JOUR
-   =====================================================================
-   Structure en 4 niveaux d'en-tête :
-   1. Événement (colspan = somme des quota de ses missions)
-   2. Mission · nb personnes (colspan = quota)
-   3. M1, M2, ... Mn (une par personne du quota)
-   4. Colonne horaire + colonnes missions (une par personne du quota)
+   RENDU GRILLE JOUR
    ===================================================================== */
 function renderDayGrid() {
   const grid = document.getElementById('dayGrid');
@@ -357,18 +370,18 @@ function renderDayGrid() {
   }
   grid.style.display = 'grid';
 
-  // Plage horaire utile
   let minMin = Infinity, maxMin = -Infinity;
   cols.forEach(c => c.ranges.forEach(r => {
     minMin = Math.min(minMin, r.start);
     maxMin = Math.max(maxMin, r.end);
   }));
   const startH = Math.max(0, Math.floor(minMin/60));
-  const endH = Math.min(24, Math.ceil(maxMin/60));
+  const endH = Math.min(24, Math.ceil(maxMax(maxMin)/60));
   const rowStart = startH * 60;
   const rowEnd = endH * 60;
 
-  // Hauteur d'une heure (pixels)
+  function maxMax(x) { return Math.max(0, x); }
+
   const HOUR_H = window.matchMedia('(max-width: 640px)').matches ? 40
                 : window.matchMedia('(min-width: 900px)').matches ? 60
                 : 50;
@@ -376,11 +389,10 @@ function renderDayGrid() {
   const totalPersonCols = cols.reduce((s,c) => s + c.mission.quota, 0);
 
   grid.style.gridTemplateColumns = `62px repeat(${totalPersonCols}, minmax(64px, 1fr))`;
-  // 4 lignes d'en-tête (auto) + 1 ligne de contenu (taille totale)
   const contentH = ((rowEnd - rowStart) / 60) * HOUR_H;
   grid.style.gridTemplateRows = `auto auto auto ${contentH}px`;
 
-  /* ---------- Niveau 1 : Événement ---------- */
+  /* ---------- Niveau 1 : Événement + statut ---------- */
   const h1 = document.createElement('div');
   h1.className = 'head-ev';
   h1.style.gridRow = '1';
@@ -397,45 +409,49 @@ function renderDayGrid() {
 
   let colIdx = 2;
   evSpans.forEach(({ ev, span }) => {
+    const status = eventDayStatus(dateStr, ev);
     const el = document.createElement('div');
     el.className = 'head-ev';
     el.style.gridRow = '1';
     el.style.gridColumn = `${colIdx} / span ${span}`;
     el.style.background = ev.color || '#3498db';
-    el.textContent = ev.name;
+    el.innerHTML = `
+      <span class="ev-status-dot" style="background:${STATUS_COLOR[status]};"></span>
+      ${ev.name}
+    `;
     grid.appendChild(el);
     colIdx += span;
   });
 
-  /* ---------- Niveau 2 : Mission · nb ---------- */
+  /* ---------- Niveau 2 : Mission + statut ---------- */
   const h2 = document.createElement('div');
   h2.className = 'head-mi';
   h2.style.gridRow = '2';
   h2.style.gridColumn = '1';
   h2.style.background = '#ecf0f1';
-  h2.textContent = '';
   grid.appendChild(h2);
 
   colIdx = 2;
   cols.forEach(c => {
+    const status = missionDayStatus(dateStr, c.mission);
     const el = document.createElement('div');
     el.className = 'head-mi';
     el.style.gridRow = '2';
     el.style.gridColumn = `${colIdx} / span ${c.mission.quota}`;
     el.style.background = shade(c.mission.color || c.ev.color || '#3498db', 0.8);
-    el.style.color = 'white';
-    el.style.textShadow = '0 1px 1px rgba(0,0,0,0.25)';
-    el.textContent = `${c.mission.name} · ${c.mission.quota} pers.`;
+    el.innerHTML = `
+      <span class="mi-status-dot" style="background:${STATUS_COLOR[status]};"></span>
+      ${c.mission.name} · ${c.mission.quota}
+    `;
     grid.appendChild(el);
     colIdx += c.mission.quota;
   });
 
-  /* ---------- Niveau 3 : M1, M2... ---------- */
+  /* ---------- Niveau 3 : M1..Mn ---------- */
   const h3 = document.createElement('div');
   h3.className = 'head-person';
   h3.style.gridRow = '3';
   h3.style.gridColumn = '1';
-  h3.textContent = '';
   grid.appendChild(h3);
 
   colIdx = 2;
@@ -452,7 +468,7 @@ function renderDayGrid() {
     }
   });
 
-  /* ---------- Colonne horaire (sticky, avec graduations) ---------- */
+  /* ---------- Colonne horaire ---------- */
   const hourCol = document.createElement('div');
   hourCol.className = 'hour-track';
   hourCol.style.gridRow = '4';
@@ -473,35 +489,16 @@ function renderDayGrid() {
   grid.appendChild(hourCol);
 
   /* ---------- Colonnes missions : blocs ---------- */
-  // Construire les blocs pour chaque mission
-  const blocksByCol = cols.map(c => ({
-    ...c,
-    blocks: buildBlocks(dateStr, c.mission)
-  }));
-
-  // Pour chaque mission, on doit affecter les blocs "full" ou "partial"
-  // à des sous-colonnes M1..Mn. Un bloc "free" est affiché comme un
-  // bloc libre sur la PREMIÈRE sous-colonne disponible (celle de M1)
-  // pour rester lisible — les autres sous-colonnes libres restent vides.
-
-  // Algorithme : pour chaque sous-colonne p (0-based), parcourir les blocs
-  // et n'afficher que ceux où la p-ième personne est présente ou libre.
-  // On "pack" les userIds : les personnes actives sur un bloc sont
-  // assignées aux premières places disponibles à ce moment-là.
-
-  // Construire pour chaque mission une timeline minute → array userId (longueur quota)
-  const timelineByCol = blocksByCol.map(col => {
+  const timelineByCol = cols.map(col => {
     const totalMinutes = rowEnd - rowStart;
     const arr = new Array(totalMinutes);
     for (let i = 0; i < totalMinutes; i++) {
       arr[i] = new Array(col.mission.quota).fill(null);
     }
-    // Remplir avec les shifts (ordre stable)
     const shifts = getShifts(dateStr, col.mission.id);
     shifts.forEach(shift => {
       const from = Math.max(shift.start, rowStart) - rowStart;
       const to = Math.min(shift.end, rowEnd) - rowStart;
-      // Trouver une place libre à chaque minute
       for (let m = from; m < to; m++) {
         const row = arr[m];
         for (let p = 0; p < col.mission.quota; p++) {
@@ -512,8 +509,6 @@ function renderDayGrid() {
     return { ...col, timeline: arr };
   });
 
-  // Construire les "blocs" pour l'affichage : on regroupe les minutes
-  // consécutives où l'état d'une sous-colonne est identique.
   let subColIdx = 2;
   timelineByCol.forEach(col => {
     for (let p = 0; p < col.mission.quota; p++) {
@@ -524,12 +519,37 @@ function renderDayGrid() {
       colEl.style.setProperty('--hour-h', HOUR_H + 'px');
       colEl.style.height = contentH + 'px';
 
-      // Construire les segments pour cette sous-colonne p
+      // Zones hors plage (hachurées) — un bloc par intervalle hors plage
+      const allRangeBounds = [];
+      col.ranges.forEach(r => { allRangeBounds.push(r.start, r.end); });
+      const sortedBounds = [...new Set(allRangeBounds)].sort((a,b)=>a-b);
+      // Hors plage = entre rowStart et rowEnd, hors des ranges autorisées
+      const outSegments = [];
+      let cursor = rowStart;
+      col.ranges.forEach(r => {
+        if (r.start > cursor) outSegments.push({ start: cursor, end: r.start });
+        cursor = Math.max(cursor, r.end);
+      });
+      if (cursor < rowEnd) outSegments.push({ start: cursor, end: rowEnd });
+
+      // Afficher les segments hors plage uniquement sur la 1re sous-colonne
+      if (p === 0) {
+        outSegments.forEach(seg => {
+          const top = ((seg.start - rowStart) / 60) * HOUR_H;
+          const height = ((seg.end - seg.start) / 60) * HOUR_H;
+          const o = document.createElement('div');
+          o.className = 'out-of-range';
+          o.style.top = top + 'px';
+          o.style.height = height + 'px';
+          colEl.appendChild(o);
+        });
+      }
+
+      // Construire les segments d'occupation
       const segments = [];
       let cur = null;
       for (let i = 0; i < col.timeline.length; i++) {
         const slot = col.timeline[i][p];
-        // Vérifie si la minute est dans une plage autorisée
         const minute = rowStart + i;
         const inRange = col.ranges.some(r => minute >= r.start && minute < r.end);
         const state = !inRange ? 'out' : (slot ? 'taken' : 'free');
@@ -545,11 +565,13 @@ function renderDayGrid() {
       }
       if (cur) segments.push(cur);
 
-      // Ne garder que les segments "in range"
       segments.forEach(seg => {
         if (seg.state === 'out') return;
+        // Pour les zones "free", on n'affiche le bloc QUE sur la 1re sous-colonne
+        if (seg.state === 'free' && p !== 0) return;
+
         const top = ((seg.start - rowStart) / 60) * HOUR_H;
-        const height = Math.max(2, ((seg.end - seg.start) / 60) * HOUR_H - 1);
+        const height = Math.max(3, ((seg.end - seg.start) / 60) * HOUR_H - 1);
         const block = document.createElement('div');
         block.className = 'block ' + (
           seg.state === 'taken'
@@ -559,10 +581,6 @@ function renderDayGrid() {
         if (locked) block.classList.add('locked');
         block.style.top = top + 'px';
         block.style.height = height + 'px';
-
-        // Pour "free", un seul bloc par zone libre : on évite de dupliquer
-        // sur plusieurs sous-colonnes. On affiche seulement sur M1 (p=0).
-        if (seg.state === 'free' && p !== 0) return;
 
         const label = seg.state === 'taken'
           ? (USERS[seg.userId] || '?')
@@ -581,8 +599,6 @@ function renderDayGrid() {
           });
         }
 
-        // Ajustement de la largeur visuelle si plusieurs sous-colonnes libres
-        // (le bloc "free" est affiché uniquement sur M1 et ne couvre que M1)
         colEl.appendChild(block);
       });
 
@@ -590,9 +606,6 @@ function renderDayGrid() {
       subColIdx++;
     }
   });
-
-  // Compteur final des colonnes pour grid-template-columns si pas déjà fait
-  // (déjà défini plus haut avec totalPersonCols)
 }
 
 function shade(hex, factor) {
@@ -608,7 +621,7 @@ function shade(hex, factor) {
 }
 
 /* =====================================================================
-   MODAL
+   MODAL — création directe / modification directe si clic sur "mine"
    ===================================================================== */
 function openSlotModal(dateStr, col, clickedMinute) {
   const { mission, ranges } = col;
@@ -617,85 +630,131 @@ function openSlotModal(dateStr, col, clickedMinute) {
   const body = document.getElementById('modalBody');
   const actions = document.getElementById('modalActions');
 
-  const myShifts = getShifts(dateStr, mission.id).filter(s => s.userId === CURRENT_USER.id);
-
-  const containingRange = ranges.find(r => clickedMinute >= r.start && clickedMinute < r.end)
-    || ranges.find(r => clickedMinute < r.end) || ranges[0];
-  // Alignement à la minute près : on propose le créneau qui démarre à
-  // clickedMinute ou à la fin du dernier shift qui le chevaucherait
-  let defaultStart = Math.max(containingRange.start, clickedMinute);
-  // Si un shift se termine après defaultStart, on propose la fin de ce shift
-  getShifts(dateStr, mission.id).forEach(s => {
-    if (s.start <= defaultStart && s.end > defaultStart && s.userId !== CURRENT_USER.id) {
-      // proposer après ce shift si la place est déjà occupée (mais on
-      // reste dans la même plage autorisée)
-      // (comportement simple : on n'ajuste pas ici, l'utilisateur choisit)
-    }
-  });
-  if (defaultStart >= containingRange.end) defaultStart = containingRange.start;
-  let defaultEnd = Math.min(containingRange.end, defaultStart + 60);
+  // Vérifier si l'utilisateur a un shift ici (mission courante)
+  const myShiftHere = getShifts(dateStr, mission.id)
+    .find(s => s.userId === CURRENT_USER.id && clickedMinute >= s.start && clickedMinute < s.end);
 
   const dateObj = parseDate(dateStr);
   const dateLabel = dateObj.toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long'
   });
 
-  title.textContent = myShifts.length ? 'Gérer ma garde' : 'Prendre une garde';
+  // ---- CAS 1 : clic sur MON propre shift -> modification directe
+  if (myShiftHere) {
+    title.textContent = 'Mon créneau';
+    body.innerHTML = `
+      <div class="slot-info">
+        <strong>${col.ev.name}</strong><br>
+        ${mission.name} · ${dateLabel}<br>
+        <span style="color:var(--mine);font-weight:700;">${fmtHMfull(myShiftHere.start)} → ${fmtHMfull(myShiftHere.end)}</span>
+      </div>
+      <label for="inputStart">Heure de début</label>
+      <input type="time" id="inputStart" value="${minToTimeStr(myShiftHere.start)}" min="${minToTimeStr(ranges[0].start)}" max="${minToTimeStr(ranges[ranges.length-1].end)}" step="60">
+      <label for="inputEnd">Heure de fin</label>
+      <input type="time" id="inputEnd" value="${minToTimeStr(myShiftHere.end)}" min="${minToTimeStr(ranges[0].start)}" max="${minToTimeStr(ranges[ranges.length-1].end)}" step="60">
+      <div class="error" id="modalError"></div>
+    `;
+    actions.innerHTML = '';
 
-  let bodyHTML = `
+    const btnSave = document.createElement('button');
+    btnSave.className = 'btn-primary';
+    btnSave.textContent = 'Enregistrer';
+    btnSave.onclick = () => {
+      const ns = timeStrToMin(document.getElementById('inputStart').value);
+      const ne = timeStrToMin(document.getElementById('inputEnd').value);
+      if (ne <= ns) { showErr('Fin doit être après début.'); return; }
+      if (!shiftWithinRanges(ns, ne, ranges)) { showErr('Hors plage autorisée.'); return; }
+      // Vérif conflit avec autres missions du jour
+      const conflict = userHasOverlapAnyMission(dateStr, CURRENT_USER.id, ns, ne, myShiftHere.id);
+      if (conflict) {
+        showErr(`Conflit avec ${conflict.mission.name} (${conflict.ev.name}) ${fmtHMfull(conflict.shift.start)}→${fmtHMfull(conflict.shift.end)}.`);
+        return;
+      }
+      // Vérif capacité sur la mission
+      for (let mm = ns; mm < ne; mm++) {
+        let count = 0;
+        getShifts(dateStr, mission.id).forEach(s => {
+          if (s.id === myShiftHere.id) return;
+          if (mm >= s.start && mm < s.end) count++;
+        });
+        if (count >= mission.quota) {
+          showErr(`Capacité atteinte à ${fmtHMfull(mm)}.`); return;
+        }
+      }
+      myShiftHere.start = ns; myShiftHere.end = ne;
+      closeModal();
+      renderDayGrid();
+    };
+    actions.appendChild(btnSave);
+
+    const btnDel = document.createElement('button');
+    btnDel.className = 'btn-danger';
+    btnDel.textContent = 'Supprimer';
+    btnDel.onclick = () => {
+      if (!confirm('Supprimer ce créneau ?')) return;
+      const key = `${dateStr}|${mission.id}`;
+      bookings[key] = getShifts(dateStr, mission.id).filter(s => s.id !== myShiftHere.id);
+      closeModal();
+      renderDayGrid();
+    };
+    actions.appendChild(btnDel);
+
+    const btnCancel = document.createElement('button');
+    btnCancel.className = 'btn-cancel';
+    btnCancel.textContent = 'Fermer';
+    btnCancel.onclick = closeModal;
+    actions.appendChild(btnCancel);
+
+    modal.classList.add('active');
+    return;
+  }
+
+  // ---- CAS 2 : clic sur une zone libre -> création
+  const containingRange = ranges.find(r => clickedMinute >= r.start && clickedMinute < r.end)
+    || ranges.find(r => clickedMinute < r.end) || ranges[0];
+  let defaultStart = Math.max(containingRange.start, clickedMinute);
+  if (defaultStart >= containingRange.end) defaultStart = containingRange.start;
+  let defaultEnd = Math.min(containingRange.end, defaultStart + 60);
+
+  title.textContent = 'Prendre une garde';
+  body.innerHTML = `
     <div class="slot-info">
       <strong>${col.ev.name}</strong><br>
       ${mission.name} · ${dateLabel}<br>
       Quota : ${mission.quota} personne(s) simultanée(s)<br>
       Plage : ${ranges.map(r => `${fmtHM(r.start)}→${fmtHM(r.end)}`).join(', ')}
     </div>
+    <label for="inputStart">Heure de début</label>
+    <input type="time" id="inputStart" value="${minToTimeStr(defaultStart)}" min="${minToTimeStr(containingRange.start)}" max="${minToTimeStr(containingRange.end)}" step="60">
+    <label for="inputEnd">Heure de fin</label>
+    <input type="time" id="inputEnd" value="${minToTimeStr(defaultEnd)}" min="${minToTimeStr(containingRange.start)}" max="${minToTimeStr(containingRange.end)}" step="60">
+    <div class="error" id="modalError"></div>
   `;
-
-  if (myShifts.length) {
-    bodyHTML += `<div style="font-size:0.85rem;margin-bottom:6px;font-weight:600;">Vos créneaux :</div>`;
-    myShifts.forEach(s => {
-      bodyHTML += `
-        <div style="background:#ebf5fb;border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span>${fmtHM(s.start)} → ${fmtHM(s.end)}</span>
-          <span style="display:flex;gap:6px;">
-            <button class="btn-cancel" data-edit="${s.id}" style="padding:4px 10px;font-size:0.78rem;border-radius:6px;font-weight:600;">Modifier</button>
-            <button class="btn-danger" data-del="${s.id}" style="padding:4px 10px;font-size:0.78rem;border-radius:6px;font-weight:600;">Suppr.</button>
-          </span>
-        </div>
-      `;
-    });
-  }
-
-  bodyHTML += `
-    <div style="margin-top:8px;">
-      <label for="inputStart">Heure de début</label>
-      <input type="time" id="inputStart" value="${minToTimeStr(defaultStart)}" min="${minToTimeStr(containingRange.start)}" max="${minToTimeStr(containingRange.end)}" step="60">
-      <label for="inputEnd">Heure de fin</label>
-      <input type="time" id="inputEnd" value="${minToTimeStr(defaultEnd)}" min="${minToTimeStr(containingRange.start)}" max="${minToTimeStr(containingRange.end)}" step="60">
-      <div class="error" id="modalError"></div>
-    </div>
-  `;
-
-  body.innerHTML = bodyHTML;
   actions.innerHTML = '';
 
   const btnTake = document.createElement('button');
   btnTake.className = 'btn-primary btn-block';
-  btnTake.textContent = myShifts.length ? 'Ajouter un autre créneau' : "Je m'inscris";
+  btnTake.textContent = "Je m'inscris";
   btnTake.onclick = () => {
     const start = timeStrToMin(document.getElementById('inputStart').value);
     const end = timeStrToMin(document.getElementById('inputEnd').value);
     if (end <= start) { showErr('Fin doit être après début.'); return; }
     if (!shiftWithinRanges(start, end, ranges)) { showErr('Hors plage autorisée.'); return; }
-    if (userHasOverlap(dateStr, mission.id, CURRENT_USER.id, start, end)) {
-      showErr('Vous avez déjà un créneau qui chevauche.'); return;
+
+    // NOUVEAU : conflit avec N'IMPORTE QUELLE autre mission du jour
+    const conflict = userHasOverlapAnyMission(dateStr, CURRENT_USER.id, start, end, null);
+    if (conflict) {
+      showErr(`Vous avez déjà ${conflict.mission.name} (${conflict.ev.name}) sur ${fmtHMfull(conflict.shift.start)}→${fmtHMfull(conflict.shift.end)}.`);
+      return;
     }
-    // Vérif capacité minute par minute
+
+    // Capacité de la mission
     for (let mm = start; mm < end; mm++) {
       if (coverAt(dateStr, mission.id, mm) >= mission.quota) {
         showErr(`Capacité atteinte à ${fmtHMfull(mm)}.`); return;
       }
     }
+
     const key = `${dateStr}|${mission.id}`;
     if (!bookings[key]) bookings[key] = [];
     bookings[key].push({ id: nextId(), userId: CURRENT_USER.id, start, end });
@@ -710,48 +769,6 @@ function openSlotModal(dateStr, col, clickedMinute) {
   btnCancel.onclick = closeModal;
   actions.appendChild(btnCancel);
 
-  body.querySelectorAll('[data-edit]').forEach(btn => {
-    btn.onclick = () => {
-      const shift = myShifts.find(s => s.id === btn.dataset.edit);
-      if (!shift) return;
-      document.getElementById('inputStart').value = minToTimeStr(shift.start);
-      document.getElementById('inputEnd').value = minToTimeStr(shift.end);
-      btnTake.textContent = 'Enregistrer';
-      btnTake.onclick = () => {
-        const ns = timeStrToMin(document.getElementById('inputStart').value);
-        const ne = timeStrToMin(document.getElementById('inputEnd').value);
-        if (ne <= ns) { showErr('Fin doit être après début.'); return; }
-        if (!shiftWithinRanges(ns, ne, ranges)) { showErr('Hors plage.'); return; }
-        const others = myShifts.filter(s => s.id !== shift.id);
-        if (others.some(s => !(ne <= s.start || ns >= s.end))) {
-          showErr('Chevauchement avec un autre de vos créneaux.'); return;
-        }
-        for (let mm = ns; mm < ne; mm++) {
-          let count = 0;
-          getShifts(dateStr, mission.id).forEach(s => {
-            if (s.id === shift.id) return;
-            if (mm >= s.start && mm < s.end) count++;
-          });
-          if (count >= mission.quota) {
-            showErr(`Capacité atteinte à ${fmtHMfull(mm)}.`); return;
-          }
-        }
-        shift.start = ns; shift.end = ne;
-        closeModal();
-        renderDayGrid();
-      };
-    };
-  });
-  body.querySelectorAll('[data-del]').forEach(btn => {
-    btn.onclick = () => {
-      if (!confirm('Supprimer ce créneau ?')) return;
-      const key = `${dateStr}|${mission.id}`;
-      bookings[key] = getShifts(dateStr, mission.id).filter(s => s.id !== btn.dataset.del);
-      closeModal();
-      renderDayGrid();
-    };
-  });
-
   modal.classList.add('active');
 }
 
@@ -764,12 +781,14 @@ function closeModal() {
 }
 
 /* =====================================================================
-   MON PLANNING (Google Calendar)
+   MON PLANNING
    ===================================================================== */
 function openMyPlanning() {
   document.getElementById('calendarView').style.display = 'none';
   document.getElementById('dayView').classList.remove('active');
   document.getElementById('myPlanningView').classList.add('active');
+  document.getElementById('tabPlanning').classList.remove('active');
+  document.getElementById('tabMyPlanning').classList.add('active');
   myPlanningDate = new Date();
   renderMyPlanning();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -777,6 +796,9 @@ function openMyPlanning() {
 function closeMyPlanning() {
   document.getElementById('myPlanningView').classList.remove('active');
   document.getElementById('calendarView').style.display = 'block';
+  document.getElementById('tabMyPlanning').classList.remove('active');
+  document.getElementById('tabPlanning').classList.add('active');
+  renderCalendar();
 }
 
 function renderMyPlanning() {
@@ -876,62 +898,12 @@ function renderMyPlanning() {
 }
 
 function openShiftActions(dateStr, mission, ev, shift) {
-  const modal = document.getElementById('modal');
-  const title = document.getElementById('modalTitle');
-  const body = document.getElementById('modalBody');
-  const actions = document.getElementById('modalActions');
-
-  const d = parseDate(dateStr);
-  const dateLabel = d.toLocaleDateString('fr-FR', {
-    weekday: 'long', day: 'numeric', month: 'long'
-  });
-  const canEdit = !isLocked(dateStr);
-
-  title.textContent = 'Mon engagement';
-  body.innerHTML = `
-    <div class="slot-info">
-      <strong>${ev.name}</strong><br>
-      ${mission.name} · ${dateLabel}<br>
-      <span style="color:var(--accent);font-weight:700;">${fmtHMfull(shift.start)} → ${fmtHMfull(shift.end)}</span>
-    </div>
-    ${canEdit ? '' : '<div class="error" style="color:#e67e22;">🔒 Non modifiable.</div>'}
-  `;
-  actions.innerHTML = '';
-
-  if (canEdit) {
-    const btnEdit = document.createElement('button');
-    btnEdit.className = 'btn-primary';
-    btnEdit.textContent = 'Modifier';
-    btnEdit.onclick = () => {
-      closeModal();
-      openDayView(dateStr);
-      setTimeout(() => {
-        const ranges = missionRangesForDate(mission, dateStr);
-        openSlotModal(dateStr, { ev, mission, ranges }, shift.start);
-      }, 200);
-    };
-    actions.appendChild(btnEdit);
-
-    const btnDel = document.createElement('button');
-    btnDel.className = 'btn-danger';
-    btnDel.textContent = 'Supprimer';
-    btnDel.onclick = () => {
-      if (!confirm('Supprimer ce créneau ?')) return;
-      const key = `${dateStr}|${mission.id}`;
-      bookings[key] = getShifts(dateStr, mission.id).filter(s => s.id !== shift.id);
-      closeModal();
-      renderMyPlanning();
-    };
-    actions.appendChild(btnDel);
-  }
-
-  const btnClose = document.createElement('button');
-  btnClose.className = 'btn-cancel';
-  btnClose.textContent = 'Fermer';
-  btnClose.onclick = closeModal;
-  actions.appendChild(btnClose);
-
-  modal.classList.add('active');
+  // Ouvre la vue jour + le modal du shift directement
+  openDayView(dateStr);
+  setTimeout(() => {
+    const ranges = missionRangesForDate(mission, dateStr);
+    openSlotModal(dateStr, { ev, mission, ranges }, shift.start);
+  }, 200);
 }
 
 /* =====================================================================
@@ -950,10 +922,16 @@ document.getElementById('calToday').onclick = () => {
   renderCalendar();
 };
 document.getElementById('btnBack').onclick = closeDayView;
-document.getElementById('btnMyPlanning').onclick = () => {
-  if (document.getElementById('myPlanningView').classList.contains('active')) closeMyPlanning();
-  else openMyPlanning();
+
+document.getElementById('tabPlanning').onclick = () => {
+  if (document.getElementById('dayView').classList.contains('active')) return;
+  closeMyPlanning();
 };
+document.getElementById('tabMyPlanning').onclick = () => {
+  if (document.getElementById('myPlanningView').classList.contains('active')) return;
+  openMyPlanning();
+};
+
 document.getElementById('mpPrev').onclick = () => { myPlanningDate = addDays(myPlanningDate, -7); renderMyPlanning(); };
 document.getElementById('mpNext').onclick = () => { myPlanningDate = addDays(myPlanningDate, 7); renderMyPlanning(); };
 document.getElementById('mpToday').onclick = () => { myPlanningDate = new Date(); renderMyPlanning(); };

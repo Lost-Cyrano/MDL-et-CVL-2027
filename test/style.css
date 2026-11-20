@@ -8,15 +8,15 @@
   --muted: #7f8c8d;
   --border: #e1e5ea;
 
-  --taken: #95a5a6;          /* plages prises = gris neutre */
+  --taken: #95a5a6;          /* plages prises par d'autres = gris neutre */
   --taken-dark: #7f8c8d;
   --mine: #2980b9;           /* mes plages = bleu fort */
-  --free: #27ae60;           /* plages à combler = vert fort */
-  --free-light: #eafaf1;
+  --free: #e74c3c;           /* plages à combler = rouge fort */
+  --free-border: #a93226;    /* bordure rouge foncé */
 
-  --complete: #27ae60;       /* mission / événement complet */
-  --partial: #f39c12;        /* partiel */
-  --empty: #c0392b;          /* vide */
+  --complete: #27ae60;
+  --partial: #f39c12;
+  --empty: #c0392b;
   --radius: 12px;
 }
 
@@ -47,7 +47,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .app-header h1 { font-size: clamp(1rem, 2.5vw, 1.4rem); font-weight: 700; }
 
-/* Onglets de navigation (switch Planning / Mon planning) */
 .nav-tabs {
   display: flex;
   gap: 6px;
@@ -368,7 +367,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   background-size: 100% var(--hour-h);
 }
 
-/* Zones hors plage (hachurées) */
+/* Arrière-plan hachuré pour les zones hors plage — TOUTES les colonnes */
 .out-of-range {
   position: absolute;
   left: 0; right: 0;
@@ -380,6 +379,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     #e3e7ea 8px
   );
   pointer-events: none;
+  z-index: 0;
 }
 
 /* Blocs */
@@ -400,6 +400,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   justify-content: center;
   min-height: 14px;
   color: white;
+  z-index: 1;
 }
 .block:hover {
   transform: scale(1.03);
@@ -418,14 +419,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-weight: 500;
 }
 
-/* Libre = couleur PUISSANTE (vert) - très visible */
+/* Libre = rouge PUISSANT (à combler) */
 .block.free {
   background: var(--free);
-  border: 1px solid #1e8449;
-  box-shadow: 0 0 0 1px rgba(39,174,96,0.3) inset;
+  border: 1px solid var(--free-border);
+  box-shadow: 0 0 0 1px rgba(231,76,60,0.35) inset;
 }
 
-/* Pris = gris neutre (moins attractif visuellement) */
+/* Pris par d'autres = gris neutre */
 .block.taken {
   background: var(--taken);
   color: white;
@@ -437,7 +438,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .block.mine {
   background: var(--mine);
   border: 1px solid #1f618d;
-  box-shadow: 0 0 0 1px rgba(41,128,185,0.3) inset;
+  box-shadow: 0 0 0 1px rgba(41,128,185,0.35) inset;
 }
 
 .block.locked {
@@ -651,18 +652,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .btn-cancel:hover { background: #d5dbdf; }
 .btn-block { width: 100%; }
 
-/* Mini-formulaire : prévisualisation du créneau */
-.shift-preview {
-  background: var(--free-light);
-  border-left: 4px solid var(--free);
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  margin-top: 10px;
-  font-weight: 600;
-  color: #1e8449;
-}
-
 .modal-close {
   position: absolute;
   top: 12px; right: 12px;
@@ -712,4 +701,4 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 @media (hover: none) {
   .cal-cell:hover { background: #fafbfc; border-color: transparent; }
   .nav-btn:active, .back-btn:active { background: #e0e6ea; }
-        }
+  }

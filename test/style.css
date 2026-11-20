@@ -1,0 +1,613 @@
+:root {
+  --primary: #c0392b;
+  --primary-dark: #962d22;
+  --accent: #3498db;
+  --bg: #f4f6f9;
+  --card: #ffffff;
+  --text: #2c3e50;
+  --muted: #7f8c8d;
+  --border: #e1e5ea;
+  --free: #eafaf1;
+  --free-border: #27ae60;
+  --taken: #fadbd8;
+  --taken-border: #c0392b;
+  --mine: #d6eaf8;
+  --mine-border: #2980b9;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.4;
+  -webkit-text-size-adjust: 100%;
+}
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+/* ============ HEADER ============ */
+.app-header {
+  background: linear-gradient(135deg, var(--primary), #e74c3c);
+  color: white;
+  padding: max(16px, env(safe-area-inset-top)) 18px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.app-header h1 { font-size: clamp(1rem, 2.5vw, 1.4rem); font-weight: 700; }
+.app-header .user-info {
+  font-size: 0.85rem;
+  background: rgba(255,255,255,0.2);
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+.my-planning-btn {
+  background: white;
+  color: var(--primary);
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: 24px;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: transform 0.15s;
+}
+.my-planning-btn:hover { transform: scale(1.03); }
+.my-planning-btn:active { transform: scale(0.97); }
+
+/* ============ CALENDRIER MENSUEL ============ */
+.calendar-wrap {
+  max-width: 1100px;
+  margin: 18px auto;
+  padding: 0 12px;
+}
+.calendar-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 10px;
+}
+.calendar-nav h2 {
+  font-size: clamp(1rem, 2.5vw, 1.3rem);
+  text-transform: capitalize;
+  text-align: center;
+  flex: 1;
+}
+.nav-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text);
+  transition: background 0.15s;
+}
+.nav-btn:hover { background: #ecf0f1; }
+.nav-btn.today { color: var(--accent); }
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  background: var(--card);
+  padding: 10px;
+  border-radius: var(--radius);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.cal-dow {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 6px 0;
+  text-transform: uppercase;
+}
+.cal-cell {
+  aspect-ratio: 1 / 1;
+  min-height: 42px;
+  border-radius: 8px;
+  background: #fafbfc;
+  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  padding: 2px;
+}
+.cal-cell:hover { background: #eef2f6; border-color: var(--accent); }
+.cal-cell.other-month { color: #c8cdd2; }
+.cal-cell.today { background: var(--accent); color: white; font-weight: 700; }
+.cal-cell.locked { opacity: 0.55; }
+.cal-cell .dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--primary);
+  position: absolute;
+  bottom: 4px;
+}
+.cal-cell.today .dot { background: white; }
+.cal-cell .day-num { font-size: clamp(0.75rem, 2.5vw, 0.95rem); }
+
+/* ============ VUE JOUR ============ */
+.day-view {
+  max-width: 100%;
+  margin: 18px auto;
+  padding: 0 8px 40px;
+  display: none;
+}
+.day-view.active { display: block; }
+.day-view-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 0 4px;
+}
+.day-view-header h2 {
+  font-size: clamp(1rem, 2.5vw, 1.35rem);
+  text-transform: capitalize;
+}
+.back-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  color: var(--text);
+}
+.back-btn:hover { background: #ecf0f1; }
+
+.locked-banner {
+  background: #fff3cd;
+  border-left: 4px solid #f39c12;
+  color: #856404;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  margin-bottom: 12px;
+}
+
+/* ============ TABLEAU 4 NIVEAUX D'EN-TÊTE ============ */
+.grid-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  position: relative;
+}
+.day-grid {
+  display: grid;
+  min-width: max-content;
+  font-size: 0.82rem;
+}
+
+/* Colonne horaire sticky */
+.day-grid .col-time {
+  position: sticky;
+  left: 0;
+  background: var(--card);
+  z-index: 6;
+  border-right: 2px solid var(--border);
+}
+
+/* ============ EN-TÊTES (4 niveaux) ============ */
+.head-ev {
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 8px 6px;
+  text-align: center;
+  border-bottom: 2px solid var(--border);
+  border-left: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  color: white;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+}
+.head-mi {
+  font-weight: 600;
+  font-size: 0.76rem;
+  padding: 6px 4px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  color: var(--text);
+  position: sticky;
+  top: 34px;
+  z-index: 2;
+}
+.head-person {
+  font-weight: 500;
+  font-size: 0.7rem;
+  padding: 4px 2px;
+  text-align: center;
+  border-bottom: 2px solid var(--border);
+  border-left: 1px solid #f0f3f5;
+  color: var(--muted);
+  position: sticky;
+  top: 66px;
+  z-index: 2;
+  background: #fafbfc;
+}
+.head-person .p-slot-num {
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ============ PISTE HORAIRE (colonne heure) ============ */
+.hour-track {
+  position: relative;
+  background: #fafbfc;
+  border-right: 2px solid var(--border);
+  min-height: 100%;
+}
+.hour-tick {
+  position: absolute;
+  left: 0;
+  right: 0;
+  font-size: 0.68rem;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: right;
+  padding: 0 6px;
+  border-top: 1px solid #f0f3f5;
+  background: #fafbfc;
+  z-index: 1;
+}
+.hour-tick span {
+  position: relative;
+  top: -0.65em;
+  background: #fafbfc;
+  padding: 0 2px;
+}
+
+/* ============ COLONNES DES MISSIONS : événements type GCal ============ */
+.mission-col {
+  position: relative;
+  border-left: 1px solid #f0f3f5;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--hour-h) - 1px),
+    #f0f3f5 calc(var(--hour-h) - 1px),
+    #f0f3f5 var(--hour-h)
+  );
+  background-size: 100% var(--hour-h);
+}
+
+/* Bloc d'occupation (un par shift + un par zone libre) */
+.block {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 6px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  padding: 2px 4px;
+  overflow: hidden;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  border-left: 3px solid rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 12px;
+}
+.block:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 3;
+}
+.block .block-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.block .block-time {
+  font-size: 0.58rem;
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+/* Statuts */
+.block.free {
+  background: var(--free);
+  color: var(--free-border);
+  border-left-color: var(--free-border);
+  border: 1px dashed var(--free-border);
+  font-style: italic;
+}
+.block.taken {
+  background: var(--taken);
+  color: var(--primary-dark);
+  border-left-color: var(--taken-border);
+}
+.block.mine {
+  background: var(--mine);
+  color: #1a5276;
+  border-left-color: var(--mine-border);
+}
+.block.locked { cursor: not-allowed; opacity: 0.6; }
+.block.locked:hover { transform: none; box-shadow: none; }
+
+/* ============ VUE "MON PLANNING" (Google Calendar) ============ */
+.calendar-view {
+  max-width: 900px;
+  margin: 18px auto;
+  padding: 0 12px 30px;
+  display: none;
+}
+.calendar-view.active { display: block; }
+
+.gcal-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.gcal-nav h2 {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  text-transform: capitalize;
+  text-align: center;
+  flex: 1;
+}
+.gcal-container {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.gcal-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.gcal-grid {
+  display: grid;
+  min-width: max-content;
+  position: relative;
+}
+.gcal-hour-col {
+  border-right: 2px solid var(--border);
+  background: var(--card);
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+.gcal-hour-cell {
+  height: 50px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 4px 6px 0;
+  text-align: right;
+  border-bottom: 1px solid #f0f3f5;
+}
+.gcal-day-col {
+  border-right: 1px solid #f0f3f5;
+  position: relative;
+}
+.gcal-day-col:last-child { border-right: none; }
+.gcal-day-head {
+  position: sticky;
+  top: 0;
+  background: #f8f9fa;
+  z-index: 4;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-bottom: 2px solid var(--border);
+  text-transform: capitalize;
+}
+.gcal-day-head .gcal-day-num {
+  font-size: 1rem;
+  color: var(--text);
+}
+.gcal-day-head.today .gcal-day-num {
+  background: var(--accent);
+  color: white;
+  border-radius: 50%;
+  display: inline-flex;
+  width: 26px; height: 26px;
+  align-items: center;
+  justify-content: center;
+}
+.gcal-slots {
+  position: relative;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 49px,
+    #f0f3f5 49px,
+    #f0f3f5 50px
+  );
+}
+.gcal-event {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 0.7rem;
+  overflow: hidden;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  border-left: 3px solid rgba(0,0,0,0.3);
+  line-height: 1.2;
+}
+.gcal-event .ev-time {
+  font-size: 0.62rem;
+  opacity: 0.9;
+  font-weight: 600;
+}
+.gcal-event .ev-title {
+  font-weight: 700;
+  font-size: 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gcal-event .ev-role {
+  font-size: 0.62rem;
+  opacity: 0.9;
+}
+.gcal-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* ============ MODAL ============ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: white;
+  border-radius: 16px;
+  padding: 22px;
+  max-width: 460px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.modal h3 {
+  margin-bottom: 14px;
+  font-size: 1.1rem;
+  padding-right: 30px;
+}
+.modal label {
+  display: block;
+  margin: 12px 0 5px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.modal input[type="time"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+.modal .slot-info {
+  background: #f8f9fa;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 0.88rem;
+}
+.modal .slot-info strong { color: var(--primary); }
+.modal .error {
+  color: var(--primary);
+  font-size: 0.85rem;
+  margin-top: 8px;
+  min-height: 1.2em;
+  font-weight: 600;
+}
+.modal .actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.modal .actions button {
+  flex: 1;
+  min-width: 110px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #2980b9; }
+.btn-danger { background: var(--primary); color: white; }
+.btn-danger:hover { background: var(--primary-dark); }
+.btn-cancel { background: #ecf0f1; color: var(--text); }
+.btn-cancel:hover { background: #d5dbdf; }
+.btn-block { width: 100%; }
+
+.modal-close {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: none;
+  font-size: 1.4rem;
+  color: var(--muted);
+  width: 32px; height: 32px;
+  border-radius: 50%;
+}
+.modal-close:hover { background: #f0f0f0; }
+.modal-inner { position: relative; }
+
+.empty-state {
+  text-align: center;
+  padding: 30px 16px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 640px) {
+  .app-header { padding: 12px 14px; }
+  .my-planning-btn { padding: 8px 12px; font-size: 0.82rem; }
+  .calendar-grid { gap: 3px; padding: 8px; }
+  .cal-cell { min-height: 38px; font-size: 0.78rem; }
+  .gcal-hour-cell { height: 40px; }
+  .head-ev { font-size: 0.74rem; padding: 6px 4px; }
+  .head-mi { font-size: 0.68rem; padding: 5px 3px; top: 30px; }
+  .head-person { font-size: 0.62rem; top: 60px; padding: 3px 1px; }
+  .modal { padding: 18px; border-radius: 14px; }
+  .modal .actions button { padding: 11px 12px; font-size: 0.88rem; }
+  .block { font-size: 0.6rem; }
+  .block .block-time { font-size: 0.52rem; }
+}
+@media (max-width: 380px) {
+  .cal-cell { min-height: 34px; }
+  .gcal-hour-cell { height: 36px; }
+  .block { font-size: 0.55rem; padding: 1px 2px; }
+  .block .block-time { display: none; }
+}
+@media (min-width: 900px) {
+  .gcal-hour-cell { height: 60px; }
+}
+@media (hover: none) {
+  .cal-cell:hover { background: #fafbfc; border-color: transparent; }
+  .nav-btn:active, .back-btn:active { background: #e0e6ea; }
+}

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning des Gardes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f4f6f9;
+    color: #2c3e50;
+    padding: 20px;
+  }
+  header {
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(192,57,43,0.3);
+  }
+  header h1 { font-size: 1.6rem; }
+  header p { opacity: 0.9; margin-top: 5px; font-size: 0.9rem; }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  .toolbar button {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .toolbar button:hover { background: #ecf0f1; }
+  .toolbar .today { background: #3498db; color: white; border-color: #3498db; }
+  .toolbar .today:hover { background: #2980b9; }
+
+  .day-section {
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+  .day-header {
+    padding: 15px 20px;
+    background: #ecf0f1;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .day-header h2 { font-size: 1.1rem; text-transform: capitalize; }
+  .day-header.past { opacity: 0.6; }
+  .day-header.today-h { background: #d6eaf8; }
+  .day-header .badge {
+    background: #bdc3c7;
+    color: white;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+  }
+
+  .mission {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 15px 20px;
+  }
+  .mission:last-child { border-bottom: none; }
+  .mission-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .mission-title { font-weight: 600; font-size: 1rem; }
+  .mission-time { color: #7f8c8d; font-size: 0.85rem; margin-top: 2px; }
+  .status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .status.full { background: #d5f4e6; color: #27ae60; }
+  .status.partial { background: #fef5e7; color: #e67e22; }
+  .status.empty { background: #fadbd8; color: #c0392b; }
+  .status.past { background: #e5e7eb; color: #7f8c8d; }
+
+  .slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .slot {
+    flex: 1;
+    min-width: 110px;
+    background: #f8f9fa;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .slot:hover:not(.locked) { border-color: #3498db; background: #ebf5fb; }
+  .slot.locked { cursor: not-allowed; opacity: 0.7; }
+  .slot.covered { border-color: #27ae60; background: #eafaf1; }
+  .slot.covered:hover:not(.locked) { background: #d5f4e6; }
+  .slot-hour { font-weight: 600; font-size: 0.85rem; }
+  .slot-count { font-size: 0.75rem; color: #7f8c8d; margin-top: 2px; }
+  .slot-people { font-size: 0.75rem; margin-top: 4px; color: #2c3e50; }
+  .slot-people .me { color: #c0392b; font-weight: 600; }
+  .slot-empty-hint { font-size: 0.75rem; color: #bdc3c7; font-style: italic; }
+
+  .taken-by {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    margin-top: 6px;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    max-width: 450px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal h3 { margin-bottom: 15px; }
+  .modal label { display: block; margin: 12px 0 5px; font-size: 0.9rem; font-weight: 500; }
+  .modal input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+  .modal .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+  .modal .actions button {
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .btn-primary { background: #3498db; color: white; }
+  .btn-primary:hover { background: #2980b9; }
+  .btn-danger { background: #e74c3c; color: white; }
+  .btn-danger:hover { background: #c0392b; }
+  .btn-cancel { background: #ecf0f1; color: #2c3e50; }
+
+  .info-box {
+    background: #fff8e1;
+    border-left: 4px solid #f39c12;
+    padding: 12px 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-size: 0.85rem;
+  }
+  .legend {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    margin-bottom: 15px;
+    color: #7f8c8d;
+  }
+  .legend span::before {
+    content: '●';
+    margin-right: 4px;
+    font-size: 1rem;
+  }
+  .legend .l-full::before { color: #27ae60; }
+  .legend .l-partial::before { color: #e67e22; }
+  .legend .l-empty::before { color: #c0392b; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🥐 Planning des Gardes — Vente de pains au chocolat</h1>
+  <p>Cliquez sur un créneau pour prendre ou libérer une garde.</p>
+</header>
+
+<div class="toolbar">
+  <button class="today" id="btnToday">Aujourd'hui</button>
+  <button id="btnPrev">◀ Semaine précédente</button>
+  <button id="btnNext">Semaine suivante ▶</button>
+  <span id="rangeLabel" style="margin-left:auto;font-weight:600;color:#7f8c8d;"></span>
+</div>
+
+<div class="legend">
+  <span class="l-full">Complet</span>
+  <span class="l-partial">Partiel</span>
+  <span class="l-empty">Vide</span>
+  <span style="color:#bdc3c7;">Grisé = passé / aujourd'hui (non modifiable)</span>
+</div>
+
+<div class="info-box">
+  ℹ️ <strong>Règle :</strong> impossible de modifier une mission le jour même ou passée.
+</div>
+
+<div id="planning"></div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Prendre une garde</h3>
+    <div id="modalBody"></div>
+    <div class="actions" id="modalActions"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   DONNÉES EN MÉMOIRE
+   ========================================================= */
+
+// Utilisateur courant (simulé)
+const CURRENT_USER = { id: 'u1', name: 'Vous' };
+
+// Autres utilisateurs (simulés)
+const USERS = {
+  u1: 'Vous',
+  u2: 'Alice',
+  u3: 'Bob',
+  u4: 'Chloé',
+  u5: 'David'
+};
+
+/* Modèle de missions récurrentes.
+   days: 1=lundi ... 7=dimanche
+   slots: liste de créneaux horaires (chaque slot = 1h)
+   quota: nombre de personnes requises PAR slot
+*/
+const MISSION_TEMPLATES = [
+  {
+    id: 'pain',
+    name: 'Vente de pains au chocolat',
+    quota: 2,
+    // Règle : Lun-Ven 9h-12h et 14h-16h, SAUF mercredi après-midi
+    occurrences: [
+      { days: [1,2,3,4,5], hours: [9,10,11] },   // matin tous les jours ouvrés
+      { days: [1,2,4,5],   hours: [14,15] }      // après-midi sauf mercredi
+    ]
+  }
+];
+
+/* Base de données des prises de garde.
+   Clé : `${YYYY-MM-DD}|${missionId}|${hour}`
+   Valeur : array de userId
+*/
+let assignments = {};
+
+/* Génère un jeu de données de démo sur la semaine courante */
+(function seedDemo() {
+  const today = new Date();
+  const monday = getMonday(today);
+  // Quelques inscriptions pour visualiser
+  const seed = [
+    // Semaine courante
+    { offsetDays: 0, hour: 9, users: ['u2','u3'] },   // lundi complet
+    { offsetDays: 0, hour: 10, users: ['u2'] },       // lundi partiel
+    { offsetDays: 1, hour: 9, users: ['u3','u4'] },   // mardi complet
+    { offsetDays: 2, hour: 9, users: ['u5'] },        // mercredi partiel
+    { offsetDays: 3, hour: 14, users: ['u2','u5'] },  // jeudi complet
+    // Semaine suivante
+    { offsetDays: 7, hour: 9, users: ['u2','u3'] },
+    { offsetDays: 7, hour: 10, users: ['u4'] },
+    { offsetDays: 8, hour: 14, users: ['u3','u4'] },
+  ];
+  seed.forEach(s => {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + s.offsetDays);
+    const key = `${fmtDate(d)}|pain|${s.hour}`;
+    assignments[key] = [...s.users];
+  });
+})();
+
+/* =========================================================
+   UTILITAIRES DE DATE
+   ========================================================= */
+function fmtDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function getMonday(d) {
+  const date = new Date(d);
+  const day = date.getDay(); // 0=dim, 1=lun...
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(date.setDate(diff));
+  monday.setHours(0,0,0,0);
+  return monday;
+}
+function addDays(d, n) {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
+function isPastOrToday(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr + 'T00:00:00');
+  return d <= today; // jour même inclus => non modifiable
+}
+const DAY_NAMES = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const DAY_NAMES_SHORT = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+
+/* =========================================================
+   ÉTAT DE LA VUE
+   ========================================================= */
+let currentMonday = getMonday(new Date());
+
+/* =========================================================
+   LOGIQUE MÉTIER
+   ========================================================= */
+
+// Retourne les créneaux horaires d'une mission pour un jour donné
+function getHoursForDay(template, dateObj) {
+  // JS: 0=dimanche, 1=lundi... On normalise : 0=lundi
+  const jsDay = dateObj.getDay();
+  const dayNum = jsDay === 0 ? 7 : jsDay; // 1=lundi ... 7=dimanche
+  const hours = new Set();
+  template.occurrences.forEach(occ => {
+    if (occ.days.includes(dayNum)) {
+      occ.hours.forEach(h => hours.add(h));
+    }
+  });
+  return [...hours].sort((a,b)=>a-b);
+}
+
+// Compte les personnes sur un créneau
+function getSlotAssignees(dateStr, missionId, hour) {
+  return assignments[`${dateStr}|${missionId}|${hour}`] || [];
+}
+
+// Statut global d'une mission sur une journée (complète / partielle / vide)
+function getMissionDayStatus(dateStr, template, hours) {
+  if (hours.length === 0) return { status: 'empty', totalAssigned: 0, totalSlots: 0 };
+  let fullSlots = 0;
+  let anyAssigned = false;
+  hours.forEach(h => {
+    const arr = getSlotAssignees(dateStr, template.id, h);
+    if (arr.length >= template.quota) fullSlots++;
+    if (arr.length > 0) anyAssigned = true;
+  });
+  if (fullSlots === hours.length) return { status: 'full', fullSlots, totalSlots: hours.length };
+  if (anyAssigned) return { status: 'partial', fullSlots, totalSlots: hours.length };
+  return { status: 'empty', fullSlots, totalSlots: hours.length };
+}
+
+/* =========================================================
+   RENDU
+   ========================================================= */
+function render() {
+  const planning = document.getElementById('planning');
+  planning.innerHTML = '';
+
+  // Label de plage
+  const sunday = addDays(currentMonday, 6);
+  document.getElementById('rangeLabel').textContent =
+    `${currentMonday.getDate()} ${DAY_NAMES_SHORT[currentMonday.getDay()]} → ` +
+    `${sunday.getDate()} ${DAY_NAMES_SHORT[sunday.getDay()]} ` +
+    `${currentMonday.getFullYear()}`;
+
+  const todayStr = fmtDate(new Date());
+
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(currentMonday, i);
+    const dateStr = fmtDate(d);
+    const daySection = document.createElement('div');
+    daySection.className = 'day-section';
+
+    const locked = isPastOrToday(dateStr);
+    const isToday = dateStr === todayStr;
+
+    const header = document.createElement('div');
+    header.className = 'day-header' + (locked ? ' past' : '') + (isToday ? ' today-h' : '');
+    const dayLabel = `${DAY_NAMES[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
+    header.innerHTML = `
+      <h2>${dayLabel}${isToday ? ' <span style="color:#2980b9;font-size:0.8rem;">(aujourd\'hui)</span>' : ''}</h2>
+      ${locked ? '<span class="badge">🔒 Non modifiable</span>' : ''}
+    `;
+    daySection.appendChild(header);
+
+    // Missions
+    MISSION_TEMPLATES.forEach(template => {
+      const hours = getHoursForDay(template, d);
+      if (hours.length === 0) return;
+
+      const missionEl = document.createElement('div');
+      missionEl.className = 'mission';
+
+      const status = getMissionDayStatus(dateStr, template, hours);
+      const statusClass = locked ? 'past' : status.status;
+      const statusLabel = locked ? 'Passé' :
+        status.status === 'full' ? '✓ Complet' :
+        status.status === 'partial' ? '⏳ Partiel' : '✗ Vide';
+
+      missionEl.innerHTML = `
+        <div class="mission-top">
+          <div>
+            <div class="mission-title">${template.name}</div>
+            <div class="mission-time">${hours[0]}h → ${hours[hours.length-1]+1}h · ${template.quota} pers./créneau</div>
+          </div>
+          <div class="status ${statusClass}">${statusLabel} (${status.fullSlots}/${status.totalSlots} créneaux complets)</div>
+        </div>
+        <div class="slots" data-date="${dateStr}" data-mission="${template.id}"></div>
+      `;
+
+      const slotsContainer = missionEl.querySelector('.slots');
+      hours.forEach(h => {
+        const assignees = getSlotAssignees(dateStr, template.id, h);
+        const covered = assignees.length >= template.quota;
+        const slotEl = document.createElement('div');
+        slotEl.className = 'slot' + (covered ? ' covered' : '') + (locked ? ' locked' : '');
+        slotEl.dataset.hour = h;
+
+        const names = assignees.map(uid =>
+          `<span class="${uid === CURRENT_USER.id ? 'me' : ''}">${USERS[uid] || uid}</span>`
+        ).join(', ');
+
+        slotEl.innerHTML = `
+          <div class="slot-hour">${h}h - ${h+1}h</div>
+          <div class="slot-count">${assignees.length}/${template.quota} inscrit(s)</div>
+          <div class="slot-people">${names || '<span class="slot-empty-hint">Personne</span>'}</div>
+        `;
+
+        if (!locked) {
+          slotEl.addEventListener('click', () => openSlotModal(dateStr, template, h));
+        }
+        slotsContainer.appendChild(slotEl);
+      });
+
+      daySection.appendChild(missionEl);
+    });
+
+    planning.appendChild(daySection);
+  }
+}
+
+/* =========================================================
+   MODAL : prise / libération de garde
+   ========================================================= */
+function openSlotModal(dateStr, template, hour) {
+  const modal = document.getElementById('modal');
+  const title = document.getElementById('modalTitle');
+  const body = document.getElementById('modalBody');
+  const actions = document.getElementById('modalActions');
+
+  const key = `${dateStr}|${template.id}|${hour}`;
+  const assignees = assignments[key] || [];
+  const isMine = assignees.includes(CURRENT_USER.id);
+  const isFull = assignees.length >= template.quota;
+
+  const dateObj = new Date(dateStr + 'T00:00:00');
+  const dateLabel = `${DAY_NAMES[dateObj.getDay()]} ${dateObj.getDate()}/${dateObj.getMonth()+1}`;
+
+  title.textContent = isMine ? 'Libérer ma garde' : 'Prendre une garde';
+
+  const others = assignees.filter(u => u !== CURRENT_USER.id);
+  body.innerHTML = `
+    <p style="font-size:0.9rem;color:#7f8c8d;margin-bottom:10px;">
+      <strong>${template.name}</strong><br>
+      ${dateLabel} · ${hour}h - ${hour+1}h
+    </p>
+    <p style="font-size:0.9rem;margin-bottom:10px;">
+      Inscrits : ${assignees.length ? assignees.map(u => USERS[u]).join(', ') : '<em>aucun</em>'}
+    </p>
+    <p style="font-size:0.85rem;color:#7f8c8d;">
+      Quota : ${template.quota} personne(s)
+    </p>
+  `;
+
+  actions.innerHTML = '';
+
+  if (isMine) {
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-danger';
+    removeBtn.textContent = 'Me retirer';
+    removeBtn.onclick = () => {
+      assignments[key] = assignees.filter(u => u !== CURRENT_USER.id);
+      if (assignments[key].length === 0) delete assignments[key];
+      closeModal();
+      render();
+    };
+    actions.appendChild(removeBtn);
+  } else if (isFull) {
+    const msg = document.createElement('p');
+    msg.style.cssText = 'color:#c0392b;font-size:0.9rem;';
+    msg.textContent = 'Ce créneau est complet.';
+    body.appendChild(msg);
+  } else {
+    const takeBtn = document.createElement('button');
+    takeBtn.className = 'btn-primary';
+    takeBtn.textContent = 'Je m\'inscris';
+    takeBtn.onclick = () => {
+      if (!assignments[key]) assignments[key] = [];
+      if (!assignments[key].includes(CURRENT_USER.id)) {
+        assignments[key].push(CURRENT_USER.id);
+      }
+      closeModal();
+      render();
+    };
+    actions.appendChild(takeBtn);
+  }
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn-cancel';
+  cancelBtn.textContent = 'Fermer';
+  cancelBtn.onclick = closeModal;
+  actions.appendChild(cancelBtn);
+
+  modal.classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+}
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+document.getElementById('btnPrev').onclick = () => {
+  currentMonday = addDays(currentMonday, -7);
+  render();
+};
+document.getElementById('btnNext').onclick = () => {
+  currentMonday = addDays(currentMonday, 7);
+  render();
+};
+document.getElementById('btnToday').onclick = () => {
+  currentMonday = getMonday(new Date());
+  render();
+};
+
+// Fermer modal au clic sur l'overlay
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target.id === 'modal') closeModal();
+});
+
+/* INIT */
+render();
+</script>
+
+</body>
+</html>

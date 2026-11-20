@@ -20,7 +20,6 @@
     --taken-border: #c0392b;
     --mine: #d6eaf8;
     --mine-border: #2980b9;
-    --disabled: #ecf0f1;
     --radius: 12px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -152,7 +151,7 @@
   .cal-cell.today .dot { background: white; }
   .cal-cell .day-num { font-size: clamp(0.75rem, 2.5vw, 0.95rem); }
 
-  /* ============ VUE JOUR (tableau 3 entrées) ============ */
+  /* ============ VUE JOUR ============ */
   .day-view {
     max-width: 100%;
     margin: 18px auto;
@@ -193,7 +192,7 @@
     margin-bottom: 12px;
   }
 
-  /* Conteneur scrollable horizontalement */
+  /* ============ TABLEAU 4 NIVEAUX D'EN-TÊTE ============ */
   .grid-scroll {
     overflow-x: auto;
     overflow-y: visible;
@@ -202,84 +201,85 @@
     box-shadow: 0 2px 10px rgba(0,0,0,0.06);
     -webkit-overflow-scrolling: touch;
     border: 1px solid var(--border);
+    position: relative;
   }
   .day-grid {
     display: grid;
     min-width: max-content;
     font-size: 0.82rem;
   }
-  /* Colonnes dynamiques : heure + N missions */
-  .day-grid .col {
-    border-right: 1px solid var(--border);
-    min-width: 90px;
-  }
-  .day-grid .col:last-child { border-right: none; }
+
+  /* Colonne horaire sticky */
   .day-grid .col-time {
-    min-width: 62px;
     position: sticky;
     left: 0;
     background: var(--card);
-    z-index: 4;
+    z-index: 6;
     border-right: 2px solid var(--border);
   }
+  .hour-label {
+    height: 26px;
+    background: #fafbfc;
+    color: var(--muted);
+    font-weight: 600;
+    border-bottom: 1px solid #f0f3f5;
+    font-size: 0.68rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-  /* En-têtes (2 niveaux : événement + mission) */
-  .day-grid .head-ev {
-    background: #ecf0f1;
+  /* En-têtes (4 niveaux) */
+  .head-ev {
     font-weight: 700;
     font-size: 0.82rem;
     padding: 8px 6px;
     text-align: center;
-    border-bottom: 1px solid var(--border);
-    border-left: 1px solid var(--border);
+    border-bottom: 2px solid var(--border);
+    border-left: 2px solid var(--border);
     position: sticky;
     top: 0;
     z-index: 3;
-    color: var(--text);
+    color: white;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
   }
-  .day-grid .head-mi {
-    background: #f8f9fa;
+  .head-mi {
     font-weight: 600;
     font-size: 0.76rem;
-    padding: 6px 6px;
+    padding: 6px 4px;
     text-align: center;
-    border-bottom: 2px solid var(--border);
+    border-bottom: 1px solid var(--border);
     border-left: 1px solid var(--border);
-    color: var(--muted);
+    color: var(--text);
     position: sticky;
-    top: 0;
+    top: 34px;
     z-index: 2;
   }
-  .day-grid .head-ev.empty-head,
-  .day-grid .head-mi.empty-head {
-    visibility: hidden;
-    border: none;
-    background: transparent;
-  }
-  /* En-tête de la colonne heure */
-  .day-grid .head-time {
-    background: #ecf0f1;
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    left: 0;
-    z-index: 5;
-    font-size: 0.72rem;
-    color: var(--muted);
+  .head-person {
+    font-weight: 500;
+    font-size: 0.7rem;
+    padding: 4px 2px;
     text-align: center;
-    padding: 6px 4px;
-    font-weight: 700;
+    border-bottom: 2px solid var(--border);
+    border-left: 1px solid #f0f3f5;
+    color: var(--muted);
+    position: sticky;
+    top: 66px;
+    z-index: 2;
+    background: #fafbfc;
   }
-  .day-grid .head-time.row2 {
-    top: 30px; /* hauteur de la 1re ligne d'en-tête */
+  .head-person .p-slot-num {
+    font-weight: 700;
+    color: var(--text);
   }
 
-  /* Cellules du tableau */
+  /* Cellules */
   .cell {
     height: 26px;
     border-bottom: 1px solid #f0f3f5;
-    padding: 2px 4px;
-    font-size: 0.72rem;
+    border-left: 1px solid #f0f3f5;
+    padding: 0 3px;
+    font-size: 0.7rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -290,33 +290,28 @@
     text-align: center;
     line-height: 1.1;
   }
-  .cell.hour-label {
-    background: #fafbfc;
-    color: var(--muted);
-    font-weight: 600;
-    cursor: default;
-    border-right: 2px solid var(--border);
-    font-size: 0.68rem;
-  }
+  .cell.hour-label { cursor: default; }
+
+  /* Statuts */
   .cell.free {
     background: #f4fbf7;
-    border-left: 1px solid #ecf0f1;
   }
   .cell.free:hover { background: #eafaf1; }
   .cell.taken {
     background: var(--taken);
     color: var(--primary-dark);
-    border-left: 1px solid #ecf0f1;
     font-weight: 600;
   }
   .cell.mine {
     background: var(--mine);
     color: #1a5276;
-    border-left: 1px solid #ecf0f1;
     font-weight: 700;
   }
   .cell.past-cell { opacity: 0.55; cursor: not-allowed; }
-  .cell.past-cell.free:hover { background: #f4fbf7; }
+  .cell.out-of-range {
+    background: repeating-linear-gradient(45deg, #f8f9fa, #f8f9fa 4px, #eef0f2 4px, #eef0f2 8px);
+    cursor: not-allowed;
+  }
   .cell .cell-label {
     font-size: 0.62rem;
     font-weight: 700;
@@ -325,21 +320,138 @@
     text-overflow: ellipsis;
     max-width: 100%;
   }
-  .cell .cell-sub {
-    font-size: 0.58rem;
-    opacity: 0.8;
-  }
-  .cell.quota-free {
-    /* place libre mais mission partiellement occupée */
-    background: #fff9e6;
-  }
-  .cell.quota-free:hover { background: #fef5e7; }
 
-  /* Sticky hour column overlay on scroll */
-  .day-grid .row-label {
+  /* ============ VUE "MON PLANNING" (style Google Calendar) ============ */
+  .calendar-view {
+    max-width: 900px;
+    margin: 18px auto;
+    padding: 0 12px 30px;
+    display: none;
+  }
+  .calendar-view.active { display: block; }
+
+  .gcal-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .gcal-nav h2 {
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    text-transform: capitalize;
+    text-align: center;
+    flex: 1;
+  }
+  .gcal-container {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .gcal-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .gcal-grid {
+    display: grid;
+    min-width: max-content;
+    position: relative;
+  }
+  .gcal-hour-col {
+    border-right: 2px solid var(--border);
+    background: var(--card);
     position: sticky;
     left: 0;
-    z-index: 1;
+    z-index: 5;
+  }
+  .gcal-hour-cell {
+    height: 50px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 4px 6px 0;
+    text-align: right;
+    border-bottom: 1px solid #f0f3f5;
+  }
+  .gcal-day-col {
+    border-right: 1px solid #f0f3f5;
+    position: relative;
+  }
+  .gcal-day-col:last-child { border-right: none; }
+  .gcal-day-head {
+    position: sticky;
+    top: 0;
+    background: #f8f9fa;
+    z-index: 4;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-bottom: 2px solid var(--border);
+    text-transform: capitalize;
+  }
+  .gcal-day-head .gcal-day-num {
+    font-size: 1rem;
+    color: var(--text);
+  }
+  .gcal-day-head.today .gcal-day-num {
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    display: inline-flex;
+    width: 26px; height: 26px;
+    align-items: center;
+    justify-content: center;
+  }
+  .gcal-slots {
+    position: relative;
+    height: 1200px; /* 24h × 50px */
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 49px,
+      #f0f3f5 49px,
+      #f0f3f5 50px
+    );
+  }
+  .gcal-event {
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-size: 0.7rem;
+    overflow: hidden;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    border-left: 3px solid rgba(0,0,0,0.3);
+    line-height: 1.2;
+  }
+  .gcal-event .ev-time {
+    font-size: 0.62rem;
+    opacity: 0.9;
+    font-weight: 600;
+  }
+  .gcal-event .ev-title {
+    font-weight: 700;
+    font-size: 0.72rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gcal-event .ev-role {
+    font-size: 0.62rem;
+    opacity: 0.9;
+  }
+  .gcal-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-size: 0.95rem;
   }
 
   /* ============ MODAL ============ */
@@ -433,51 +545,6 @@
   .modal-close:hover { background: #f0f0f0; }
   .modal-inner { position: relative; }
 
-  /* ============ PLANNING PERSONNEL ============ */
-  .my-planning-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 8px;
-  }
-  .my-shift {
-    background: #f8f9fa;
-    border-left: 4px solid var(--accent);
-    border-radius: 8px;
-    padding: 12px 14px;
-    font-size: 0.9rem;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .my-shift.future { border-left-color: var(--free-border); }
-  .my-shift.past { border-left-color: #bdc3c7; opacity: 0.75; }
-  .my-shift.today { border-left-color: #f39c12; }
-  .my-shift .shift-when {
-    font-weight: 700;
-    color: var(--text);
-  }
-  .my-shift .shift-role { color: var(--muted); font-size: 0.85rem; }
-  .my-shift .shift-time {
-    font-weight: 600;
-    color: var(--accent);
-  }
-  .my-shift .shift-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 6px;
-    flex-wrap: wrap;
-  }
-  .my-shift .shift-actions button {
-    font-size: 0.78rem;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-weight: 600;
-  }
-  .shift-edit { background: #ebf5fb; color: #1a5276; }
-  .shift-edit:hover { background: #d6eaf8; }
-  .shift-del { background: #fadbd8; color: var(--primary-dark); }
-  .shift-del:hover { background: #f5b7b1; }
   .empty-state {
     text-align: center;
     padding: 30px 16px;
@@ -491,29 +558,29 @@
     .my-planning-btn { padding: 8px 12px; font-size: 0.82rem; }
     .calendar-grid { gap: 3px; padding: 8px; }
     .cal-cell { min-height: 38px; font-size: 0.78rem; }
-    .day-grid .col { min-width: 78px; }
-    .day-grid .col-time { min-width: 52px; }
     .cell { height: 24px; font-size: 0.68rem; }
-    .day-grid .head-ev { font-size: 0.74rem; padding: 6px 4px; }
-    .day-grid .head-mi { font-size: 0.68rem; padding: 5px 4px; }
+    .hour-label { height: 24px; }
+    .gcal-hour-cell { height: 40px; }
+    .gcal-slots { height: 960px; }
+    .head-ev { font-size: 0.74rem; padding: 6px 4px; }
+    .head-mi { font-size: 0.68rem; padding: 5px 3px; top: 30px; }
+    .head-person { font-size: 0.62rem; top: 60px; padding: 3px 1px; }
     .modal { padding: 18px; border-radius: 14px; }
     .modal .actions button { padding: 11px 12px; font-size: 0.88rem; }
   }
-
   @media (max-width: 380px) {
-    .day-grid .col { min-width: 70px; }
     .cell { font-size: 0.62rem; height: 22px; }
+    .hour-label { height: 22px; }
     .cal-cell { min-height: 34px; }
-    .day-grid .head-ev { font-size: 0.68rem; }
+    .gcal-hour-cell { height: 36px; }
+    .gcal-slots { height: 864px; }
   }
-
-  /* Tablette : profiter de l'espace */
   @media (min-width: 900px) {
-    .day-grid .col { min-width: 110px; }
     .cell { height: 30px; font-size: 0.78rem; }
+    .hour-label { height: 30px; }
+    .gcal-hour-cell { height: 60px; }
+    .gcal-slots { height: 1440px; }
   }
-
-  /* Pour l'accessibilité tactile */
   @media (hover: none) {
     .cal-cell:hover { background: #fafbfc; border-color: transparent; }
     .cell.free:hover { background: #f4fbf7; }
@@ -524,9 +591,7 @@
 <body>
 
 <header class="app-header">
-  <div>
-    <h1>📅 Planning des Gardes</h1>
-  </div>
+  <div><h1>📅 Planning des Gardes</h1></div>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
     <span class="user-info">👤 Vous</span>
     <button class="my-planning-btn" id="btnMyPlanning">🗂 Mon planning</button>
@@ -546,7 +611,7 @@
   </div>
 </main>
 
-<!-- ================== VUE DÉTAIL JOUR ================== -->
+<!-- ================== VUE DÉTAIL JOUR (tableau 4 niveaux) ================== -->
 <main class="day-view" id="dayView">
   <div class="day-view-header">
     <button class="back-btn" id="btnBack">◀ Retour</button>
@@ -560,7 +625,24 @@
   </div>
 </main>
 
-<!-- ================== MODAL GÉNÉRIQUE ================== -->
+<!-- ================== VUE MON PLANNING (Google Calendar) ================== -->
+<main class="calendar-view" id="myPlanningView">
+  <div class="gcal-nav">
+    <button class="nav-btn" id="mpPrev">◀</button>
+    <h2 id="mpLabel">—</h2>
+    <button class="nav-btn" id="mpNext">▶</button>
+  </div>
+  <div class="gcal-container">
+    <div class="gcal-scroll">
+      <div class="gcal-grid" id="gcalGrid"></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:12px;">
+    <button class="nav-btn today" id="mpToday">Aujourd'hui</button>
+  </div>
+</main>
+
+<!-- ================== MODAL ================== -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <div class="modal-inner">
@@ -574,95 +656,43 @@
 
 <script>
 /* =====================================================================
-   MODÈLE DE DONNÉES (mémoire, sans BDD)
+   CONSTANTES / UTILISATEUR
    ===================================================================== */
-
 const CURRENT_USER = { id: 'u1', name: 'Vous' };
-
 const USERS = {
   u1: 'Vous', u2: 'Alice', u3: 'Bob', u4: 'Chloé', u5: 'David', u6: 'Emma'
 };
 
-/* Rôles de missions récurrents (par événement).
-   Chaque mission a :
-     - id, name (nom du rôle)
-     - quota (nb personnes simultanées)
-     - startHour, endHour (plage de validité du rôle, en heures pleines)
-   Un événement a :
-     - id, name
-     - days: [1..7] (jours récurrents, 1=lundi)
-     - missions: [...]
-   Les événements PONCTUELS ont un champ `specificDate` (YYYY-MM-DD).
-*/
-const EVENTS = [
-  {
-    id: 'pain',
-    name: 'Vente de Pains au Chocolat',
-    type: 'recurring',
-    days: [1,2,3,4,5], // lundi-vendredi
-    skipAfternoonOn: [3], // mercredi aprèm off
-    missions: [
-      { id: 'pain-vendeur', name: 'Vendeurs', quota: 2,
-        ranges: [
-          { start: 9, end: 12, excludeOn: [3] }, // matin tous les jours
-          { start: 14, end: 16, excludeOn: [3] } // sauf mercredi
-        ]
-      }
-    ]
-  },
-  {
-    id: 'loto-2026-11-23',
-    name: 'Grand Loto',
-    type: 'punctual',
-    specificDate: '2026-11-23',
-    missions: [
-      { id: 'loto-buvette', name: 'Buvette', quota: 3, ranges: [{ start: 8, end: 17 }] },
-      { id: 'loto-caissier', name: 'Caissier', quota: 1, ranges: [{ start: 8, end: 17 }] },
-      { id: 'loto-verif', name: 'Vérif. des lots', quota: 2, ranges: [{ start: 8, end: 17 }] },
-      { id: 'loto-present', name: 'Présentateur', quota: 1, ranges: [{ start: 8, end: 17 }] },
-      { id: 'loto-tirage', name: 'Tirage des numéros', quota: 1, ranges: [{ start: 8, end: 17 }] }
-    ]
-  }
-];
+/* =====================================================================
+   DONNÉES (remplies par fetch depuis events.json)
+   ===================================================================== */
+let EVENTS = [];
 
-/* Réservations (prises de garde) :
-   Clé = `${dateStr}|${missionId}`
-   Valeur = tableau de shifts :
-     { id, userId, start (en minutes depuis 00:00), end }
-*/
+/* Réservations : clé `${dateStr}|${missionId}` → tableau de shifts */
 let bookings = {};
-
-/* Générateur d'id unique */
 let _id = 0;
 const nextId = () => `s${++_id}`;
 
-/* ============== SEED DEMO ============== */
+/* Seed démo (à retirer quand une vraie API prend le relais) */
 (function seed() {
-  function add(dateStr, missionId, userId, startH, startM, endH, endM) {
+  const add = (dateStr, missionId, userId, sH, sM, eH, eM) => {
     const key = `${dateStr}|${missionId}`;
     if (!bookings[key]) bookings[key] = [];
     bookings[key].push({
-      id: nextId(),
-      userId,
-      start: startH*60 + startM,
-      end: endH*60 + endM
+      id: nextId(), userId,
+      start: sH*60 + sM, end: eH*60 + eM
     });
-  }
-  // Dates de démo basées sur aujourd'hui
-  const today = new Date();
-  function dOffset(n) {
-    const d = new Date(today);
-    d.setDate(d.getDate() + n);
-    return fmtDate(d);
-  }
-  // Réservations semaine passée + à venir (pain-vendeur)
-  // On évite le jour même et la veille pour être modifiables
-  add(dOffset(2), 'pain-vendeur', 'u2', 9, 0, 11, 0);
-  add(dOffset(2), 'pain-vendeur', 'u3', 11, 0, 12, 0);
-  add(dOffset(2), 'pain-vendeur', 'u4', 14, 0, 16, 0);
-  add(dOffset(3), 'pain-vendeur', 'u5', 9, 0, 10, 30);
-  add(dOffset(3), 'pain-vendeur', 'u6', 10, 30, 12, 0);
-  // Le grand loto (23 nov 2026) — ajoutons des exemples
+  };
+  const t = new Date();
+  const dOff = n => { const d = new Date(t); d.setDate(d.getDate()+n); return fmtDate(d); };
+
+  add(dOff(2), 'pain-vendeur', 'u2', 10, 0, 11, 0);
+  add(dOff(2), 'pain-vendeur', 'u3', 9, 0, 10, 0);
+  add(dOff(2), 'pain-vendeur', 'u4', 11, 30, 12, 0);
+  add(dOff(3), 'pain-vendeur', 'u5', 9, 0, 10, 30);
+  add(dOff(3), 'pain-vendeur', 'u6', 10, 30, 12, 0);
+  add(dOff(3), 'pain-vendeur', 'u1', 14, 0, 15, 0);
+
   add('2026-11-23', 'loto-buvette', 'u2', 8, 0, 12, 0);
   add('2026-11-23', 'loto-caissier', 'u3', 8, 0, 17, 0);
   add('2026-11-23', 'loto-present', 'u4', 14, 0, 17, 0);
@@ -672,57 +702,53 @@ const nextId = () => `s${++_id}`;
    UTILITAIRES
    ===================================================================== */
 function fmtDate(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function parseDate(s) { return new Date(s + 'T00:00:00'); }
 function todayStr() { return fmtDate(new Date()); }
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+function jsDayToOur(d) { const j = d.getDay(); return j === 0 ? 7 : j; }
 
-function jsDayToOur(d) { // 1=lundi...7=dimanche
-  const j = d.getDay();
-  return j === 0 ? 7 : j;
-}
-
-/* Renvoie true si la date est passée, aujourd'hui, ou demain
-   → verrouillage selon la règle métier (J-1 inclus) */
 function isLocked(dateStr) {
   const t = new Date(); t.setHours(0,0,0,0);
-  const d = parseDate(dateStr);
-  const diff = (d - t) / 86400000;
+  const diff = (parseDate(dateStr) - t) / 86400000;
   return diff <= 1;
 }
 
-function fmtHM(minutes) {
-  const h = Math.floor(minutes/60);
-  const m = minutes % 60;
+function fmtHM(min) {
+  const h = Math.floor(min/60);
+  const m = min % 60;
   return `${String(h).padStart(2,'0')}h${m ? String(m).padStart(2,'0') : ''}`;
 }
+function minToTimeStr(m) {
+  return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+}
+function timeStrToMin(s) {
+  const [h,m] = s.split(':').map(Number);
+  return h*60 + m;
+}
 
-/* Liste des événements actifs un jour donné */
+/* =====================================================================
+   LOGIQUE ÉVÉNEMENTS
+   ===================================================================== */
 function eventsForDate(dateStr) {
   const d = parseDate(dateStr);
   const dayNum = jsDayToOur(d);
   return EVENTS.filter(ev => {
     if (ev.type === 'punctual') return ev.specificDate === dateStr;
-    if (ev.type === 'recurring') return ev.days.includes(dayNum);
+    if (ev.type === 'recurring') return ev.recurrence && ev.recurrence.days.includes(dayNum);
     return false;
   });
 }
 
-/* Plages horaires effectives d'une mission pour une date.
-   Retourne tableau de { start, end } en minutes. */
-function missionRangesForDate(mission, ev, dateStr) {
+function missionRangesForDate(mission, dateStr) {
   const d = parseDate(dateStr);
   const dayNum = jsDayToOur(d);
   const out = [];
-  mission.ranges.forEach(r => {
+  (mission.ranges || []).forEach(r => {
     if (r.excludeOn && r.excludeOn.includes(dayNum)) return;
-    out.push({ start: r.start * 60, end: r.end * 60 });
+    out.push({ start: r.start*60, end: r.end*60 });
   });
-  // Fusionner si chevauchement
   out.sort((a,b)=>a.start-b.start);
   const merged = [];
   out.forEach(r => {
@@ -733,17 +759,53 @@ function missionRangesForDate(mission, ev, dateStr) {
   return merged;
 }
 
-/* Vérifie si un shift [start,end] est couvert par les plages autorisées */
-function shiftWithinRanges(start, end, ranges) {
-  return ranges.some(r => start >= r.start && end <= r.end);
+/* =====================================================================
+   RÉSERVATIONS : helpers
+   ===================================================================== */
+function getShifts(dateStr, missionId) {
+  return bookings[`${dateStr}|${missionId}`] || [];
 }
 
-/* Compte combien de personnes sont présentes à une minute donnée
-   sur une mission. Renvoie { total, mine } */
+/* Événements sur un intervalle pour construire les blocs type GCal.
+   Retourne une liste triée de segments { start, end, status, assignees }
+   status = 'free' | 'full' | 'partial'
+   Chaque segment a une longueur > 0.
+*/
+function buildSegments(dateStr, mission) {
+  const ranges = missionRangesForDate(mission, dateStr);
+  const segments = [];
+
+  ranges.forEach(range => {
+    // Points de découpe = bornes + débuts/fins de shifts
+    const points = new Set([range.start, range.end]);
+    getShifts(dateStr, mission.id).forEach(s => {
+      if (s.end <= range.start || s.start >= range.end) return;
+      points.add(Math.max(s.start, range.start));
+      points.add(Math.min(s.end, range.end));
+    });
+    const sorted = [...points].sort((a,b)=>a-b);
+
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const start = sorted[i];
+      const end = sorted[i+1];
+      if (end <= start) continue;
+      // personnes présentes sur [start,end)
+      const present = getShifts(dateStr, mission.id).filter(s =>
+        s.start <= start && s.end >= end
+      );
+      let status;
+      if (present.length === 0) status = 'free';
+      else if (present.length >= mission.quota) status = 'full';
+      else status = 'partial';
+      segments.push({ start, end, status, count: present.length, assignees: present });
+    }
+  });
+  return segments;
+}
+
 function coverAt(dateStr, missionId, minute) {
-  const list = bookings[`${dateStr}|${missionId}`] || [];
   let total = 0, mine = 0;
-  list.forEach(s => {
+  getShifts(dateStr, missionId).forEach(s => {
     if (minute >= s.start && minute < s.end) {
       total++;
       if (s.userId === CURRENT_USER.id) mine = 1;
@@ -752,49 +814,54 @@ function coverAt(dateStr, missionId, minute) {
   return { total, mine };
 }
 
-/* Comptage sur un intervalle [start,end) par pas de 30 min
-   → renvoie le MAX de personnes simultanées sur l'intervalle
-   (utilisé pour déterminer si le quota est atteint partout) */
-function maxCoverInInterval(dateStr, missionId, start, end) {
-  let max = 0;
-  for (let m = start; m < end; m += 15) {
-    const c = coverAt(dateStr, missionId, m);
-    if (c.total > max) max = c.total;
-  }
-  return max;
-}
-
-/* Vérifie si [start,end] sur la mission est en conflit avec les
-   shifts existants d'un user (pour éviter les doublons) */
 function userHasOverlap(dateStr, missionId, userId, start, end) {
-  const list = bookings[`${dateStr}|${missionId}`] || [];
-  return list.some(s =>
+  return getShifts(dateStr, missionId).some(s =>
     s.userId === userId && !(end <= s.start || start >= s.end)
   );
+}
+
+function shiftWithinRanges(start, end, ranges) {
+  return ranges.some(r => start >= r.start && end <= r.end);
 }
 
 /* =====================================================================
    ÉTAT VUE
    ===================================================================== */
-let calMonth = new Date(); // mois affiché dans le calendrier
-let currentDay = null;     // date sélectionnée (YYYY-MM-DD)
+let calMonth = new Date();
+let currentDay = null;
+let myPlanningDate = new Date();
 
 /* =====================================================================
-   RENDU CALENDRIER MENSUEL
+   INIT — chargement du JSON
+   ===================================================================== */
+async function loadEvents() {
+  try {
+    const res = await fetch('./events.json');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    EVENTS = data.events || [];
+  } catch (err) {
+    console.error('Impossible de charger events.json', err);
+    // Fallback minimal pour démo si le fichier n'est pas servi
+    EVENTS = [];
+    alert("Attention : impossible de charger ./events.json (ouvrez la page via un serveur HTTP local, pas en file://).");
+  }
+  renderCalendar();
+}
+
+/* =====================================================================
+   CALENDRIER MENSUEL
    ===================================================================== */
 function renderCalendar() {
   const grid = document.getElementById('calendarGrid');
   grid.innerHTML = '';
-
   const year = calMonth.getFullYear();
   const month = calMonth.getMonth();
   const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month+1, 0);
 
   document.getElementById('calLabel').textContent =
     firstDay.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 
-  // En-têtes jours
   ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].forEach(d => {
     const el = document.createElement('div');
     el.className = 'cal-dow';
@@ -802,14 +869,11 @@ function renderCalendar() {
     grid.appendChild(el);
   });
 
-  // Calcul du décalage (lundi = 1er)
   let startOffset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
   const startDate = new Date(year, month, 1 - startOffset);
-
-  const totalCells = 42; // 6 semaines
   const tStr = todayStr();
 
-  for (let i = 0; i < totalCells; i++) {
+  for (let i = 0; i < 42; i++) {
     const d = addDays(startDate, i);
     const dateStr = fmtDate(d);
     const cell = document.createElement('div');
@@ -817,33 +881,31 @@ function renderCalendar() {
     if (d.getMonth() !== month) cell.classList.add('other-month');
     if (dateStr === tStr) cell.classList.add('today');
     if (isLocked(dateStr)) cell.classList.add('locked');
-
     const hasEv = eventsForDate(dateStr).length > 0;
-    cell.innerHTML = `
-      <span class="day-num">${d.getDate()}</span>
-      ${hasEv ? '<span class="dot"></span>' : ''}
-    `;
+    cell.innerHTML = `<span class="day-num">${d.getDate()}</span>${hasEv ? '<span class="dot"></span>' : ''}`;
     cell.addEventListener('click', () => openDayView(dateStr));
     grid.appendChild(cell);
   }
 }
 
 /* =====================================================================
-   VUE DÉTAIL JOUR — TABLEAU 3 ENTRÉES
+   VUE JOUR — TABLEAU 4 NIVEAUX D'EN-TÊTE
+   Niveau 1 : Événement
+   Niveau 2 : Mission + nb personnes
+   Niveau 3 : Missionnaire 1..N
+   Niveau 4 : Heures (colonne gauche sticky)
    ===================================================================== */
 function openDayView(dateStr) {
   currentDay = dateStr;
   document.getElementById('calendarView').style.display = 'none';
+  document.getElementById('myPlanningView').classList.remove('active');
   document.getElementById('dayView').classList.add('active');
 
   const d = parseDate(dateStr);
-  const label = d.toLocaleDateString('fr-FR', {
+  document.getElementById('dayTitle').textContent = d.toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
-  document.getElementById('dayTitle').textContent = label;
-  document.getElementById('lockedBanner').style.display =
-    isLocked(dateStr) ? 'block' : 'none';
-
+  document.getElementById('lockedBanner').style.display = isLocked(dateStr) ? 'block' : 'none';
   renderDayGrid();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -855,7 +917,6 @@ function closeDayView() {
   renderCalendar();
 }
 
-/* Construit le tableau à 3 entrées */
 function renderDayGrid() {
   const grid = document.getElementById('dayGrid');
   grid.innerHTML = '';
@@ -863,31 +924,16 @@ function renderDayGrid() {
   const evs = eventsForDate(dateStr);
   const locked = isLocked(dateStr);
 
-  // On affiche 24 h pleines (00h→24h) mais on peut restreindre
-  // à la plage utile si aucune mission hors plage. Ici : plage min/max.
-  let minH = 24, maxH = 0;
-  evs.forEach(ev => ev.missions.forEach(m => {
-    missionRangesForDate(m, ev, dateStr).forEach(r => {
-      minH = Math.min(minH, r.start/60);
-      maxH = Math.max(maxH, r.end/60);
-    });
-  }));
-  if (evs.length === 0) { minH = 0; maxH = 24; }
-  // On affiche la plage utile avec 1h de marge
-  const startH = Math.max(0, Math.floor(minH) - 0);
-  const endH = Math.min(24, Math.ceil(maxH));
-
-  // Construire la liste des missions (colonnes)
+  // Construire la liste des missions (colonnes) avec event parent
   const cols = [];
   evs.forEach(ev => {
     ev.missions.forEach(m => {
-      const ranges = missionRangesForDate(m, ev, dateStr);
+      const ranges = missionRangesForDate(m, dateStr);
       if (ranges.length === 0) return;
       cols.push({ ev, mission: m, ranges });
     });
   });
 
-  // Si aucune colonne → message
   if (cols.length === 0) {
     grid.style.display = 'block';
     grid.innerHTML = `<div class="empty-state" style="padding:40px;">Aucun événement prévu ce jour.</div>`;
@@ -895,131 +941,207 @@ function renderDayGrid() {
   }
   grid.style.display = 'grid';
 
-  // Définir les colonnes : heure + N missions
-  grid.style.gridTemplateColumns = `62px repeat(${cols.length}, minmax(88px, 1fr))`;
-
-  // Ligne 1 : en-têtes événements (avec colspan par événement)
-  // On place les cellules vides pour la colonne heure
-  const timeHead1 = document.createElement('div');
-  timeHead1.className = 'head-time';
-  timeHead1.textContent = 'Heure';
-  timeHead1.style.gridRow = '1';
-  timeHead1.style.gridColumn = '1';
-  grid.appendChild(timeHead1);
-
-  // Compter les missions par événement pour colspan
-  const evCounts = {};
-  cols.forEach(c => evCounts[c.ev.id] = (evCounts[c.ev.id]||0)+1);
-
-  let colIdx = 2;
-  Object.keys(evCounts).forEach(evId => {
-    const ev = cols.find(c => c.ev.id === evId).ev;
-    const cell = document.createElement('div');
-    cell.className = 'head-ev';
-    cell.textContent = ev.name;
-    cell.style.gridRow = '1';
-    cell.style.gridColumn = `${colIdx} / span ${evCounts[evId]}`;
-    grid.appendChild(cell);
-    colIdx += evCounts[evId];
-  });
-
-  // Ligne 2 : en-têtes missions
-  const timeHead2 = document.createElement('div');
-  timeHead2.className = 'head-time row2';
-  timeHead2.textContent = '';
-  timeHead2.style.gridRow = '2';
-  timeHead2.style.gridColumn = '1';
-  grid.appendChild(timeHead2);
-
-  cols.forEach((c, i) => {
-    const el = document.createElement('div');
-    el.className = 'head-mi';
-    el.textContent = `${c.mission.name} (${c.mission.quota})`;
-    el.style.gridRow = '2';
-    el.style.gridColumn = `${i+2}`;
-    grid.appendChild(el);
-  });
-
-  // Lignes horaires (par pas de 30 min pour précision, mais affichage à l'heure)
-  // On utilise des cellules de 30 min pour visualiser les plages à la demi-heure.
-  // Mais on affiche le libellé seulement à l'heure pile pour lisibilité.
-  const step = 30; // minutes
+  // Calcul de la plage horaire utile
+  let minMin = Infinity, maxMin = -Infinity;
+  cols.forEach(c => c.ranges.forEach(r => {
+    minMin = Math.min(minMin, r.start);
+    maxMin = Math.max(maxMin, r.end);
+  }));
+  const startH = Math.max(0, Math.floor(minMin/60));
+  const endH = Math.min(24, Math.ceil(maxMin/60));
   const rowStart = startH * 60;
   const rowEnd = endH * 60;
-  let rowIdx = 3;
 
-  for (let m = rowStart; m < rowEnd; m += step) {
-    // Colonne heure
+  // Nombre total de sous-colonnes = somme des quota
+  const totalPersonCols = cols.reduce((s,c) => s + c.mission.quota, 0);
+
+  // Grille : 1 (heure) + totalPersonCols
+  grid.style.gridTemplateColumns = `62px repeat(${totalPersonCols}, minmax(64px, 1fr))`;
+
+  /* ---------- Niveau 1 : Événement ---------- */
+  // Colonne heure
+  const h1 = document.createElement('div');
+  h1.className = 'head-ev';
+  h1.style.gridRow = '1';
+  h1.style.gridColumn = '1';
+  h1.style.background = '#7f8c8d';
+  h1.textContent = 'Heure';
+  grid.appendChild(h1);
+
+  // Compter les sous-colonnes par event (sum de quota)
+  const evSpans = new Map();
+  cols.forEach(c => {
+    if (!evSpans.has(c.ev.id)) evSpans.set(c.ev.id, { ev: c.ev, span: 0 });
+    evSpans.get(c.ev.id).span += c.mission.quota;
+  });
+
+  let colIdx = 2;
+  evSpans.forEach(({ ev, span }) => {
+    const el = document.createElement('div');
+    el.className = 'head-ev';
+    el.style.gridRow = '1';
+    el.style.gridColumn = `${colIdx} / span ${span}`;
+    el.style.background = ev.color || '#3498db';
+    el.textContent = ev.name;
+    grid.appendChild(el);
+    colIdx += span;
+  });
+
+  /* ---------- Niveau 2 : Mission + nb personnes ---------- */
+  const h2 = document.createElement('div');
+  h2.className = 'head-mi';
+  h2.style.gridRow = '2';
+  h2.style.gridColumn = '1';
+  h2.style.background = '#ecf0f1';
+  h2.style.top = '0'; // colonne heure sticky
+  h2.textContent = '';
+  grid.appendChild(h2);
+
+  colIdx = 2;
+  cols.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'head-mi';
+    el.style.gridRow = '2';
+    el.style.gridColumn = `${colIdx} / span ${c.mission.quota}`;
+    el.style.background = shade(c.mission.color || c.ev.color || '#3498db', 0.8);
+    el.style.color = 'white';
+    el.style.textShadow = '0 1px 1px rgba(0,0,0,0.25)';
+    el.textContent = `${c.mission.name} · ${c.mission.quota} pers.`;
+    grid.appendChild(el);
+    colIdx += c.mission.quota;
+  });
+
+  /* ---------- Niveau 3 : Missionnaire 1..N ---------- */
+  const h3 = document.createElement('div');
+  h3.className = 'head-person';
+  h3.style.gridRow = '3';
+  h3.style.gridColumn = '1';
+  h3.style.top = '0';
+  h3.textContent = '';
+  grid.appendChild(h3);
+
+  colIdx = 2;
+  cols.forEach(c => {
+    for (let p = 1; p <= c.mission.quota; p++) {
+      const el = document.createElement('div');
+      el.className = 'head-person';
+      el.style.gridRow = '3';
+      el.style.gridColumn = `${colIdx}`;
+      el.style.background = shade(c.mission.color || c.ev.color || '#3498db', 0.92);
+      el.innerHTML = `<span class="p-slot-num">M${p}</span>`;
+      grid.appendChild(el);
+      colIdx++;
+    }
+  });
+
+  /* ---------- Lignes horaires (pas de 15 min pour la précision) ---------- */
+  // On affiche un libellé qu'aux heures pile, mais cellules par 15 min
+  // pour bien voir les segments de disponibilité.
+  const STEP = 15;
+  let rowIdx = 4;
+
+  // Pour chaque mission, on calcule ses segments (bornes de shifts incluses)
+  const segmentsByCol = cols.map(c => ({
+    ...c,
+    segments: buildSegments(dateStr, c.mission)
+  }));
+
+  // Pour chaque personne-slot (M1..Mn), on construit l'occupation par minute
+  // (qui remplit chaque sous-colonne). On répartit les shifts :
+  // - les shifts déjà connus d'un user occupent les sous-colonnes 1, 2... 
+  //   en remplissant les premières dispo
+  // - les créneaux libres restent gris dans les sous-colonnes non occupées
+  // On garde la logique simple : pour chaque instant et chaque mission,
+  // on liste les userId actifs, on les place dans les slots dans l'ordre.
+
+  // Construire pour chaque mission un planning par minute → array de userId
+  // de taille quota, avec null pour slots libres
+  const timelineByCol = segmentsByCol.map(col => {
+    const minutes = [];
+    for (let m = rowStart; m < rowEnd; m += STEP) {
+      const present = getShifts(dateStr, col.mission.id)
+        .filter(s => m >= s.start && m < s.end)
+        .map(s => s.userId);
+      // Compléter avec null jusqu'au quota
+      while (present.length < col.mission.quota) present.push(null);
+      minutes.push(present);
+    }
+    return { ...col, minutes };
+  });
+
+  // Rendu ligne par ligne
+  for (let m = rowStart; m < rowEnd; m += STEP) {
     const isHour = m % 60 === 0;
+
+    // Colonne heure
     const hourCell = document.createElement('div');
-    hourCell.className = 'cell hour-label row-label';
+    hourCell.className = 'hour-label';
     hourCell.style.gridRow = `${rowIdx}`;
     hourCell.style.gridColumn = '1';
+    hourCell.style.position = 'sticky';
+    hourCell.style.left = '0';
+    hourCell.style.zIndex = '5';
+    hourCell.style.background = '#fafbfc';
+    hourCell.style.borderRight = '2px solid var(--border)';
     hourCell.textContent = isHour ? fmtHM(m) : '';
     grid.appendChild(hourCell);
 
-    // Cellules missions
-    cols.forEach((c, i) => {
-      const cell = createMissionCell(dateStr, c, m, step, locked);
-      cell.style.gridRow = `${rowIdx}`;
-      cell.style.gridColumn = `${i+2}`;
-      grid.appendChild(cell);
+    // Pour chaque mission : afficher les sous-colonnes
+    let subCol = 2;
+    timelineByCol.forEach(col => {
+      const idx = (m - rowStart) / STEP;
+      const slotArr = col.minutes[idx];
+      const inRange = col.ranges.some(r => m >= r.start && m < r.end);
+
+      for (let p = 0; p < col.mission.quota; p++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.style.gridRow = `${rowIdx}`;
+        cell.style.gridColumn = `${subCol}`;
+
+        if (!inRange) {
+          cell.classList.add('out-of-range');
+        } else {
+          const userId = slotArr[p];
+          if (userId === CURRENT_USER.id) {
+            cell.classList.add('mine');
+            cell.innerHTML = `<span class="cell-label">Vous</span>`;
+          } else if (userId) {
+            cell.classList.add('taken');
+            cell.innerHTML = `<span class="cell-label">${USERS[userId] || '?'}</span>`;
+          } else {
+            cell.classList.add('free');
+            cell.innerHTML = `<span class="cell-label">Libre</span>`;
+          }
+          if (locked) {
+            cell.classList.add('past-cell');
+          } else {
+            cell.addEventListener('click', () => openSlotModal(dateStr, col, m));
+          }
+        }
+        grid.appendChild(cell);
+        subCol++;
+      }
     });
     rowIdx++;
   }
 }
 
-/* Crée une cellule pour un intervalle [m, m+step) */
-function createMissionCell(dateStr, col, m, step, locked) {
-  const { mission, ranges } = col;
-  const cell = document.createElement('div');
-  cell.className = 'cell';
-
-  const inRange = ranges.some(r => m >= r.start && m < r.end);
-
-  if (!inRange) {
-    // Hors plage autorisée : case vide discrète non cliquable
-    cell.classList.add('past-cell');
-    return cell;
-  }
-
-  // Calculer la couverture sur cet intervalle
-  const cover = coverAt(dateStr, mission.id, m);
-  const quota = mission.quota;
-
-  // On regarde si TOUT l'intervalle est couvert au quota
-  const coveredFull = maxCoverInInterval(dateStr, mission.id, m, m+step) >= quota;
-  const someone = cover.total > 0;
-
-  // Récupérer les noms pour affichage
-  const list = (bookings[`${dateStr}|${mission.id}`] || [])
-    .filter(s => m >= s.start && m < s.end);
-
-  if (coveredFull) {
-    cell.classList.add('taken');
-    // Si c'est moi qui suis dedans
-    if (list.some(s => s.userId === CURRENT_USER.id)) cell.classList.add('mine');
-    const names = [...new Set(list.map(s => USERS[s.userId] || s.userId))];
-    cell.innerHTML = `<span class="cell-label">${names.join(', ')}</span>`;
-  } else if (someone) {
-    // Partiellement occupé mais quota non atteint
-    cell.classList.add('quota-free');
-    cell.innerHTML = `<span class="cell-label">${cover.total}/${quota}</span>`;
-  } else {
-    cell.classList.add('free');
-    cell.innerHTML = `<span class="cell-label">Libre</span>`;
-  }
-
-  if (locked) {
-    cell.classList.add('past-cell');
-  } else {
-    cell.addEventListener('click', () => openSlotModal(dateStr, col, m));
-  }
-  return cell;
+/* Éclaircit une couleur hex (factor 0..1, 1 = inchangé) */
+function shade(hex, factor) {
+  hex = hex.replace('#','');
+  if (hex.length === 3) hex = hex.split('').map(c => c+c).join('');
+  const r = parseInt(hex.substr(0,2),16);
+  const g = parseInt(hex.substr(2,2),16);
+  const b = parseInt(hex.substr(4,2),16);
+  const nr = Math.round(r*factor + 255*(1-factor));
+  const ng = Math.round(g*factor + 255*(1-factor));
+  const nb = Math.round(b*factor + 255*(1-factor));
+  return '#' + [nr,ng,nb].map(v => v.toString(16).padStart(2,'0')).join('');
 }
 
 /* =====================================================================
-   MODAL : prendre / modifier / supprimer un shift
+   MODAL PRISE / MODIF / SUPPRESSION
    ===================================================================== */
 function openSlotModal(dateStr, col, clickedMinute) {
   const { mission, ranges } = col;
@@ -1028,17 +1150,11 @@ function openSlotModal(dateStr, col, clickedMinute) {
   const body = document.getElementById('modalBody');
   const actions = document.getElementById('modalActions');
 
-  // Vérifier si l'utilisateur a déjà un shift sur cette mission
-  const myShifts = (bookings[`${dateStr}|${mission.id}`] || [])
-    .filter(s => s.userId === CURRENT_USER.id);
+  const myShifts = getShifts(dateStr, mission.id).filter(s => s.userId === CURRENT_USER.id);
 
-  // Déterminer les heures par défaut (arrondi au quart d'heure)
-  // et s'assurer qu'on reste dans une plage autorisée
   const containingRange = ranges.find(r => clickedMinute >= r.start && clickedMinute < r.end)
     || ranges.find(r => clickedMinute < r.end) || ranges[0];
-  let defaultStart = Math.max(containingRange.start, clickedMinute);
-  // Arrondi au quart d'heure supérieur
-  defaultStart = Math.ceil(defaultStart / 15) * 15;
+  let defaultStart = Math.max(containingRange.start, Math.ceil(clickedMinute/15)*15);
   if (defaultStart >= containingRange.end) defaultStart = containingRange.start;
   let defaultEnd = Math.min(containingRange.end, defaultStart + 60);
 
@@ -1049,7 +1165,6 @@ function openSlotModal(dateStr, col, clickedMinute) {
 
   title.textContent = myShifts.length ? 'Gérer ma garde' : 'Prendre une garde';
 
-  // Construire le corps du modal
   let bodyHTML = `
     <div class="slot-info">
       <strong>${col.ev.name}</strong><br>
@@ -1059,12 +1174,11 @@ function openSlotModal(dateStr, col, clickedMinute) {
     </div>
   `;
 
-  // Afficher les shifts de l'utilisateur
   if (myShifts.length) {
     bodyHTML += `<div style="font-size:0.85rem;margin-bottom:6px;font-weight:600;">Vos créneaux :</div>`;
     myShifts.forEach(s => {
       bodyHTML += `
-        <div style="background:#ebf5fb;border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="background:#ebf5fb;border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
           <span>${fmtHM(s.start)} → ${fmtHM(s.end)}</span>
           <span style="display:flex;gap:6px;">
             <button class="btn-cancel" data-edit="${s.id}" style="padding:4px 10px;font-size:0.78rem;border-radius:6px;font-weight:600;">Modifier</button>
@@ -1075,7 +1189,6 @@ function openSlotModal(dateStr, col, clickedMinute) {
     });
   }
 
-  // Formulaire nouveau / édité
   bodyHTML += `
     <div style="margin-top:8px;">
       <label for="inputStart">Heure de début</label>
@@ -1093,35 +1206,22 @@ function openSlotModal(dateStr, col, clickedMinute) {
   btnTake.className = 'btn-primary btn-block';
   btnTake.textContent = myShifts.length ? 'Ajouter un autre créneau' : "Je m'inscris";
   btnTake.onclick = () => {
-    const startStr = document.getElementById('inputStart').value;
-    const endStr = document.getElementById('inputEnd').value;
-    if (!startStr || !endStr) { showErr('Veuillez renseigner les heures.'); return; }
-    const start = timeStrToMin(startStr);
-    const end = timeStrToMin(endStr);
+    const start = timeStrToMin(document.getElementById('inputStart').value);
+    const end = timeStrToMin(document.getElementById('inputEnd').value);
     if (end <= start) { showErr('L\'heure de fin doit être après le début.'); return; }
-    if (!shiftWithinRanges(start, end, ranges)) {
-      showErr('Le créneau doit être dans une plage autorisée.'); return;
-    }
-    // Vérifier chevauchement avec mes propres shifts
+    if (!shiftWithinRanges(start, end, ranges)) { showErr('Hors plage autorisée.'); return; }
     if (userHasOverlap(dateStr, mission.id, CURRENT_USER.id, start, end)) {
-      showErr('Vous avez déjà un créneau qui chevauche sur cette mission.'); return;
+      showErr('Vous avez déjà un créneau qui chevauche.'); return;
     }
-    // Vérifier la capacité : à chaque minute, il ne doit pas y avoir
-    // quota+1 personne (mais autoriser si des gens partent entre-temps)
-    // Ici on accepte tant qu'à aucun instant on ne dépasse pas le quota
     for (let mm = start; mm < end; mm += 15) {
       const c = coverAt(dateStr, mission.id, mm);
       if (c.total >= mission.quota) {
-        showErr(`Capacité atteinte à ${fmtHM(mm)} (${c.total}/${mission.quota}).`);
-        return;
+        showErr(`Capacité atteinte à ${fmtHM(mm)}.`); return;
       }
     }
-
     const key = `${dateStr}|${mission.id}`;
     if (!bookings[key]) bookings[key] = [];
-    bookings[key].push({
-      id: nextId(), userId: CURRENT_USER.id, start, end
-    });
+    bookings[key].push({ id: nextId(), userId: CURRENT_USER.id, start, end });
     closeModal();
     renderDayGrid();
   };
@@ -1133,31 +1233,25 @@ function openSlotModal(dateStr, col, clickedMinute) {
   btnCancel.onclick = closeModal;
   actions.appendChild(btnCancel);
 
-  // Boutons Modifier / Supprimer des shifts existants
   body.querySelectorAll('[data-edit]').forEach(btn => {
     btn.onclick = () => {
       const shift = myShifts.find(s => s.id === btn.dataset.edit);
       if (!shift) return;
       document.getElementById('inputStart').value = minToTimeStr(shift.start);
       document.getElementById('inputEnd').value = minToTimeStr(shift.end);
-      // Surligner visuellement : on change l'action du bouton principal
-      btnTake.textContent = 'Enregistrer les modifications';
+      btnTake.textContent = 'Enregistrer';
       btnTake.onclick = () => {
-        const startStr = document.getElementById('inputStart').value;
-        const endStr = document.getElementById('inputEnd').value;
-        const ns = timeStrToMin(startStr);
-        const ne = timeStrToMin(endStr);
+        const ns = timeStrToMin(document.getElementById('inputStart').value);
+        const ne = timeStrToMin(document.getElementById('inputEnd').value);
         if (ne <= ns) { showErr('Fin doit être après début.'); return; }
-        if (!shiftWithinRanges(ns, ne, ranges)) { showErr('Hors plage autorisée.'); return; }
-        // Vérif chevauchement avec mes autres shifts
+        if (!shiftWithinRanges(ns, ne, ranges)) { showErr('Hors plage.'); return; }
         const others = myShifts.filter(s => s.id !== shift.id);
         if (others.some(s => !(ne <= s.start || ns >= s.end))) {
           showErr('Chevauchement avec un autre de vos créneaux.'); return;
         }
-        // Vérif capacité en excluant ce shift
         for (let mm = ns; mm < ne; mm += 15) {
           let count = 0;
-          (bookings[key] || []).forEach(s => {
+          getShifts(dateStr, mission.id).forEach(s => {
             if (s.id === shift.id) return;
             if (mm >= s.start && mm < s.end) count++;
           });
@@ -1175,7 +1269,7 @@ function openSlotModal(dateStr, col, clickedMinute) {
     btn.onclick = () => {
       if (!confirm('Supprimer ce créneau ?')) return;
       const key = `${dateStr}|${mission.id}`;
-      bookings[key] = (bookings[key] || []).filter(s => s.id !== btn.dataset.del);
+      bookings[key] = getShifts(dateStr, mission.id).filter(s => s.id !== btn.dataset.del);
       closeModal();
       renderDayGrid();
     };
@@ -1188,150 +1282,194 @@ function showErr(msg) {
   const el = document.getElementById('modalError');
   if (el) el.textContent = msg;
 }
-function minToTimeStr(m) {
-  const h = Math.floor(m/60);
-  const mm = m % 60;
-  return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
-}
-function timeStrToMin(s) {
-  const [h, m] = s.split(':').map(Number);
-  return h*60 + m;
-}
-
 function closeModal() {
   document.getElementById('modal').classList.remove('active');
 }
 
 /* =====================================================================
-   PLANNING PERSONNEL
+   VUE MON PLANNING — style Google Calendar
    ===================================================================== */
 function openMyPlanning() {
+  document.getElementById('calendarView').style.display = 'none';
+  document.getElementById('dayView').classList.remove('active');
+  document.getElementById('myPlanningView').classList.add('active');
+  myPlanningDate = new Date();
+  renderMyPlanning();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function closeMyPlanning() {
+  document.getElementById('myPlanningView').classList.remove('active');
+  document.getElementById('calendarView').style.display = 'block';
+}
+
+function renderMyPlanning() {
+  const grid = document.getElementById('gcalGrid');
+  grid.innerHTML = '';
+
+  // Semaine courante (lundi → dimanche)
+  const monday = (() => {
+    const d = new Date(myPlanningDate);
+    const day = d.getDay() === 0 ? 6 : d.getDay() - 1;
+    d.setDate(d.getDate() - day);
+    d.setHours(0,0,0,0);
+    return d;
+  })();
+  const sunday = addDays(monday, 6);
+
+  document.getElementById('mpLabel').textContent =
+    `${monday.toLocaleDateString('fr-FR', { day:'numeric', month:'short' })} → ` +
+    `${sunday.toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' })}`;
+
+  // Récupérer tous mes shifts de la semaine
+  const shiftsByDay = {}; // dateStr → [{ shift, mission, ev }]
+  for (let i = 0; i < 7; i++) {
+    const dateStr = fmtDate(addDays(monday, i));
+    shiftsByDay[dateStr] = [];
+    EVENTS.forEach(ev => {
+      ev.missions.forEach(m => {
+        getShifts(dateStr, m.id).forEach(s => {
+          if (s.userId !== CURRENT_USER.id) return;
+          shiftsByDay[dateStr].push({ shift: s, mission: m, ev });
+        });
+      });
+    });
+  }
+
+  // Grille : colonne heure + 7 jours
+  const HOUR_HEIGHT_DESKTOP = 60;
+  const isMobile = window.matchMedia('(max-width: 640px)').matches;
+  const hourH = isMobile ? 40 : 60;
+
+  grid.style.gridTemplateColumns = `60px repeat(7, minmax(110px, 1fr))`;
+  grid.style.gridTemplateRows = `auto 1fr`;
+
+  // En-tête : coin
+  const corner = document.createElement('div');
+  corner.style.cssText = `position:sticky;top:0;left:0;z-index:7;background:#f8f9fa;border-right:2px solid var(--border);border-bottom:2px solid var(--border);`;
+  grid.appendChild(corner);
+
+  // En-têtes des jours
+  const tStr = todayStr();
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(monday, i);
+    const dateStr = fmtDate(d);
+    const h = document.createElement('div');
+    h.className = 'gcal-day-head' + (dateStr === tStr ? ' today' : '');
+    h.innerHTML = `
+      <div>${['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'][i]}</div>
+      <div class="gcal-day-num">${d.getDate()}</div>
+    `;
+    grid.appendChild(h);
+  }
+
+  // Colonne heures
+  const hourCol = document.createElement('div');
+  hourCol.className = 'gcal-hour-col';
+  hourCol.style.gridRow = '2';
+  hourCol.style.gridColumn = '1';
+  for (let h = 0; h < 24; h++) {
+    const c = document.createElement('div');
+    c.className = 'gcal-hour-cell';
+    c.style.height = hourH + 'px';
+    c.textContent = `${String(h).padStart(2,'0')}h`;
+    hourCol.appendChild(c);
+  }
+  grid.appendChild(hourCol);
+
+  // Colonnes jours
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(monday, i);
+    const dateStr = fmtDate(d);
+    const col = document.createElement('div');
+    col.className = 'gcal-day-col';
+    col.style.gridRow = '2';
+    col.style.gridColumn = `${i+2}`;
+
+    const slots = document.createElement('div');
+    slots.className = 'gcal-slots';
+    slots.style.height = (24 * hourH) + 'px';
+
+    // Placer les shifts
+    shiftsByDay[dateStr].forEach(({ shift, mission, ev }) => {
+      const top = (shift.start / 60) * hourH;
+      const height = Math.max(20, ((shift.end - shift.start) / 60) * hourH - 1);
+      const el = document.createElement('div');
+      el.className = 'gcal-event';
+      el.style.top = top + 'px';
+      el.style.height = height + 'px';
+      const baseColor = mission.color || ev.color || '#3498db';
+      el.style.background = baseColor;
+      el.innerHTML = `
+        <div class="ev-time">${fmtHM(shift.start)}–${fmtHM(shift.end)}</div>
+        <div class="ev-title">${ev.name}</div>
+        <div class="ev-role">${mission.name}</div>
+      `;
+      el.addEventListener('click', () => openShiftActions(dateStr, mission, ev, shift));
+      slots.appendChild(el);
+    });
+
+    col.appendChild(slots);
+    grid.appendChild(col);
+  }
+}
+
+function openShiftActions(dateStr, mission, ev, shift) {
   const modal = document.getElementById('modal');
   const title = document.getElementById('modalTitle');
   const body = document.getElementById('modalBody');
   const actions = document.getElementById('modalActions');
 
-  title.textContent = '🗂 Mon planning';
-
-  // Rassembler tous mes shifts
-  const mine = [];
-  Object.keys(bookings).forEach(key => {
-    const [dateStr, missionId] = key.split('|');
-    bookings[key].forEach(s => {
-      if (s.userId !== CURRENT_USER.id) return;
-      // Retrouver mission + event
-      let ev = null, mission = null;
-      EVENTS.forEach(e => {
-        e.missions.forEach(m => {
-          if (m.id === missionId) { ev = e; mission = m; }
-        });
-      });
-      if (!ev) return;
-      mine.push({ dateStr, missionId, ev, mission, shift: s });
-    });
+  const d = parseDate(dateStr);
+  const dateLabel = d.toLocaleDateString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long'
   });
+  const canEdit = !isLocked(dateStr);
 
-  // Trier par date puis heure
-  mine.sort((a,b) => {
-    if (a.dateStr !== b.dateStr) return a.dateStr.localeCompare(b.dateStr);
-    return a.shift.start - b.shift.start;
-  });
-
-  if (mine.length === 0) {
-    body.innerHTML = `<div class="empty-state">Vous n'avez aucune garde enregistrée.</div>`;
-    actions.innerHTML = '';
-    const btn = document.createElement('button');
-    btn.className = 'btn-cancel btn-block';
-    btn.textContent = 'Fermer';
-    btn.onclick = closeModal;
-    actions.appendChild(btn);
-    modal.classList.add('active');
-    return;
-  }
-
-  // Regrouper par date
-  const byDate = {};
-  mine.forEach(x => {
-    if (!byDate[x.dateStr]) byDate[x.dateStr] = [];
-    byDate[x.dateStr].push(x);
-  });
-
-  const tStr = todayStr();
-  let html = '<div class="my-planning-list">';
-  Object.keys(byDate).sort().forEach(dateStr => {
-    const d = parseDate(dateStr);
-    const dateLabel = d.toLocaleDateString('fr-FR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    });
-    const isPast = dateStr < tStr;
-    const isToday = dateStr === tStr;
-    const canEdit = !isLocked(dateStr);
-
-    html += `<div style="font-weight:700;margin:12px 0 6px;font-size:0.9rem;color:${isPast ? '#95a5a6' : (isToday ? '#e67e22' : '#2c3e50')};">${dateLabel}${isToday ? ' (aujourd\'hui)' : ''}</div>`;
-
-    byDate[dateStr].forEach(x => {
-      const cls = isPast ? 'past' : (isToday ? 'today' : 'future');
-      html += `
-        <div class="my-shift ${cls}">
-          <div class="shift-when">${x.ev.name} · ${x.mission.name}</div>
-          <div class="shift-time">${fmtHM(x.shift.start)} → ${fmtHM(x.shift.end)}</div>
-          ${canEdit ? `
-            <div class="shift-actions">
-              <button class="shift-edit" data-edit-shift="${x.dateStr}|${x.missionId}|${x.shift.id}">Modifier</button>
-              <button class="shift-del" data-del-shift="${x.dateStr}|${x.missionId}|${x.shift.id}">Supprimer</button>
-            </div>
-          ` : `<div style="font-size:0.78rem;color:#95a5a6;margin-top:4px;">🔒 Non modifiable</div>`}
-        </div>
-      `;
-    });
-  });
-  html += '</div>';
-  body.innerHTML = html;
+  title.textContent = 'Mon engagement';
+  body.innerHTML = `
+    <div class="slot-info">
+      <strong>${ev.name}</strong><br>
+      ${mission.name} · ${dateLabel}<br>
+      <span style="color:var(--accent);font-weight:700;">${fmtHM(shift.start)} → ${fmtHM(shift.end)}</span>
+    </div>
+    ${canEdit ? '' : '<div class="error" style="color:#e67e22;">🔒 Non modifiable (jour J, J-1 ou passé).</div>'}
+  `;
   actions.innerHTML = '';
 
+  if (canEdit) {
+    const btnEdit = document.createElement('button');
+    btnEdit.className = 'btn-primary';
+    btnEdit.textContent = 'Modifier';
+    btnEdit.onclick = () => {
+      closeModal();
+      openDayView(dateStr);
+      setTimeout(() => {
+        const ranges = missionRangesForDate(mission, dateStr);
+        const col = { ev, mission, ranges };
+        openSlotModal(dateStr, col, shift.start);
+      }, 200);
+    };
+    actions.appendChild(btnEdit);
+
+    const btnDel = document.createElement('button');
+    btnDel.className = 'btn-danger';
+    btnDel.textContent = 'Supprimer';
+    btnDel.onclick = () => {
+      if (!confirm('Supprimer ce créneau ?')) return;
+      const key = `${dateStr}|${mission.id}`;
+      bookings[key] = getShifts(dateStr, mission.id).filter(s => s.id !== shift.id);
+      closeModal();
+      renderMyPlanning();
+    };
+    actions.appendChild(btnDel);
+  }
+
   const btnClose = document.createElement('button');
-  btnClose.className = 'btn-cancel btn-block';
+  btnClose.className = 'btn-cancel';
   btnClose.textContent = 'Fermer';
   btnClose.onclick = closeModal;
   actions.appendChild(btnClose);
-
-  // Actions modifier / supprimer
-  body.querySelectorAll('[data-edit-shift]').forEach(btn => {
-    btn.onclick = () => {
-      const [dateStr, missionId, shiftId] = btn.dataset.editShift.split('|');
-      closeModal();
-      openDayView(dateStr);
-      // Ouvrir le modal du créneau après rendu
-      setTimeout(() => {
-        // Retrouver la colonne
-        const evs = eventsForDate(dateStr);
-        let col = null;
-        evs.forEach(ev => {
-          ev.missions.forEach(m => {
-            if (m.id === missionId) {
-              col = { ev, mission: m, ranges: missionRangesForDate(m, ev, dateStr) };
-            }
-          });
-        });
-        if (col) {
-          const shift = (bookings[`${dateStr}|${missionId}`] || []).find(s => s.id === shiftId);
-          if (shift) openSlotModal(dateStr, col, shift.start);
-        }
-      }, 200);
-    };
-  });
-  body.querySelectorAll('[data-del-shift]').forEach(btn => {
-    btn.onclick = () => {
-      if (!confirm('Supprimer ce créneau ?')) return;
-      const [dateStr, missionId, shiftId] = btn.dataset.delShift.split('|');
-      const key = `${dateStr}|${missionId}`;
-      bookings[key] = (bookings[key] || []).filter(s => s.id !== shiftId);
-      closeModal();
-      // Rouvrir le planning mis à jour
-      openMyPlanning();
-      if (currentDay) renderDayGrid();
-    };
-  });
 
   modal.classList.add('active');
 }
@@ -1352,17 +1490,34 @@ document.getElementById('calToday').onclick = () => {
   renderCalendar();
 };
 document.getElementById('btnBack').onclick = closeDayView;
-document.getElementById('btnMyPlanning').onclick = openMyPlanning;
+document.getElementById('btnMyPlanning').onclick = () => {
+  // Toggle : si on est déjà sur mon planning, on revient au calendrier
+  if (document.getElementById('myPlanningView').classList.contains('active')) {
+    closeMyPlanning();
+  } else {
+    openMyPlanning();
+  }
+};
+document.getElementById('mpPrev').onclick = () => {
+  myPlanningDate = addDays(myPlanningDate, -7);
+  renderMyPlanning();
+};
+document.getElementById('mpNext').onclick = () => {
+  myPlanningDate = addDays(myPlanningDate, 7);
+  renderMyPlanning();
+};
+document.getElementById('mpToday').onclick = () => {
+  myPlanningDate = new Date();
+  renderMyPlanning();
+};
 document.getElementById('modalClose').onclick = closeModal;
 document.getElementById('modal').addEventListener('click', e => {
   if (e.target.id === 'modal') closeModal();
 });
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
-});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 /* INIT */
-renderCalendar();
+loadEvents();
 </script>
 </body>
 </html>

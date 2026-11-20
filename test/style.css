@@ -7,12 +7,16 @@
   --text: #2c3e50;
   --muted: #7f8c8d;
   --border: #e1e5ea;
-  --free: #eafaf1;
-  --free-border: #27ae60;
-  --taken: #fadbd8;
-  --taken-border: #c0392b;
-  --mine: #d6eaf8;
-  --mine-border: #2980b9;
+
+  --taken: #95a5a6;          /* plages prises = gris neutre */
+  --taken-dark: #7f8c8d;
+  --mine: #2980b9;           /* mes plages = bleu fort */
+  --free: #27ae60;           /* plages à combler = vert fort */
+  --free-light: #eafaf1;
+
+  --complete: #27ae60;       /* mission / événement complet */
+  --partial: #f39c12;        /* partiel */
+  --empty: #c0392b;          /* vide */
   --radius: 12px;
 }
 
@@ -42,27 +46,40 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   z-index: 50;
 }
 .app-header h1 { font-size: clamp(1rem, 2.5vw, 1.4rem); font-weight: 700; }
-.app-header .user-info {
-  font-size: 0.85rem;
-  background: rgba(255,255,255,0.2);
-  padding: 6px 12px;
-  border-radius: 20px;
+
+/* Onglets de navigation (switch Planning / Mon planning) */
+.nav-tabs {
+  display: flex;
+  gap: 6px;
+  background: rgba(255,255,255,0.18);
+  padding: 4px;
+  border-radius: 26px;
 }
-.my-planning-btn {
-  background: white;
-  color: var(--primary);
+.nav-tab {
+  color: white;
+  padding: 9px 18px;
+  border-radius: 22px;
+  font-size: 0.85rem;
   font-weight: 700;
-  padding: 10px 16px;
-  border-radius: 24px;
-  font-size: 0.9rem;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  transition: transform 0.15s;
+  gap: 6px;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
 }
-.my-planning-btn:hover { transform: scale(1.03); }
-.my-planning-btn:active { transform: scale(0.97); }
+.nav-tab:hover { background: rgba(255,255,255,0.15); }
+.nav-tab.active {
+  background: white;
+  color: var(--primary);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.user-badge {
+  font-size: 0.85rem;
+  background: rgba(255,255,255,0.22);
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+}
 
 /* ============ CALENDRIER MENSUEL ============ */
 .calendar-wrap {
@@ -115,35 +132,47 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .cal-cell {
   aspect-ratio: 1 / 1;
-  min-height: 42px;
+  min-height: 44px;
   border-radius: 8px;
   background: #fafbfc;
   border: 1px solid transparent;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
+  align-items: stretch;
+  justify-content: flex-start;
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
   position: relative;
-  padding: 2px;
+  padding: 3px 4px;
+  overflow: hidden;
+  gap: 2px;
 }
 .cal-cell:hover { background: #eef2f6; border-color: var(--accent); }
 .cal-cell.other-month { color: #c8cdd2; }
 .cal-cell.today { background: var(--accent); color: white; font-weight: 700; }
-.cal-cell.locked { opacity: 0.55; }
-.cal-cell .dot {
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--primary);
-  position: absolute;
-  bottom: 4px;
+.cal-cell.today .ev-chip { background: rgba(255,255,255,0.25); color: white; }
+.cal-cell.locked { opacity: 0.6; }
+.cal-cell .day-num { font-size: clamp(0.75rem, 2.5vw, 0.95rem); align-self: flex-start; }
+.cal-cell .ev-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
 }
-.cal-cell.today .dot { background: white; }
-.cal-cell .day-num { font-size: clamp(0.75rem, 2.5vw, 0.95rem); }
+.cal-cell .ev-chip {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: white;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: left;
+  line-height: 1.25;
+}
 
 /* ============ VUE JOUR ============ */
 .day-view {
@@ -186,7 +215,32 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   margin-bottom: 12px;
 }
 
-/* ============ TABLEAU 4 NIVEAUX D'EN-TÊTE ============ */
+/* Légende */
+.legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  margin: 6px 0 12px;
+  color: var(--muted);
+  padding: 0 4px;
+}
+.legend .lg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend .lg-swatch {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.15);
+}
+.lg-free   { background: var(--free); }
+.lg-taken  { background: var(--taken); }
+.lg-mine   { background: var(--mine); }
+.lg-past   { background: repeating-linear-gradient(45deg, #ecf0f1, #ecf0f1 3px, #d5dbdf 3px, #d5dbdf 6px); }
+
+/* ============ TABLEAU 4 NIVEAUX ============ */
 .grid-scroll {
   overflow-x: auto;
   overflow-y: visible;
@@ -203,16 +257,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-size: 0.82rem;
 }
 
-/* Colonne horaire sticky */
-.day-grid .col-time {
-  position: sticky;
-  left: 0;
-  background: var(--card);
-  z-index: 6;
-  border-right: 2px solid var(--border);
-}
-
-/* ============ EN-TÊTES (4 niveaux) ============ */
+/* ============ EN-TÊTES ============ */
 .head-ev {
   font-weight: 700;
   font-size: 0.82rem;
@@ -224,7 +269,20 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   top: 0;
   z-index: 3;
   color: white;
-  text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+  text-shadow: 0 1px 1px rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.head-ev .ev-status-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid rgba(0,0,0,0.2);
+  flex-shrink: 0;
 }
 .head-mi {
   font-weight: 600;
@@ -233,10 +291,24 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   text-align: center;
   border-bottom: 1px solid var(--border);
   border-left: 1px solid var(--border);
-  color: var(--text);
+  color: white;
   position: sticky;
   top: 34px;
   z-index: 2;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.head-mi .mi-status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid rgba(0,0,0,0.2);
+  flex-shrink: 0;
 }
 .head-person {
   font-weight: 500;
@@ -256,12 +328,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   color: var(--text);
 }
 
-/* ============ PISTE HORAIRE (colonne heure) ============ */
+/* ============ PISTE HORAIRE ============ */
 .hour-track {
   position: relative;
   background: #fafbfc;
   border-right: 2px solid var(--border);
-  min-height: 100%;
 }
 .hour-tick {
   position: absolute;
@@ -283,7 +354,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   padding: 0 2px;
 }
 
-/* ============ COLONNES DES MISSIONS : événements type GCal ============ */
+/* ============ COLONNES MISSIONS ============ */
 .mission-col {
   position: relative;
   border-left: 1px solid #f0f3f5;
@@ -297,29 +368,44 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   background-size: 100% var(--hour-h);
 }
 
-/* Bloc d'occupation (un par shift + un par zone libre) */
+/* Zones hors plage (hachurées) */
+.out-of-range {
+  position: absolute;
+  left: 0; right: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    #f8f9fa,
+    #f8f9fa 4px,
+    #e3e7ea 4px,
+    #e3e7ea 8px
+  );
+  pointer-events: none;
+}
+
+/* Blocs */
 .block {
   position: absolute;
   left: 2px;
   right: 2px;
   border-radius: 6px;
-  font-size: 0.66rem;
-  font-weight: 600;
-  padding: 2px 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 5px;
   overflow: hidden;
   line-height: 1.1;
   cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.1s;
-  border-left: 3px solid rgba(0,0,0,0.25);
+  transition: transform 0.1s, box-shadow 0.1s, filter 0.1s;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  min-height: 12px;
+  justify-content: center;
+  min-height: 14px;
+  color: white;
 }
 .block:hover {
-  transform: scale(1.02);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  z-index: 3;
+  transform: scale(1.03);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.22);
+  z-index: 4;
+  filter: brightness(1.08);
 }
 .block .block-label {
   white-space: nowrap;
@@ -328,32 +414,39 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .block .block-time {
   font-size: 0.58rem;
-  opacity: 0.85;
+  opacity: 0.92;
   font-weight: 500;
 }
 
-/* Statuts */
+/* Libre = couleur PUISSANTE (vert) - très visible */
 .block.free {
   background: var(--free);
-  color: var(--free-border);
-  border-left-color: var(--free-border);
-  border: 1px dashed var(--free-border);
-  font-style: italic;
+  border: 1px solid #1e8449;
+  box-shadow: 0 0 0 1px rgba(39,174,96,0.3) inset;
 }
+
+/* Pris = gris neutre (moins attractif visuellement) */
 .block.taken {
   background: var(--taken);
-  color: var(--primary-dark);
-  border-left-color: var(--taken-border);
+  color: white;
+  border: 1px solid var(--taken-dark);
 }
+.block.taken .block-label { font-weight: 600; }
+
+/* Mes prises = bleu distinctif */
 .block.mine {
   background: var(--mine);
-  color: #1a5276;
-  border-left-color: var(--mine-border);
+  border: 1px solid #1f618d;
+  box-shadow: 0 0 0 1px rgba(41,128,185,0.3) inset;
 }
-.block.locked { cursor: not-allowed; opacity: 0.6; }
-.block.locked:hover { transform: none; box-shadow: none; }
 
-/* ============ VUE "MON PLANNING" (Google Calendar) ============ */
+.block.locked {
+  cursor: not-allowed;
+  filter: grayscale(0.3);
+}
+.block.locked:hover { transform: none; box-shadow: none; filter: grayscale(0.3); }
+
+/* ============ MON PLANNING ============ */
 .calendar-view {
   max-width: 900px;
   margin: 18px auto;
@@ -478,12 +571,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-size: 0.62rem;
   opacity: 0.9;
 }
-.gcal-empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--muted);
-  font-size: 0.95rem;
-}
 
 /* ============ MODAL ============ */
 .modal-overlay {
@@ -564,6 +651,18 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .btn-cancel:hover { background: #d5dbdf; }
 .btn-block { width: 100%; }
 
+/* Mini-formulaire : prévisualisation du créneau */
+.shift-preview {
+  background: var(--free-light);
+  border-left: 4px solid var(--free);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-top: 10px;
+  font-weight: 600;
+  color: #1e8449;
+}
+
 .modal-close {
   position: absolute;
   top: 12px; right: 12px;
@@ -586,23 +685,26 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 640px) {
   .app-header { padding: 12px 14px; }
-  .my-planning-btn { padding: 8px 12px; font-size: 0.82rem; }
+  .nav-tab { padding: 8px 12px; font-size: 0.78rem; }
+  .user-badge { padding: 6px 10px; font-size: 0.78rem; }
   .calendar-grid { gap: 3px; padding: 8px; }
-  .cal-cell { min-height: 38px; font-size: 0.78rem; }
+  .cal-cell { min-height: 40px; font-size: 0.78rem; padding: 2px 3px; }
+  .cal-cell .ev-chip { font-size: 0.52rem; padding: 0 2px; }
   .gcal-hour-cell { height: 40px; }
-  .head-ev { font-size: 0.74rem; padding: 6px 4px; }
-  .head-mi { font-size: 0.68rem; padding: 5px 3px; top: 30px; }
-  .head-person { font-size: 0.62rem; top: 60px; padding: 3px 1px; }
+  .head-ev { font-size: 0.72rem; padding: 6px 4px; }
+  .head-mi { font-size: 0.66rem; padding: 5px 3px; top: 30px; }
+  .head-person { font-size: 0.6rem; top: 60px; padding: 3px 1px; }
   .modal { padding: 18px; border-radius: 14px; }
   .modal .actions button { padding: 11px 12px; font-size: 0.88rem; }
   .block { font-size: 0.6rem; }
   .block .block-time { font-size: 0.52rem; }
 }
 @media (max-width: 380px) {
-  .cal-cell { min-height: 34px; }
+  .cal-cell { min-height: 36px; }
   .gcal-hour-cell { height: 36px; }
   .block { font-size: 0.55rem; padding: 1px 2px; }
   .block .block-time { display: none; }
+  .nav-tab { padding: 6px 10px; font-size: 0.72rem; }
 }
 @media (min-width: 900px) {
   .gcal-hour-cell { height: 60px; }
@@ -610,4 +712,4 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 @media (hover: none) {
   .cal-cell:hover { background: #fafbfc; border-color: transparent; }
   .nav-btn:active, .back-btn:active { background: #e0e6ea; }
-}
+        }

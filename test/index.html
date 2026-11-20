@@ -4,589 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Planning des Gardes</title>
-<style>
-  :root {
-    --primary: #c0392b;
-    --primary-dark: #962d22;
-    --accent: #3498db;
-    --bg: #f4f6f9;
-    --card: #ffffff;
-    --text: #2c3e50;
-    --muted: #7f8c8d;
-    --border: #e1e5ea;
-    --free: #eafaf1;
-    --free-border: #27ae60;
-    --taken: #fadbd8;
-    --taken-border: #c0392b;
-    --mine: #d6eaf8;
-    --mine-border: #2980b9;
-    --radius: 12px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.4;
-    -webkit-text-size-adjust: 100%;
-  }
-  button { font-family: inherit; cursor: pointer; border: none; background: none; }
-
-  /* ============ HEADER ============ */
-  .app-header {
-    background: linear-gradient(135deg, var(--primary), #e74c3c);
-    color: white;
-    padding: max(16px, env(safe-area-inset-top)) 18px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.15);
-    position: sticky;
-    top: 0;
-    z-index: 50;
-  }
-  .app-header h1 { font-size: clamp(1rem, 2.5vw, 1.4rem); font-weight: 700; }
-  .app-header .user-info {
-    font-size: 0.85rem;
-    background: rgba(255,255,255,0.2);
-    padding: 6px 12px;
-    border-radius: 20px;
-  }
-  .my-planning-btn {
-    background: white;
-    color: var(--primary);
-    font-weight: 700;
-    padding: 10px 16px;
-    border-radius: 24px;
-    font-size: 0.9rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    transition: transform 0.15s;
-  }
-  .my-planning-btn:hover { transform: scale(1.03); }
-  .my-planning-btn:active { transform: scale(0.97); }
-
-  /* ============ CALENDRIER MENSUEL ============ */
-  .calendar-wrap {
-    max-width: 1100px;
-    margin: 18px auto;
-    padding: 0 12px;
-  }
-  .calendar-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    gap: 10px;
-  }
-  .calendar-nav h2 {
-    font-size: clamp(1rem, 2.5vw, 1.3rem);
-    text-transform: capitalize;
-    text-align: center;
-    flex: 1;
-  }
-  .nav-btn {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-weight: 600;
-    font-size: 1rem;
-    color: var(--text);
-    transition: background 0.15s;
-  }
-  .nav-btn:hover { background: #ecf0f1; }
-  .nav-btn.today { color: var(--accent); }
-
-  .calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    background: var(--card);
-    padding: 10px;
-    border-radius: var(--radius);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  }
-  .cal-dow {
-    text-align: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--muted);
-    padding: 6px 0;
-    text-transform: uppercase;
-  }
-  .cal-cell {
-    aspect-ratio: 1 / 1;
-    min-height: 42px;
-    border-radius: 8px;
-    background: #fafbfc;
-    border: 1px solid transparent;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-    position: relative;
-    padding: 2px;
-  }
-  .cal-cell:hover { background: #eef2f6; border-color: var(--accent); }
-  .cal-cell.other-month { color: #c8cdd2; }
-  .cal-cell.today { background: var(--accent); color: white; font-weight: 700; }
-  .cal-cell.locked { opacity: 0.55; }
-  .cal-cell .dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: var(--primary);
-    position: absolute;
-    bottom: 4px;
-  }
-  .cal-cell.today .dot { background: white; }
-  .cal-cell .day-num { font-size: clamp(0.75rem, 2.5vw, 0.95rem); }
-
-  /* ============ VUE JOUR ============ */
-  .day-view {
-    max-width: 100%;
-    margin: 18px auto;
-    padding: 0 8px 40px;
-    display: none;
-  }
-  .day-view.active { display: block; }
-  .day-view-header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 14px;
-    padding: 0 4px;
-  }
-  .day-view-header h2 {
-    font-size: clamp(1rem, 2.5vw, 1.35rem);
-    text-transform: capitalize;
-  }
-  .back-btn {
-    background: var(--card);
-    border: 1px solid var(--border);
-    padding: 8px 14px;
-    border-radius: 10px;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .back-btn:hover { background: #ecf0f1; }
-
-  .locked-banner {
-    background: #fff3cd;
-    border-left: 4px solid #f39c12;
-    color: #856404;
-    padding: 10px 14px;
-    border-radius: 8px;
-    font-size: 0.88rem;
-    margin-bottom: 12px;
-  }
-
-  /* ============ TABLEAU 4 NIVEAUX D'EN-TÊTE ============ */
-  .grid-scroll {
-    overflow-x: auto;
-    overflow-y: visible;
-    background: var(--card);
-    border-radius: var(--radius);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-    -webkit-overflow-scrolling: touch;
-    border: 1px solid var(--border);
-    position: relative;
-  }
-  .day-grid {
-    display: grid;
-    min-width: max-content;
-    font-size: 0.82rem;
-  }
-
-  /* Colonne horaire sticky */
-  .day-grid .col-time {
-    position: sticky;
-    left: 0;
-    background: var(--card);
-    z-index: 6;
-    border-right: 2px solid var(--border);
-  }
-  .hour-label {
-    height: 26px;
-    background: #fafbfc;
-    color: var(--muted);
-    font-weight: 600;
-    border-bottom: 1px solid #f0f3f5;
-    font-size: 0.68rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* En-têtes (4 niveaux) */
-  .head-ev {
-    font-weight: 700;
-    font-size: 0.82rem;
-    padding: 8px 6px;
-    text-align: center;
-    border-bottom: 2px solid var(--border);
-    border-left: 2px solid var(--border);
-    position: sticky;
-    top: 0;
-    z-index: 3;
-    color: white;
-    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
-  }
-  .head-mi {
-    font-weight: 600;
-    font-size: 0.76rem;
-    padding: 6px 4px;
-    text-align: center;
-    border-bottom: 1px solid var(--border);
-    border-left: 1px solid var(--border);
-    color: var(--text);
-    position: sticky;
-    top: 34px;
-    z-index: 2;
-  }
-  .head-person {
-    font-weight: 500;
-    font-size: 0.7rem;
-    padding: 4px 2px;
-    text-align: center;
-    border-bottom: 2px solid var(--border);
-    border-left: 1px solid #f0f3f5;
-    color: var(--muted);
-    position: sticky;
-    top: 66px;
-    z-index: 2;
-    background: #fafbfc;
-  }
-  .head-person .p-slot-num {
-    font-weight: 700;
-    color: var(--text);
-  }
-
-  /* Cellules */
-  .cell {
-    height: 26px;
-    border-bottom: 1px solid #f0f3f5;
-    border-left: 1px solid #f0f3f5;
-    padding: 0 3px;
-    font-size: 0.7rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.12s;
-    position: relative;
-    overflow: hidden;
-    text-align: center;
-    line-height: 1.1;
-  }
-  .cell.hour-label { cursor: default; }
-
-  /* Statuts */
-  .cell.free {
-    background: #f4fbf7;
-  }
-  .cell.free:hover { background: #eafaf1; }
-  .cell.taken {
-    background: var(--taken);
-    color: var(--primary-dark);
-    font-weight: 600;
-  }
-  .cell.mine {
-    background: var(--mine);
-    color: #1a5276;
-    font-weight: 700;
-  }
-  .cell.past-cell { opacity: 0.55; cursor: not-allowed; }
-  .cell.out-of-range {
-    background: repeating-linear-gradient(45deg, #f8f9fa, #f8f9fa 4px, #eef0f2 4px, #eef0f2 8px);
-    cursor: not-allowed;
-  }
-  .cell .cell-label {
-    font-size: 0.62rem;
-    font-weight: 700;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
-
-  /* ============ VUE "MON PLANNING" (style Google Calendar) ============ */
-  .calendar-view {
-    max-width: 900px;
-    margin: 18px auto;
-    padding: 0 12px 30px;
-    display: none;
-  }
-  .calendar-view.active { display: block; }
-
-  .gcal-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .gcal-nav h2 {
-    font-size: clamp(1rem, 2.5vw, 1.25rem);
-    text-transform: capitalize;
-    text-align: center;
-    flex: 1;
-  }
-  .gcal-container {
-    background: var(--card);
-    border-radius: var(--radius);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-    overflow: hidden;
-    border: 1px solid var(--border);
-  }
-  .gcal-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .gcal-grid {
-    display: grid;
-    min-width: max-content;
-    position: relative;
-  }
-  .gcal-hour-col {
-    border-right: 2px solid var(--border);
-    background: var(--card);
-    position: sticky;
-    left: 0;
-    z-index: 5;
-  }
-  .gcal-hour-cell {
-    height: 50px;
-    font-size: 0.72rem;
-    color: var(--muted);
-    font-weight: 600;
-    padding: 4px 6px 0;
-    text-align: right;
-    border-bottom: 1px solid #f0f3f5;
-  }
-  .gcal-day-col {
-    border-right: 1px solid #f0f3f5;
-    position: relative;
-  }
-  .gcal-day-col:last-child { border-right: none; }
-  .gcal-day-head {
-    position: sticky;
-    top: 0;
-    background: #f8f9fa;
-    z-index: 4;
-    padding: 8px 4px;
-    text-align: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border-bottom: 2px solid var(--border);
-    text-transform: capitalize;
-  }
-  .gcal-day-head .gcal-day-num {
-    font-size: 1rem;
-    color: var(--text);
-  }
-  .gcal-day-head.today .gcal-day-num {
-    background: var(--accent);
-    color: white;
-    border-radius: 50%;
-    display: inline-flex;
-    width: 26px; height: 26px;
-    align-items: center;
-    justify-content: center;
-  }
-  .gcal-slots {
-    position: relative;
-    height: 1200px; /* 24h × 50px */
-    background: repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 49px,
-      #f0f3f5 49px,
-      #f0f3f5 50px
-    );
-  }
-  .gcal-event {
-    position: absolute;
-    left: 3px;
-    right: 3px;
-    border-radius: 6px;
-    padding: 4px 6px;
-    font-size: 0.7rem;
-    overflow: hidden;
-    color: white;
-    cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    border-left: 3px solid rgba(0,0,0,0.3);
-    line-height: 1.2;
-  }
-  .gcal-event .ev-time {
-    font-size: 0.62rem;
-    opacity: 0.9;
-    font-weight: 600;
-  }
-  .gcal-event .ev-title {
-    font-weight: 700;
-    font-size: 0.72rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .gcal-event .ev-role {
-    font-size: 0.62rem;
-    opacity: 0.9;
-  }
-  .gcal-empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--muted);
-    font-size: 0.95rem;
-  }
-
-  /* ============ MODAL ============ */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.55);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    padding: 16px;
-  }
-  .modal-overlay.active { display: flex; }
-  .modal {
-    background: white;
-    border-radius: 16px;
-    padding: 22px;
-    max-width: 460px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-  }
-  .modal h3 {
-    margin-bottom: 14px;
-    font-size: 1.1rem;
-    padding-right: 30px;
-  }
-  .modal label {
-    display: block;
-    margin: 12px 0 5px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--muted);
-  }
-  .modal input[type="time"] {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    font-size: 1rem;
-    font-family: inherit;
-  }
-  .modal .slot-info {
-    background: #f8f9fa;
-    padding: 10px 14px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    font-size: 0.88rem;
-  }
-  .modal .slot-info strong { color: var(--primary); }
-  .modal .error {
-    color: var(--primary);
-    font-size: 0.85rem;
-    margin-top: 8px;
-    min-height: 1.2em;
-    font-weight: 600;
-  }
-  .modal .actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 16px;
-    flex-wrap: wrap;
-  }
-  .modal .actions button {
-    flex: 1;
-    min-width: 110px;
-    padding: 12px 16px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 0.95rem;
-  }
-  .btn-primary { background: var(--accent); color: white; }
-  .btn-primary:hover { background: #2980b9; }
-  .btn-danger { background: var(--primary); color: white; }
-  .btn-danger:hover { background: var(--primary-dark); }
-  .btn-cancel { background: #ecf0f1; color: var(--text); }
-  .btn-cancel:hover { background: #d5dbdf; }
-  .btn-block { width: 100%; }
-
-  .modal-close {
-    position: absolute;
-    top: 12px; right: 12px;
-    background: none;
-    font-size: 1.4rem;
-    color: var(--muted);
-    width: 32px; height: 32px;
-    border-radius: 50%;
-  }
-  .modal-close:hover { background: #f0f0f0; }
-  .modal-inner { position: relative; }
-
-  .empty-state {
-    text-align: center;
-    padding: 30px 16px;
-    color: var(--muted);
-    font-size: 0.95rem;
-  }
-
-  /* ============ RESPONSIVE ============ */
-  @media (max-width: 640px) {
-    .app-header { padding: 12px 14px; }
-    .my-planning-btn { padding: 8px 12px; font-size: 0.82rem; }
-    .calendar-grid { gap: 3px; padding: 8px; }
-    .cal-cell { min-height: 38px; font-size: 0.78rem; }
-    .cell { height: 24px; font-size: 0.68rem; }
-    .hour-label { height: 24px; }
-    .gcal-hour-cell { height: 40px; }
-    .gcal-slots { height: 960px; }
-    .head-ev { font-size: 0.74rem; padding: 6px 4px; }
-    .head-mi { font-size: 0.68rem; padding: 5px 3px; top: 30px; }
-    .head-person { font-size: 0.62rem; top: 60px; padding: 3px 1px; }
-    .modal { padding: 18px; border-radius: 14px; }
-    .modal .actions button { padding: 11px 12px; font-size: 0.88rem; }
-  }
-  @media (max-width: 380px) {
-    .cell { font-size: 0.62rem; height: 22px; }
-    .hour-label { height: 22px; }
-    .cal-cell { min-height: 34px; }
-    .gcal-hour-cell { height: 36px; }
-    .gcal-slots { height: 864px; }
-  }
-  @media (min-width: 900px) {
-    .cell { height: 30px; font-size: 0.78rem; }
-    .hour-label { height: 30px; }
-    .gcal-hour-cell { height: 60px; }
-    .gcal-slots { height: 1440px; }
-  }
-  @media (hover: none) {
-    .cal-cell:hover { background: #fafbfc; border-color: transparent; }
-    .cell.free:hover { background: #f4fbf7; }
-    .nav-btn:active, .back-btn:active { background: #e0e6ea; }
-  }
-</style>
+<link rel="stylesheet" href="./style.css">
 </head>
 <body>
 
@@ -598,12 +16,12 @@
   </div>
 </header>
 
-<!-- ================== CALENDRIER MENSUEL ================== -->
+<!-- CALENDRIER MENSUEL -->
 <main class="calendar-wrap" id="calendarView">
   <div class="calendar-nav">
-    <button class="nav-btn" id="calPrev" aria-label="Mois précédent">◀</button>
+    <button class="nav-btn" id="calPrev">◀</button>
     <h2 id="calLabel">—</h2>
-    <button class="nav-btn" id="calNext" aria-label="Mois suivant">▶</button>
+    <button class="nav-btn" id="calNext">▶</button>
   </div>
   <div class="calendar-grid" id="calendarGrid"></div>
   <div style="text-align:center;margin-top:12px;">
@@ -611,7 +29,7 @@
   </div>
 </main>
 
-<!-- ================== VUE DÉTAIL JOUR (tableau 4 niveaux) ================== -->
+<!-- VUE JOUR -->
 <main class="day-view" id="dayView">
   <div class="day-view-header">
     <button class="back-btn" id="btnBack">◀ Retour</button>
@@ -625,7 +43,7 @@
   </div>
 </main>
 
-<!-- ================== VUE MON PLANNING (Google Calendar) ================== -->
+<!-- MON PLANNING -->
 <main class="calendar-view" id="myPlanningView">
   <div class="gcal-nav">
     <button class="nav-btn" id="mpPrev">◀</button>
@@ -642,7 +60,7 @@
   </div>
 </main>
 
-<!-- ================== MODAL ================== -->
+<!-- MODAL -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <div class="modal-inner">
@@ -656,32 +74,24 @@
 
 <script>
 /* =====================================================================
-   CONSTANTES / UTILISATEUR
+   CONSTANTES
    ===================================================================== */
 const CURRENT_USER = { id: 'u1', name: 'Vous' };
 const USERS = {
   u1: 'Vous', u2: 'Alice', u3: 'Bob', u4: 'Chloé', u5: 'David', u6: 'Emma'
 };
 
-/* =====================================================================
-   DONNÉES (remplies par fetch depuis events.json)
-   ===================================================================== */
 let EVENTS = [];
-
-/* Réservations : clé `${dateStr}|${missionId}` → tableau de shifts */
 let bookings = {};
 let _id = 0;
 const nextId = () => `s${++_id}`;
 
-/* Seed démo (à retirer quand une vraie API prend le relais) */
+/* Seed démo */
 (function seed() {
   const add = (dateStr, missionId, userId, sH, sM, eH, eM) => {
     const key = `${dateStr}|${missionId}`;
     if (!bookings[key]) bookings[key] = [];
-    bookings[key].push({
-      id: nextId(), userId,
-      start: sH*60 + sM, end: eH*60 + eM
-    });
+    bookings[key].push({ id: nextId(), userId, start: sH*60+sM, end: eH*60+eM });
   };
   const t = new Date();
   const dOff = n => { const d = new Date(t); d.setDate(d.getDate()+n); return fmtDate(d); };
@@ -708,28 +118,25 @@ function parseDate(s) { return new Date(s + 'T00:00:00'); }
 function todayStr() { return fmtDate(new Date()); }
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
 function jsDayToOur(d) { const j = d.getDay(); return j === 0 ? 7 : j; }
-
 function isLocked(dateStr) {
   const t = new Date(); t.setHours(0,0,0,0);
-  const diff = (parseDate(dateStr) - t) / 86400000;
-  return diff <= 1;
+  return (parseDate(dateStr) - t) / 86400000 <= 1;
 }
-
 function fmtHM(min) {
   const h = Math.floor(min/60);
   const m = min % 60;
   return `${String(h).padStart(2,'0')}h${m ? String(m).padStart(2,'0') : ''}`;
 }
-function minToTimeStr(m) {
-  return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+function fmtHMfull(min) {
+  const h = Math.floor(min/60);
+  const m = min % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
-function timeStrToMin(s) {
-  const [h,m] = s.split(':').map(Number);
-  return h*60 + m;
-}
+function minToTimeStr(m) { return fmtHMfull(m); }
+function timeStrToMin(s) { const [h,m] = s.split(':').map(Number); return h*60+m; }
 
 /* =====================================================================
-   LOGIQUE ÉVÉNEMENTS
+   LOGIQUE
    ===================================================================== */
 function eventsForDate(dateStr) {
   const d = parseDate(dateStr);
@@ -759,59 +166,16 @@ function missionRangesForDate(mission, dateStr) {
   return merged;
 }
 
-/* =====================================================================
-   RÉSERVATIONS : helpers
-   ===================================================================== */
 function getShifts(dateStr, missionId) {
   return bookings[`${dateStr}|${missionId}`] || [];
 }
 
-/* Événements sur un intervalle pour construire les blocs type GCal.
-   Retourne une liste triée de segments { start, end, status, assignees }
-   status = 'free' | 'full' | 'partial'
-   Chaque segment a une longueur > 0.
-*/
-function buildSegments(dateStr, mission) {
-  const ranges = missionRangesForDate(mission, dateStr);
-  const segments = [];
-
-  ranges.forEach(range => {
-    // Points de découpe = bornes + débuts/fins de shifts
-    const points = new Set([range.start, range.end]);
-    getShifts(dateStr, mission.id).forEach(s => {
-      if (s.end <= range.start || s.start >= range.end) return;
-      points.add(Math.max(s.start, range.start));
-      points.add(Math.min(s.end, range.end));
-    });
-    const sorted = [...points].sort((a,b)=>a-b);
-
-    for (let i = 0; i < sorted.length - 1; i++) {
-      const start = sorted[i];
-      const end = sorted[i+1];
-      if (end <= start) continue;
-      // personnes présentes sur [start,end)
-      const present = getShifts(dateStr, mission.id).filter(s =>
-        s.start <= start && s.end >= end
-      );
-      let status;
-      if (present.length === 0) status = 'free';
-      else if (present.length >= mission.quota) status = 'full';
-      else status = 'partial';
-      segments.push({ start, end, status, count: present.length, assignees: present });
-    }
-  });
-  return segments;
-}
-
 function coverAt(dateStr, missionId, minute) {
-  let total = 0, mine = 0;
+  let total = 0;
   getShifts(dateStr, missionId).forEach(s => {
-    if (minute >= s.start && minute < s.end) {
-      total++;
-      if (s.userId === CURRENT_USER.id) mine = 1;
-    }
+    if (minute >= s.start && minute < s.end) total++;
   });
-  return { total, mine };
+  return total;
 }
 
 function userHasOverlap(dateStr, missionId, userId, start, end) {
@@ -825,14 +189,64 @@ function shiftWithinRanges(start, end, ranges) {
 }
 
 /* =====================================================================
-   ÉTAT VUE
+   CONSTRUCTION DES "SEGMENTS" (BLOCS)
+   =====================================================================
+   Découpe une mission en blocs continus où la situation ne change pas.
+   Pour chaque plage autorisée de la mission, on prend tous les points
+   de rupture (début/fin de la plage + débuts/fins des shifts), puis on
+   crée un bloc entre chaque paire de points consécutifs.
+   Chaque bloc est ensuite affecté à une SOUS-COLONNE (missionnaire 1..N)
+   si son statut est "occupé", ou bien reste "libre".
+*/
+function buildBlocks(dateStr, mission) {
+  const ranges = missionRangesForDate(mission, dateStr);
+  const shifts = getShifts(dateStr, mission.id);
+  const blocks = [];
+
+  ranges.forEach(range => {
+    // Points de rupture
+    const points = new Set([range.start, range.end]);
+    shifts.forEach(s => {
+      if (s.end <= range.start || s.start >= range.end) return;
+      points.add(Math.max(s.start, range.start));
+      points.add(Math.min(s.end, range.end));
+    });
+    const sorted = [...points].sort((a,b)=>a-b);
+
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const start = sorted[i];
+      const end = sorted[i+1];
+      if (end <= start) continue;
+
+      // Shifts actifs sur tout [start,end)
+      const present = shifts.filter(s =>
+        s.start <= start && s.end >= end
+      );
+
+      let status;
+      if (present.length === 0) status = 'free';
+      else if (present.length >= mission.quota) status = 'full';
+      else status = 'partial';
+
+      blocks.push({
+        start, end, status,
+        present: present.map(s => ({ id: s.id, userId: s.userId }))
+      });
+    }
+  });
+
+  return blocks;
+}
+
+/* =====================================================================
+   ÉTAT
    ===================================================================== */
 let calMonth = new Date();
 let currentDay = null;
 let myPlanningDate = new Date();
 
 /* =====================================================================
-   INIT — chargement du JSON
+   CHARGEMENT EVENTS
    ===================================================================== */
 async function loadEvents() {
   try {
@@ -842,9 +256,7 @@ async function loadEvents() {
     EVENTS = data.events || [];
   } catch (err) {
     console.error('Impossible de charger events.json', err);
-    // Fallback minimal pour démo si le fichier n'est pas servi
-    EVENTS = [];
-    alert("Attention : impossible de charger ./events.json (ouvrez la page via un serveur HTTP local, pas en file://).");
+    alert("Impossible de charger ./events.json — servez la page via un serveur HTTP (ex: python -m http.server).");
   }
   renderCalendar();
 }
@@ -889,11 +301,7 @@ function renderCalendar() {
 }
 
 /* =====================================================================
-   VUE JOUR — TABLEAU 4 NIVEAUX D'EN-TÊTE
-   Niveau 1 : Événement
-   Niveau 2 : Mission + nb personnes
-   Niveau 3 : Missionnaire 1..N
-   Niveau 4 : Heures (colonne gauche sticky)
+   VUE JOUR
    ===================================================================== */
 function openDayView(dateStr) {
   currentDay = dateStr;
@@ -917,6 +325,15 @@ function closeDayView() {
   renderCalendar();
 }
 
+/* =====================================================================
+   RENDU DE LA GRILLE JOUR
+   =====================================================================
+   Structure en 4 niveaux d'en-tête :
+   1. Événement (colspan = somme des quota de ses missions)
+   2. Mission · nb personnes (colspan = quota)
+   3. M1, M2, ... Mn (une par personne du quota)
+   4. Colonne horaire + colonnes missions (une par personne du quota)
+   ===================================================================== */
 function renderDayGrid() {
   const grid = document.getElementById('dayGrid');
   grid.innerHTML = '';
@@ -924,7 +341,6 @@ function renderDayGrid() {
   const evs = eventsForDate(dateStr);
   const locked = isLocked(dateStr);
 
-  // Construire la liste des missions (colonnes) avec event parent
   const cols = [];
   evs.forEach(ev => {
     ev.missions.forEach(m => {
@@ -941,7 +357,7 @@ function renderDayGrid() {
   }
   grid.style.display = 'grid';
 
-  // Calcul de la plage horaire utile
+  // Plage horaire utile
   let minMin = Infinity, maxMin = -Infinity;
   cols.forEach(c => c.ranges.forEach(r => {
     minMin = Math.min(minMin, r.start);
@@ -952,14 +368,19 @@ function renderDayGrid() {
   const rowStart = startH * 60;
   const rowEnd = endH * 60;
 
-  // Nombre total de sous-colonnes = somme des quota
+  // Hauteur d'une heure (pixels)
+  const HOUR_H = window.matchMedia('(max-width: 640px)').matches ? 40
+                : window.matchMedia('(min-width: 900px)').matches ? 60
+                : 50;
+
   const totalPersonCols = cols.reduce((s,c) => s + c.mission.quota, 0);
 
-  // Grille : 1 (heure) + totalPersonCols
   grid.style.gridTemplateColumns = `62px repeat(${totalPersonCols}, minmax(64px, 1fr))`;
+  // 4 lignes d'en-tête (auto) + 1 ligne de contenu (taille totale)
+  const contentH = ((rowEnd - rowStart) / 60) * HOUR_H;
+  grid.style.gridTemplateRows = `auto auto auto ${contentH}px`;
 
   /* ---------- Niveau 1 : Événement ---------- */
-  // Colonne heure
   const h1 = document.createElement('div');
   h1.className = 'head-ev';
   h1.style.gridRow = '1';
@@ -968,7 +389,6 @@ function renderDayGrid() {
   h1.textContent = 'Heure';
   grid.appendChild(h1);
 
-  // Compter les sous-colonnes par event (sum de quota)
   const evSpans = new Map();
   cols.forEach(c => {
     if (!evSpans.has(c.ev.id)) evSpans.set(c.ev.id, { ev: c.ev, span: 0 });
@@ -987,13 +407,12 @@ function renderDayGrid() {
     colIdx += span;
   });
 
-  /* ---------- Niveau 2 : Mission + nb personnes ---------- */
+  /* ---------- Niveau 2 : Mission · nb ---------- */
   const h2 = document.createElement('div');
   h2.className = 'head-mi';
   h2.style.gridRow = '2';
   h2.style.gridColumn = '1';
   h2.style.background = '#ecf0f1';
-  h2.style.top = '0'; // colonne heure sticky
   h2.textContent = '';
   grid.appendChild(h2);
 
@@ -1011,12 +430,11 @@ function renderDayGrid() {
     colIdx += c.mission.quota;
   });
 
-  /* ---------- Niveau 3 : Missionnaire 1..N ---------- */
+  /* ---------- Niveau 3 : M1, M2... ---------- */
   const h3 = document.createElement('div');
   h3.className = 'head-person';
   h3.style.gridRow = '3';
   h3.style.gridColumn = '1';
-  h3.style.top = '0';
   h3.textContent = '';
   grid.appendChild(h3);
 
@@ -1034,102 +452,151 @@ function renderDayGrid() {
     }
   });
 
-  /* ---------- Lignes horaires (pas de 15 min pour la précision) ---------- */
-  // On affiche un libellé qu'aux heures pile, mais cellules par 15 min
-  // pour bien voir les segments de disponibilité.
-  const STEP = 15;
-  let rowIdx = 4;
+  /* ---------- Colonne horaire (sticky, avec graduations) ---------- */
+  const hourCol = document.createElement('div');
+  hourCol.className = 'hour-track';
+  hourCol.style.gridRow = '4';
+  hourCol.style.gridColumn = '1';
+  hourCol.style.position = 'sticky';
+  hourCol.style.left = '0';
+  hourCol.style.zIndex = '5';
+  hourCol.style.height = contentH + 'px';
 
-  // Pour chaque mission, on calcule ses segments (bornes de shifts incluses)
-  const segmentsByCol = cols.map(c => ({
+  for (let h = startH; h <= endH; h++) {
+    const top = (h - startH) * HOUR_H;
+    const tick = document.createElement('div');
+    tick.className = 'hour-tick';
+    tick.style.top = top + 'px';
+    tick.innerHTML = `<span>${String(h).padStart(2,'0')}h</span>`;
+    hourCol.appendChild(tick);
+  }
+  grid.appendChild(hourCol);
+
+  /* ---------- Colonnes missions : blocs ---------- */
+  // Construire les blocs pour chaque mission
+  const blocksByCol = cols.map(c => ({
     ...c,
-    segments: buildSegments(dateStr, c.mission)
+    blocks: buildBlocks(dateStr, c.mission)
   }));
 
-  // Pour chaque personne-slot (M1..Mn), on construit l'occupation par minute
-  // (qui remplit chaque sous-colonne). On répartit les shifts :
-  // - les shifts déjà connus d'un user occupent les sous-colonnes 1, 2... 
-  //   en remplissant les premières dispo
-  // - les créneaux libres restent gris dans les sous-colonnes non occupées
-  // On garde la logique simple : pour chaque instant et chaque mission,
-  // on liste les userId actifs, on les place dans les slots dans l'ordre.
+  // Pour chaque mission, on doit affecter les blocs "full" ou "partial"
+  // à des sous-colonnes M1..Mn. Un bloc "free" est affiché comme un
+  // bloc libre sur la PREMIÈRE sous-colonne disponible (celle de M1)
+  // pour rester lisible — les autres sous-colonnes libres restent vides.
 
-  // Construire pour chaque mission un planning par minute → array de userId
-  // de taille quota, avec null pour slots libres
-  const timelineByCol = segmentsByCol.map(col => {
-    const minutes = [];
-    for (let m = rowStart; m < rowEnd; m += STEP) {
-      const present = getShifts(dateStr, col.mission.id)
-        .filter(s => m >= s.start && m < s.end)
-        .map(s => s.userId);
-      // Compléter avec null jusqu'au quota
-      while (present.length < col.mission.quota) present.push(null);
-      minutes.push(present);
+  // Algorithme : pour chaque sous-colonne p (0-based), parcourir les blocs
+  // et n'afficher que ceux où la p-ième personne est présente ou libre.
+  // On "pack" les userIds : les personnes actives sur un bloc sont
+  // assignées aux premières places disponibles à ce moment-là.
+
+  // Construire pour chaque mission une timeline minute → array userId (longueur quota)
+  const timelineByCol = blocksByCol.map(col => {
+    const totalMinutes = rowEnd - rowStart;
+    const arr = new Array(totalMinutes);
+    for (let i = 0; i < totalMinutes; i++) {
+      arr[i] = new Array(col.mission.quota).fill(null);
     }
-    return { ...col, minutes };
-  });
-
-  // Rendu ligne par ligne
-  for (let m = rowStart; m < rowEnd; m += STEP) {
-    const isHour = m % 60 === 0;
-
-    // Colonne heure
-    const hourCell = document.createElement('div');
-    hourCell.className = 'hour-label';
-    hourCell.style.gridRow = `${rowIdx}`;
-    hourCell.style.gridColumn = '1';
-    hourCell.style.position = 'sticky';
-    hourCell.style.left = '0';
-    hourCell.style.zIndex = '5';
-    hourCell.style.background = '#fafbfc';
-    hourCell.style.borderRight = '2px solid var(--border)';
-    hourCell.textContent = isHour ? fmtHM(m) : '';
-    grid.appendChild(hourCell);
-
-    // Pour chaque mission : afficher les sous-colonnes
-    let subCol = 2;
-    timelineByCol.forEach(col => {
-      const idx = (m - rowStart) / STEP;
-      const slotArr = col.minutes[idx];
-      const inRange = col.ranges.some(r => m >= r.start && m < r.end);
-
-      for (let p = 0; p < col.mission.quota; p++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.style.gridRow = `${rowIdx}`;
-        cell.style.gridColumn = `${subCol}`;
-
-        if (!inRange) {
-          cell.classList.add('out-of-range');
-        } else {
-          const userId = slotArr[p];
-          if (userId === CURRENT_USER.id) {
-            cell.classList.add('mine');
-            cell.innerHTML = `<span class="cell-label">Vous</span>`;
-          } else if (userId) {
-            cell.classList.add('taken');
-            cell.innerHTML = `<span class="cell-label">${USERS[userId] || '?'}</span>`;
-          } else {
-            cell.classList.add('free');
-            cell.innerHTML = `<span class="cell-label">Libre</span>`;
-          }
-          if (locked) {
-            cell.classList.add('past-cell');
-          } else {
-            cell.addEventListener('click', () => openSlotModal(dateStr, col, m));
-          }
+    // Remplir avec les shifts (ordre stable)
+    const shifts = getShifts(dateStr, col.mission.id);
+    shifts.forEach(shift => {
+      const from = Math.max(shift.start, rowStart) - rowStart;
+      const to = Math.min(shift.end, rowEnd) - rowStart;
+      // Trouver une place libre à chaque minute
+      for (let m = from; m < to; m++) {
+        const row = arr[m];
+        for (let p = 0; p < col.mission.quota; p++) {
+          if (row[p] === null) { row[p] = { userId: shift.userId, shiftId: shift.id }; break; }
         }
-        grid.appendChild(cell);
-        subCol++;
       }
     });
-    rowIdx++;
-  }
+    return { ...col, timeline: arr };
+  });
+
+  // Construire les "blocs" pour l'affichage : on regroupe les minutes
+  // consécutives où l'état d'une sous-colonne est identique.
+  let subColIdx = 2;
+  timelineByCol.forEach(col => {
+    for (let p = 0; p < col.mission.quota; p++) {
+      const colEl = document.createElement('div');
+      colEl.className = 'mission-col';
+      colEl.style.gridRow = '4';
+      colEl.style.gridColumn = `${subColIdx}`;
+      colEl.style.setProperty('--hour-h', HOUR_H + 'px');
+      colEl.style.height = contentH + 'px';
+
+      // Construire les segments pour cette sous-colonne p
+      const segments = [];
+      let cur = null;
+      for (let i = 0; i < col.timeline.length; i++) {
+        const slot = col.timeline[i][p];
+        // Vérifie si la minute est dans une plage autorisée
+        const minute = rowStart + i;
+        const inRange = col.ranges.some(r => minute >= r.start && minute < r.end);
+        const state = !inRange ? 'out' : (slot ? 'taken' : 'free');
+        const userId = slot ? slot.userId : null;
+        const shiftId = slot ? slot.shiftId : null;
+
+        if (!cur || cur.state !== state || cur.userId !== userId || cur.shiftId !== shiftId) {
+          if (cur) segments.push(cur);
+          cur = { start: minute, end: minute + 1, state, userId, shiftId };
+        } else {
+          cur.end = minute + 1;
+        }
+      }
+      if (cur) segments.push(cur);
+
+      // Ne garder que les segments "in range"
+      segments.forEach(seg => {
+        if (seg.state === 'out') return;
+        const top = ((seg.start - rowStart) / 60) * HOUR_H;
+        const height = Math.max(2, ((seg.end - seg.start) / 60) * HOUR_H - 1);
+        const block = document.createElement('div');
+        block.className = 'block ' + (
+          seg.state === 'taken'
+            ? (seg.userId === CURRENT_USER.id ? 'mine' : 'taken')
+            : 'free'
+        );
+        if (locked) block.classList.add('locked');
+        block.style.top = top + 'px';
+        block.style.height = height + 'px';
+
+        // Pour "free", un seul bloc par zone libre : on évite de dupliquer
+        // sur plusieurs sous-colonnes. On affiche seulement sur M1 (p=0).
+        if (seg.state === 'free' && p !== 0) return;
+
+        const label = seg.state === 'taken'
+          ? (USERS[seg.userId] || '?')
+          : 'Libre';
+        const timeLabel = `${fmtHMfull(seg.start)}–${fmtHMfull(seg.end)}`;
+
+        block.innerHTML = `
+          <div class="block-label">${label}</div>
+          <div class="block-time">${timeLabel}</div>
+        `;
+
+        if (!locked) {
+          block.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openSlotModal(dateStr, col, seg.start);
+          });
+        }
+
+        // Ajustement de la largeur visuelle si plusieurs sous-colonnes libres
+        // (le bloc "free" est affiché uniquement sur M1 et ne couvre que M1)
+        colEl.appendChild(block);
+      });
+
+      grid.appendChild(colEl);
+      subColIdx++;
+    }
+  });
+
+  // Compteur final des colonnes pour grid-template-columns si pas déjà fait
+  // (déjà défini plus haut avec totalPersonCols)
 }
 
-/* Éclaircit une couleur hex (factor 0..1, 1 = inchangé) */
 function shade(hex, factor) {
-  hex = hex.replace('#','');
+  hex = (hex || '#3498db').replace('#','');
   if (hex.length === 3) hex = hex.split('').map(c => c+c).join('');
   const r = parseInt(hex.substr(0,2),16);
   const g = parseInt(hex.substr(2,2),16);
@@ -1141,7 +608,7 @@ function shade(hex, factor) {
 }
 
 /* =====================================================================
-   MODAL PRISE / MODIF / SUPPRESSION
+   MODAL
    ===================================================================== */
 function openSlotModal(dateStr, col, clickedMinute) {
   const { mission, ranges } = col;
@@ -1154,7 +621,17 @@ function openSlotModal(dateStr, col, clickedMinute) {
 
   const containingRange = ranges.find(r => clickedMinute >= r.start && clickedMinute < r.end)
     || ranges.find(r => clickedMinute < r.end) || ranges[0];
-  let defaultStart = Math.max(containingRange.start, Math.ceil(clickedMinute/15)*15);
+  // Alignement à la minute près : on propose le créneau qui démarre à
+  // clickedMinute ou à la fin du dernier shift qui le chevaucherait
+  let defaultStart = Math.max(containingRange.start, clickedMinute);
+  // Si un shift se termine après defaultStart, on propose la fin de ce shift
+  getShifts(dateStr, mission.id).forEach(s => {
+    if (s.start <= defaultStart && s.end > defaultStart && s.userId !== CURRENT_USER.id) {
+      // proposer après ce shift si la place est déjà occupée (mais on
+      // reste dans la même plage autorisée)
+      // (comportement simple : on n'ajuste pas ici, l'utilisateur choisit)
+    }
+  });
   if (defaultStart >= containingRange.end) defaultStart = containingRange.start;
   let defaultEnd = Math.min(containingRange.end, defaultStart + 60);
 
@@ -1192,9 +669,9 @@ function openSlotModal(dateStr, col, clickedMinute) {
   bodyHTML += `
     <div style="margin-top:8px;">
       <label for="inputStart">Heure de début</label>
-      <input type="time" id="inputStart" value="${minToTimeStr(defaultStart)}" min="${minToTimeStr(containingRange.start)}" max="${minToTimeStr(containingRange.end)}" step="900">
+      <input type="time" id="inputStart" value="${minToTimeStr(defaultStart)}" min="${minToTimeStr(containingRange.start)}" max="${minToTimeStr(containingRange.end)}" step="60">
       <label for="inputEnd">Heure de fin</label>
-      <input type="time" id="inputEnd" value="${minToTimeStr(defaultEnd)}" min="${minToTimeStr(containingRange.start)}" max="${minToTimeStr(containingRange.end)}" step="900">
+      <input type="time" id="inputEnd" value="${minToTimeStr(defaultEnd)}" min="${minToTimeStr(containingRange.start)}" max="${minToTimeStr(containingRange.end)}" step="60">
       <div class="error" id="modalError"></div>
     </div>
   `;
@@ -1208,15 +685,15 @@ function openSlotModal(dateStr, col, clickedMinute) {
   btnTake.onclick = () => {
     const start = timeStrToMin(document.getElementById('inputStart').value);
     const end = timeStrToMin(document.getElementById('inputEnd').value);
-    if (end <= start) { showErr('L\'heure de fin doit être après le début.'); return; }
+    if (end <= start) { showErr('Fin doit être après début.'); return; }
     if (!shiftWithinRanges(start, end, ranges)) { showErr('Hors plage autorisée.'); return; }
     if (userHasOverlap(dateStr, mission.id, CURRENT_USER.id, start, end)) {
       showErr('Vous avez déjà un créneau qui chevauche.'); return;
     }
-    for (let mm = start; mm < end; mm += 15) {
-      const c = coverAt(dateStr, mission.id, mm);
-      if (c.total >= mission.quota) {
-        showErr(`Capacité atteinte à ${fmtHM(mm)}.`); return;
+    // Vérif capacité minute par minute
+    for (let mm = start; mm < end; mm++) {
+      if (coverAt(dateStr, mission.id, mm) >= mission.quota) {
+        showErr(`Capacité atteinte à ${fmtHMfull(mm)}.`); return;
       }
     }
     const key = `${dateStr}|${mission.id}`;
@@ -1249,14 +726,14 @@ function openSlotModal(dateStr, col, clickedMinute) {
         if (others.some(s => !(ne <= s.start || ns >= s.end))) {
           showErr('Chevauchement avec un autre de vos créneaux.'); return;
         }
-        for (let mm = ns; mm < ne; mm += 15) {
+        for (let mm = ns; mm < ne; mm++) {
           let count = 0;
           getShifts(dateStr, mission.id).forEach(s => {
             if (s.id === shift.id) return;
             if (mm >= s.start && mm < s.end) count++;
           });
           if (count >= mission.quota) {
-            showErr(`Capacité atteinte à ${fmtHM(mm)}.`); return;
+            showErr(`Capacité atteinte à ${fmtHMfull(mm)}.`); return;
           }
         }
         shift.start = ns; shift.end = ne;
@@ -1287,7 +764,7 @@ function closeModal() {
 }
 
 /* =====================================================================
-   VUE MON PLANNING — style Google Calendar
+   MON PLANNING (Google Calendar)
    ===================================================================== */
 function openMyPlanning() {
   document.getElementById('calendarView').style.display = 'none';
@@ -1297,7 +774,6 @@ function openMyPlanning() {
   renderMyPlanning();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
 function closeMyPlanning() {
   document.getElementById('myPlanningView').classList.remove('active');
   document.getElementById('calendarView').style.display = 'block';
@@ -1307,7 +783,6 @@ function renderMyPlanning() {
   const grid = document.getElementById('gcalGrid');
   grid.innerHTML = '';
 
-  // Semaine courante (lundi → dimanche)
   const monday = (() => {
     const d = new Date(myPlanningDate);
     const day = d.getDay() === 0 ? 6 : d.getDay() - 1;
@@ -1321,49 +796,38 @@ function renderMyPlanning() {
     `${monday.toLocaleDateString('fr-FR', { day:'numeric', month:'short' })} → ` +
     `${sunday.toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' })}`;
 
-  // Récupérer tous mes shifts de la semaine
-  const shiftsByDay = {}; // dateStr → [{ shift, mission, ev }]
+  const shiftsByDay = {};
   for (let i = 0; i < 7; i++) {
     const dateStr = fmtDate(addDays(monday, i));
     shiftsByDay[dateStr] = [];
-    EVENTS.forEach(ev => {
-      ev.missions.forEach(m => {
-        getShifts(dateStr, m.id).forEach(s => {
-          if (s.userId !== CURRENT_USER.id) return;
-          shiftsByDay[dateStr].push({ shift: s, mission: m, ev });
-        });
+    EVENTS.forEach(ev => ev.missions.forEach(m => {
+      getShifts(dateStr, m.id).forEach(s => {
+        if (s.userId !== CURRENT_USER.id) return;
+        shiftsByDay[dateStr].push({ shift: s, mission: m, ev });
       });
-    });
+    }));
   }
 
-  // Grille : colonne heure + 7 jours
-  const HOUR_HEIGHT_DESKTOP = 60;
   const isMobile = window.matchMedia('(max-width: 640px)').matches;
   const hourH = isMobile ? 40 : 60;
 
   grid.style.gridTemplateColumns = `60px repeat(7, minmax(110px, 1fr))`;
   grid.style.gridTemplateRows = `auto 1fr`;
 
-  // En-tête : coin
   const corner = document.createElement('div');
   corner.style.cssText = `position:sticky;top:0;left:0;z-index:7;background:#f8f9fa;border-right:2px solid var(--border);border-bottom:2px solid var(--border);`;
   grid.appendChild(corner);
 
-  // En-têtes des jours
   const tStr = todayStr();
   for (let i = 0; i < 7; i++) {
     const d = addDays(monday, i);
     const dateStr = fmtDate(d);
     const h = document.createElement('div');
     h.className = 'gcal-day-head' + (dateStr === tStr ? ' today' : '');
-    h.innerHTML = `
-      <div>${['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'][i]}</div>
-      <div class="gcal-day-num">${d.getDate()}</div>
-    `;
+    h.innerHTML = `<div>${['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'][i]}</div><div class="gcal-day-num">${d.getDate()}</div>`;
     grid.appendChild(h);
   }
 
-  // Colonne heures
   const hourCol = document.createElement('div');
   hourCol.className = 'gcal-hour-col';
   hourCol.style.gridRow = '2';
@@ -1377,7 +841,6 @@ function renderMyPlanning() {
   }
   grid.appendChild(hourCol);
 
-  // Colonnes jours
   for (let i = 0; i < 7; i++) {
     const d = addDays(monday, i);
     const dateStr = fmtDate(d);
@@ -1390,7 +853,6 @@ function renderMyPlanning() {
     slots.className = 'gcal-slots';
     slots.style.height = (24 * hourH) + 'px';
 
-    // Placer les shifts
     shiftsByDay[dateStr].forEach(({ shift, mission, ev }) => {
       const top = (shift.start / 60) * hourH;
       const height = Math.max(20, ((shift.end - shift.start) / 60) * hourH - 1);
@@ -1398,10 +860,9 @@ function renderMyPlanning() {
       el.className = 'gcal-event';
       el.style.top = top + 'px';
       el.style.height = height + 'px';
-      const baseColor = mission.color || ev.color || '#3498db';
-      el.style.background = baseColor;
+      el.style.background = mission.color || ev.color || '#3498db';
       el.innerHTML = `
-        <div class="ev-time">${fmtHM(shift.start)}–${fmtHM(shift.end)}</div>
+        <div class="ev-time">${fmtHMfull(shift.start)}–${fmtHMfull(shift.end)}</div>
         <div class="ev-title">${ev.name}</div>
         <div class="ev-role">${mission.name}</div>
       `;
@@ -1431,9 +892,9 @@ function openShiftActions(dateStr, mission, ev, shift) {
     <div class="slot-info">
       <strong>${ev.name}</strong><br>
       ${mission.name} · ${dateLabel}<br>
-      <span style="color:var(--accent);font-weight:700;">${fmtHM(shift.start)} → ${fmtHM(shift.end)}</span>
+      <span style="color:var(--accent);font-weight:700;">${fmtHMfull(shift.start)} → ${fmtHMfull(shift.end)}</span>
     </div>
-    ${canEdit ? '' : '<div class="error" style="color:#e67e22;">🔒 Non modifiable (jour J, J-1 ou passé).</div>'}
+    ${canEdit ? '' : '<div class="error" style="color:#e67e22;">🔒 Non modifiable.</div>'}
   `;
   actions.innerHTML = '';
 
@@ -1446,8 +907,7 @@ function openShiftActions(dateStr, mission, ev, shift) {
       openDayView(dateStr);
       setTimeout(() => {
         const ranges = missionRangesForDate(mission, dateStr);
-        const col = { ev, mission, ranges };
-        openSlotModal(dateStr, col, shift.start);
+        openSlotModal(dateStr, { ev, mission, ranges }, shift.start);
       }, 200);
     };
     actions.appendChild(btnEdit);
@@ -1475,7 +935,7 @@ function openShiftActions(dateStr, mission, ev, shift) {
 }
 
 /* =====================================================================
-   ÉVÉNEMENTS UI
+   UI
    ===================================================================== */
 document.getElementById('calPrev').onclick = () => {
   calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth()-1, 1);
@@ -1491,32 +951,16 @@ document.getElementById('calToday').onclick = () => {
 };
 document.getElementById('btnBack').onclick = closeDayView;
 document.getElementById('btnMyPlanning').onclick = () => {
-  // Toggle : si on est déjà sur mon planning, on revient au calendrier
-  if (document.getElementById('myPlanningView').classList.contains('active')) {
-    closeMyPlanning();
-  } else {
-    openMyPlanning();
-  }
+  if (document.getElementById('myPlanningView').classList.contains('active')) closeMyPlanning();
+  else openMyPlanning();
 };
-document.getElementById('mpPrev').onclick = () => {
-  myPlanningDate = addDays(myPlanningDate, -7);
-  renderMyPlanning();
-};
-document.getElementById('mpNext').onclick = () => {
-  myPlanningDate = addDays(myPlanningDate, 7);
-  renderMyPlanning();
-};
-document.getElementById('mpToday').onclick = () => {
-  myPlanningDate = new Date();
-  renderMyPlanning();
-};
+document.getElementById('mpPrev').onclick = () => { myPlanningDate = addDays(myPlanningDate, -7); renderMyPlanning(); };
+document.getElementById('mpNext').onclick = () => { myPlanningDate = addDays(myPlanningDate, 7); renderMyPlanning(); };
+document.getElementById('mpToday').onclick = () => { myPlanningDate = new Date(); renderMyPlanning(); };
 document.getElementById('modalClose').onclick = closeModal;
-document.getElementById('modal').addEventListener('click', e => {
-  if (e.target.id === 'modal') closeModal();
-});
+document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-/* INIT */
 loadEvents();
 </script>
 </body>

@@ -1,0 +1,69 @@
+{
+  "events": [
+    {
+      "id": "pain",
+      "name": "Vente de Pains au Chocolat",
+      "color": "#e67e22",
+      "type": "recurring",
+      "recurrence": {
+        "days": [1, 2, 3, 4, 5]
+      },
+      "missions": [
+        {
+          "id": "pain-vendeur",
+          "name": "Vendeurs",
+          "quota": 2,
+          "color": "#f39c12",
+          "ranges": [
+            { "start": 9, "end": 12, "excludeOn": [3] },
+            { "start": 14, "end": 16, "excludeOn": [3] }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loto-2026-11-23",
+      "name": "Grand Loto",
+      "color": "#8e44ad",
+      "type": "punctual",
+      "specificDate": "2026-11-23",
+      "missions": [
+        {
+          "id": "loto-buvette",
+          "name": "Buvette",
+          "quota": 3,
+          "color": "#9b59b6",
+          "ranges": [{ "start": 8, "end": 17 }]
+        },
+        {
+          "id": "loto-caissier",
+          "name": "Caissier",
+          "quota": 1,
+          "color": "#c0392b",
+          "ranges": [{ "start": 8, "end": 17 }]
+        },
+        {
+          "id": "loto-verif",
+          "name": "Vérif. des lots",
+          "quota": 2,
+          "color": "#16a085",
+          "ranges": [{ "start": 8, "end": 17 }]
+        },
+        {
+          "id": "loto-present",
+          "name": "Présentateur",
+          "quota": 1,
+          "color": "#2980b9",
+          "ranges": [{ "start": 8, "end": 17 }]
+        },
+        {
+          "id": "loto-tirage",
+          "name": "Tirage des numéros",
+          "quota": 1,
+          "color": "#d35400",
+          "ranges": [{ "start": 8, "end": 17 }]
+        }
+      ]
+    }
+  ]
+}

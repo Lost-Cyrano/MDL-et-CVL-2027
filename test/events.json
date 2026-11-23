@@ -15,18 +15,18 @@
           "quota": 2,
           "color": "#f39c12",
           "ranges": [
-            { "start": 9, "end": 12, "excludeOn": [3] },
+            { "start": 9, "end": 12},
             { "start": 14, "end": 16, "excludeOn": [3] }
           ]
         }
       ]
     },
     {
-      "id": "loto-2026-11-23",
+      "id": "loto-2026-11-30",
       "name": "Grand Loto",
       "color": "#8e44ad",
       "type": "punctual",
-      "specificDate": "2026-11-23",
+      "specificDate": "2026-11-30",
       "missions": [
         {
           "id": "loto-buvette",

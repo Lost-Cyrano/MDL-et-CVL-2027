@@ -108,7 +108,8 @@ import {
   getFirestore,
   doc,
   getDoc,
-  setDoc
+  setDoc,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 /* =====================================================================
@@ -165,6 +166,33 @@ function fmtHM(min) {
 function timeStrToMin(s) { const [h,m] = s.split(':').map(Number); return h*60+m; }
 
 /* =====================================================================
+   NORMALISATION DES SHIFTS
+   =====================================================================
+   Firestore n'accepte PAS les tableaux imbriqués (array of arrays).
+   On stocke donc les shifts sous forme d'objets plats { i, u, a, b }.
+   On relit aussi l'ancien format (tuples) pour rétrocompatibilité.
+   ===================================================================== */
+function normalizeShift(x) {
+  if (Array.isArray(x)) {
+    // Ancien format : [id, uid, start, end]
+    if (x.length >= 4) return [x[0], x[1], x[2], x[3]];
+    return null;
+  }
+  if (x && typeof x === 'object') {
+    // Nouveau format : { i, u, a, b }
+    if ('i' in x && 'u' in x && 'a' in x && 'b' in x) {
+      return [x.i, x.u, x.a, x.b];
+    }
+  }
+  return null;
+}
+
+function serializeShift(s) {
+  // s = [id, uid, start, end] → objet plat (Firestore-safe)
+  return { i: s[0], u: s[1], a: s[2], b: s[3] };
+}
+
+/* =====================================================================
    FUSION ARCHIVE + FIREBASE
    =====================================================================
    Règle : pour chaque (date, missionId), si Firestore contient la mission,
@@ -177,13 +205,16 @@ function mergeDay(dateStr, firestoreData) {
 
   // 1. Copier l'archive
   for (const [missionId, arr] of Object.entries(archive)) {
-    if (Array.isArray(arr) && arr.length) merged[missionId] = arr.map(s => [...s]);
+    if (Array.isArray(arr) && arr.length) {
+      const norm = arr.map(normalizeShift).filter(Boolean);
+      if (norm.length) merged[missionId] = norm;
+    }
   }
   // 2. Firestore écrase mission par mission
   for (const [missionId, arr] of Object.entries(fire)) {
     if (Array.isArray(arr)) {
       // même vide, Firestore gagne (mission "vidée" explicitement)
-      merged[missionId] = arr.map(s => [...s]);
+      merged[missionId] = arr.map(normalizeShift).filter(Boolean);
     }
   }
   return merged;
@@ -216,7 +247,10 @@ async function ensureRangeLoaded(dates) {
 }
 
 /* =====================================================================
-   ÉCRITURE FIRESTORE — une seule write par action
+   ÉCRITURE FIRESTORE — une seule write par action, en transaction
+   =====================================================================
+   On utilise runTransaction pour éviter que deux utilisateurs qui
+   réservent en même temps sur la même date s'écrasent mutuellement.
    ===================================================================== */
 async function persistDay(dateStr) {
   const day = bookingsCache[dateStr] || {};
@@ -224,13 +258,24 @@ async function persistDay(dateStr) {
   for (const [missionId, arr] of Object.entries(day)) {
     if (!arr || !arr.length) {
       // Pour "vider" une mission côté Firestore, on écrit un tableau vide.
-      // Cela garantit que Firestore gagne sur l'archive pour cette mission.
       compact[missionId] = [];
       continue;
     }
-    compact[missionId] = arr.map(s => [s[0], s[1], s[2], s[3]]);
+    compact[missionId] = arr.map(serializeShift);
   }
-  await setDoc(doc(db, 'plannings_gardes', dateStr), { d: dateStr, s: compact });
+
+  const ref = doc(db, 'plannings_gardes', dateStr);
+  try {
+    await runTransaction(db, async (tx) => {
+      // Lecture transactionnelle : garantit qu'on ne perd pas de writes concurrents
+      await tx.get(ref);
+      tx.set(ref, { d: dateStr, s: compact });
+    });
+  } catch (e) {
+    // On propage pour que le handler affiche un code d'erreur utile
+    console.error('persistDay failed', dateStr, e.code, e.message, e);
+    throw e;
+  }
 }
 
 function shortId() {
@@ -736,14 +781,17 @@ function openSlotModal(dateStr, col, clickedMinute) {
       }
 
       btnSave.disabled = true; btnSave.textContent = 'Enregistrement…';
+      const oldStart = myShift[2], oldEnd = myShift[3];
       myShift[2] = ns; myShift[3] = ne;
       try {
         await persistDay(dateStr);
         closeModal();
         renderDayGrid();
       } catch (e) {
+        // rollback local en cas d'échec
+        myShift[2] = oldStart; myShift[3] = oldEnd;
+        showErr(`Erreur d'enregistrement (${e.code || 'inconnue'}).`);
         console.error(e);
-        showErr('Erreur d\'enregistrement.');
         btnSave.disabled = false; btnSave.textContent = 'Enregistrer';
       }
     };
@@ -756,14 +804,18 @@ function openSlotModal(dateStr, col, clickedMinute) {
       if (!confirm('Supprimer ce créneau ?')) return;
       btnDel.disabled = true; btnDel.textContent = 'Suppression…';
       const arr = bookingsCache[dateStr][mission.id] || [];
+      const removed = arr.filter(s => s[0] === myShift[0]);
       bookingsCache[dateStr][mission.id] = arr.filter(s => s[0] !== myShift[0]);
       try {
         await persistDay(dateStr);
         closeModal();
         renderDayGrid();
       } catch (e) {
+        // rollback local
+        if (!bookingsCache[dateStr][mission.id]) bookingsCache[dateStr][mission.id] = [];
+        bookingsCache[dateStr][mission.id].push(...removed);
+        showErr(`Erreur de suppression (${e.code || 'inconnue'}).`);
         console.error(e);
-        showErr('Erreur de suppression.');
         btnDel.disabled = false; btnDel.textContent = 'Supprimer';
       }
     };
@@ -824,15 +876,19 @@ function openSlotModal(dateStr, col, clickedMinute) {
     btnTake.disabled = true; btnTake.textContent = 'Inscription…';
     if (!bookingsCache[dateStr]) bookingsCache[dateStr] = {};
     if (!bookingsCache[dateStr][mission.id]) bookingsCache[dateStr][mission.id] = [];
-    bookingsCache[dateStr][mission.id].push([shortId(), ME.uid, start, end]);
+    const newShift = [shortId(), ME.uid, start, end];
+    bookingsCache[dateStr][mission.id].push(newShift);
 
     try {
       await persistDay(dateStr);
       closeModal();
       renderDayGrid();
     } catch (e) {
+      // rollback local
+      const arr = bookingsCache[dateStr][mission.id] || [];
+      bookingsCache[dateStr][mission.id] = arr.filter(s => s[0] !== newShift[0]);
+      showErr(`Erreur d'enregistrement (${e.code || 'inconnue'}).`);
       console.error(e);
-      showErr('Erreur d\'enregistrement.');
       btnTake.disabled = false; btnTake.textContent = "Je m'inscris";
     }
   };

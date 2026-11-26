@@ -1,1 +1,951 @@
-Not now
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <title>Boîte à idées — Honoré Romane</title>
+    <style>
+        :root {
+            --bg: #f5f3ef;
+            --card: #ffffff;
+            --card-hover: #fafaf8;
+            --field: #fafaf8;
+            --border: #e5e2dc;
+            --text: #1a1a1a;
+            --text-muted: #6b6b6b;
+            --accent: #1a1a1a;
+            --accent-hover: #000000;
+            --accent-text: #ffffff;
+            --success: #1e7d4a;
+            --warning: #b45309;
+            --error: #c0392b;
+            --radius: 0.75rem;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0e0e0e;
+                --card: #1a1a1a;
+                --card-hover: #232323;
+                --field: #232323;
+                --border: #2e2e2e;
+                --text: #f2f2f2;
+                --text-muted: #9a9a9a;
+                --accent: #f2f2f2;
+                --accent-hover: #ffffff;
+                --accent-text: #0e0e0e;
+                --success: #4ade80;
+                --warning: #fbbf24;
+                --error: #ff6b5e;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: clamp(13px, 1vw + 11px, 15px);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+        }
+
+        /* --- Header --- */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: max(1rem, env(safe-area-inset-top)) clamp(1rem, 4vw, 2.5rem) 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            flex-wrap: wrap;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .back-link {
+            font-family: inherit;
+            font-size: 0.85em;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 0.4rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            transition: color .15s, border-color .15s;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .back-link:hover {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .page-title {
+            font-weight: 600;
+            font-size: 0.95em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .text-btn {
+            font-family: inherit;
+            font-size: 0.82em;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            padding: 0.5rem 0.85rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s, background .15s;
+            white-space: nowrap;
+        }
+
+        .text-btn:hover:not(:disabled) {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        .text-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* --- Main --- */
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 72rem;
+            margin: 0 auto;
+            padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 4vw, 2.5rem);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        h1 {
+            font-size: clamp(1.3rem, 2vw + 0.9rem, 1.8rem);
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.92em;
+            margin-top: -0.75rem;
+        }
+
+        /* --- Onglets --- */
+        .tabs {
+            display: flex;
+            gap: 0.4rem;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            font-family: inherit;
+            font-size: 0.88em;
+            font-weight: 500;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            padding: 0.6rem 0.9rem;
+            cursor: pointer;
+            transition: color .15s, border-color .15s;
+        }
+
+        .tab:hover {
+            color: var(--text);
+        }
+
+        .tab.active {
+            color: var(--text);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-panel {
+            display: none;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .tab-panel.active {
+            display: flex;
+        }
+
+        /* --- Carte formulaire --- */
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: clamp(1rem, 2.5vw, 1.5rem);
+        }
+
+        .panel-title {
+            font-weight: 700;
+            font-size: 1.05em;
+            margin-bottom: 0.35rem;
+        }
+
+        .panel-desc {
+            color: var(--text-muted);
+            font-size: 0.85em;
+            margin-bottom: 1rem;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .form-field label {
+            font-size: 0.82em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .form-field input,
+        .form-field select,
+        .form-field textarea {
+            font-family: inherit;
+            font-size: 1em;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            background: var(--field);
+            color: var(--text);
+            outline: none;
+            transition: border-color .15s;
+            width: 100%;
+        }
+
+        .form-field textarea {
+            min-height: 6rem;
+            resize: vertical;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus,
+        .form-field textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .radio-card {
+            flex: 1;
+            min-width: 8rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.65rem 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            transition: border-color .15s, background .15s;
+            background: var(--field);
+        }
+
+        .radio-card:hover {
+            border-color: var(--text-muted);
+        }
+
+        .radio-card input {
+            width: auto;
+            margin-top: 0.2rem;
+            accent-color: var(--accent);
+        }
+
+        .radio-card .radio-label {
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .radio-card .radio-hint {
+            font-size: 0.75em;
+            color: var(--text-muted);
+        }
+
+        .radio-card:has(input:checked) {
+            border-color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 6%, transparent);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-size: 0.9em;
+            font-weight: 600;
+            padding: 0.6rem 1.1rem;
+            border-radius: 0.5rem;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: opacity .15s, border-color .15s, color .15s, background .15s;
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            color: var(--accent-text);
+        }
+
+        .btn.primary:hover:not(:disabled) { opacity: 0.85; }
+
+        .btn.secondary {
+            background: transparent;
+            color: var(--text);
+            border-color: var(--border);
+        }
+
+        .btn.secondary:hover:not(:disabled) {
+            border-color: var(--text);
+        }
+
+        .btn.danger {
+            background: transparent;
+            color: var(--error);
+            border-color: color-mix(in srgb, var(--error) 40%, transparent);
+            font-size: 0.78em;
+            padding: 0.35rem 0.7rem;
+        }
+
+        .btn.danger:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--error) 12%, transparent);
+            border-color: var(--error);
+        }
+
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* --- Statut --- */
+        .status-msg {
+            font-size: 0.85em;
+            padding: 0.65rem 0.85rem;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .status-msg.visible { display: block; }
+
+        .status-msg.ok {
+            background: color-mix(in srgb, var(--success) 12%, transparent);
+            color: var(--success);
+            border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
+        }
+
+        .status-msg.err {
+            background: color-mix(in srgb, var(--error) 12%, transparent);
+            color: var(--error);
+            border: 1px solid color-mix(in srgb, var(--error) 35%, transparent);
+        }
+
+        /* --- Liste admin --- */
+        .admin-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 0.85rem;
+        }
+
+        .admin-count {
+            font-size: 0.82em;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+
+        .list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .item {
+            border: 1px solid var(--border);
+            border-radius: 0.6rem;
+            padding: 0.9rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            border-left-width: 3px;
+            background: var(--card);
+        }
+
+        .item.type-projet { border-left-color: #2563eb; }
+        .item.type-question { border-left-color: #b45309; }
+
+        .item-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .item-title {
+            font-weight: 600;
+            font-size: 1em;
+            word-break: break-word;
+        }
+
+        .item-badge {
+            font-size: 0.7em;
+            font-weight: 600;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .item-badge.projet {
+            background: color-mix(in srgb, #2563eb 15%, transparent);
+            color: #2563eb;
+        }
+
+        .item-badge.question {
+            background: color-mix(in srgb, #b45309 15%, transparent);
+            color: #b45309;
+        }
+
+        .item-body {
+            font-size: 0.88em;
+            color: var(--text);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .item-meta {
+            font-size: 0.76em;
+            color: var(--text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem 0.85rem;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-top: 0.25rem;
+        }
+
+        /* --- Empty / loader --- */
+        .empty, .loader {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9em;
+            padding: 2rem 1rem;
+        }
+
+        /* --- Footer --- */
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.72em;
+            padding: 1.25rem 1rem max(1.25rem, env(safe-area-inset-bottom));
+            opacity: 0.7;
+            user-select: none;
+        }
+
+        @media (max-width: 640px) {
+            .page-title { display: none; }
+            .radio-card { min-width: 100%; }
+        }
+
+        @media (max-height: 520px) and (orientation: landscape) {
+            header {
+                padding-top: max(0.6rem, env(safe-area-inset-top));
+                padding-bottom: 0.6rem;
+            }
+            main { padding-top: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <a href="https://account.honore-romane.fr/account/" class="back-link">← Accueil</a>
+            <span class="page-title">Boîte à idées</span>
+        </div>
+        <div class="header-actions">
+            <button class="text-btn" id="logout-btn">Déconnexion</button>
+        </div>
+    </header>
+
+    <main>
+        <h1>Boîte à idées</h1>
+        <p class="subtitle">
+            Proposez un projet ou posez une question : tout sera étudié lors de la prochaine réunion.
+            Vos contributions restent privées.
+        </p>
+
+        <div class="tabs" role="tablist">
+            <button class="tab active" data-tab="submit" role="tab" aria-selected="true">Proposer / Questionner</button>
+            <button class="tab" data-tab="admin" role="tab" aria-selected="false" id="tab-admin-btn" style="display:none;">Administration</button>
+        </div>
+
+        <!-- ===== Onglet soumission ===== -->
+        <section class="tab-panel active" id="panel-submit" role="tabpanel">
+            <div class="panel">
+                <div class="panel-title">Nouvelle contribution</div>
+                <div class="panel-desc">Choisissez le type, puis décrivez votre idée le plus clairement possible.</div>
+
+                <form id="submit-form" novalidate>
+                    <div class="form-field">
+                        <label>Type de contribution</label>
+                        <div class="radio-group">
+                            <label class="radio-card">
+                                <input type="radio" name="type" value="projet" checked>
+                                <span>
+                                    <span class="radio-label">Projet</span><br>
+                                    <span class="radio-hint">Une idée d'action concrète à voter en réunion.</span>
+                                </span>
+                            </label>
+                            <label class="radio-card">
+                                <input type="radio" name="type" value="question">
+                                <span>
+                                    <span class="radio-label">Question</span><br>
+                                    <span class="radio-hint">Un point à aborder en réunion.</span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="in-title">Titre</label>
+                        <input type="text" id="in-title" required maxlength="120" placeholder="Ex : Mettre en place un compost au self">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="in-desc">Description</label>
+                        <textarea id="in-desc" required maxlength="2000" placeholder="Détaillez votre idée, le contexte, les bénéfices attendus…"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn primary" id="btn-submit">Envoyer</button>
+                    </div>
+
+                    <div class="status-msg" id="submit-status" role="status"></div>
+                </form>
+            </div>
+        </section>
+
+        <!-- ===== Onglet admin ===== -->
+        <section class="tab-panel" id="panel-admin" role="tabpanel">
+            <div class="panel">
+                <div class="panel-title">Contributions reçues</div>
+                <div class="panel-desc">Visible uniquement par les administrateurs. Supprimez les entrées traitées.</div>
+
+                <div class="admin-toolbar">
+                    <select id="filter-type" class="text-btn" style="padding:0.45rem 0.7rem;">
+                        <option value="all">Tous les types</option>
+                        <option value="projet">Projets uniquement</option>
+                        <option value="question">Questions uniquement</option>
+                    </select>
+                    <select id="filter-status" class="text-btn" style="padding:0.45rem 0.7rem;">
+                        <option value="all">Tous les statuts</option>
+                        <option value="pending">En attente</option>
+                        <option value="done">Traités</option>
+                    </select>
+                    <button class="text-btn" id="btn-refresh">Rafraîchir</button>
+                    <span class="admin-count" id="admin-count"></span>
+                </div>
+
+                <div class="list" id="admin-list">
+                    <div class="loader">Chargement…</div>
+                </div>
+
+                <div class="status-msg" id="admin-status" role="status"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        MAIRE Anael pour Honoré Romane 2027 — Tous droits réservés
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+        import {
+            getAuth,
+            onAuthStateChanged,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            getDoc,
+            collection,
+            getDocs,
+            addDoc,
+            updateDoc,
+            deleteDoc,
+            query,
+            orderBy,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
+            authDomain: "mdl-et-cvl-2027.firebaseapp.com",
+            projectId: "mdl-et-cvl-2027",
+            storageBucket: "mdl-et-cvl-2027.firebasestorage.app",
+            messagingSenderId: "142816093888",
+            appId: "1:142816093888:web:9f7c3632732a526b7c2f25",
+            measurementId: "G-FBKEPBY0CQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const LOGIN_URL = 'https://account.honore-romane.fr/login/';
+        const CURRENT_URL = 'https://account.honore-romane.fr/ideabox/';
+        const COL = 'ideabox'; // nom du document/collection Firestore
+
+        let me = null;
+        let isAdmin = false;
+        let allItems = [];
+
+        const tabSubmitBtn = document.querySelector('[data-tab="submit"]');
+        const tabAdminBtn = document.getElementById('tab-admin-btn');
+        const panelSubmit = document.getElementById('panel-submit');
+        const panelAdmin = document.getElementById('panel-admin');
+
+        const submitForm = document.getElementById('submit-form');
+        const inTitle = document.getElementById('in-title');
+        const inDesc = document.getElementById('in-desc');
+        const btnSubmit = document.getElementById('btn-submit');
+        const submitStatus = document.getElementById('submit-status');
+
+        const adminList = document.getElementById('admin-list');
+        const adminStatus = document.getElementById('admin-status');
+        const adminCount = document.getElementById('admin-count');
+        const filterType = document.getElementById('filter-type');
+        const filterStatus = document.getElementById('filter-status');
+        const btnRefresh = document.getElementById('btn-refresh');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        const TYPE_LABELS = { projet: 'Projet', question: 'Question' };
+
+        // --- Garde d'accès ---
+        const goToLogin = () => {
+            window.location.replace(
+                LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL)
+            );
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                goToLogin();
+                return;
+            }
+
+            try {
+                const snap = await getDoc(doc(db, 'users', user.uid));
+                if (!snap.exists() || snap.data().status !== 'active') {
+                    await signOut(auth);
+                    goToLogin();
+                    return;
+                }
+
+                me = snap.data();
+                isAdmin = me.isAdmin === true;
+
+                if (isAdmin) {
+                    tabAdminBtn.style.display = '';
+                }
+
+                // Si l'utilisateur n'est pas admin, on s'assure que l'onglet admin est inaccessible
+                if (!isAdmin) {
+                    switchTab('submit');
+                }
+            } catch (err) {
+                console.error(err);
+                await signOut(auth).catch(() => {});
+                goToLogin();
+            }
+        });
+
+        // --- Onglets ---
+        function switchTab(name) {
+            if (name === 'admin' && !isAdmin) return;
+
+            [tabSubmitBtn, tabAdminBtn].forEach(btn => {
+                const active = btn.dataset.tab === name;
+                btn.classList.toggle('active', active);
+                btn.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+
+            panelSubmit.classList.toggle('active', name === 'submit');
+            panelAdmin.classList.toggle('active', name === 'admin');
+
+            if (name === 'admin' && isAdmin) {
+                loadAdminItems();
+            }
+        }
+
+        tabSubmitBtn.addEventListener('click', () => switchTab('submit'));
+        tabAdminBtn.addEventListener('click', () => switchTab('admin'));
+
+        // --- Soumission ---
+        submitForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideStatus(submitStatus);
+
+            const type = document.querySelector('input[name="type"]:checked')?.value || 'projet';
+            const title = inTitle.value.trim();
+            const description = inDesc.value.trim();
+
+            if (!title || !description) {
+                showStatus(submitStatus, 'Merci de renseigner un titre et une description.', 'err');
+                return;
+            }
+            if (!auth.currentUser) {
+                goToLogin();
+                return;
+            }
+
+            btnSubmit.disabled = true;
+            const original = btnSubmit.textContent;
+            btnSubmit.textContent = 'Envoi…';
+
+            try {
+                await addDoc(collection(db, COL), {
+                    type,
+                    title,
+                    description,
+                    authorUid: auth.currentUser.uid,
+                    authorName: me?.name || auth.currentUser.email || 'Utilisateur',
+                    authorEmail: me?.email || auth.currentUser.email || '',
+                    authorClasse: me?.classe || '',
+                    status: 'pending',
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                });
+
+                inTitle.value = '';
+                inDesc.value = '';
+                document.querySelector('input[name="type"][value="projet"]').checked = true;
+
+                showStatus(submitStatus, 'Merci ! Votre contribution a bien été enregistrée et sera étudiée à la prochaine réunion.', 'ok');
+            } catch (err) {
+                console.error(err);
+                showStatus(submitStatus, 'Erreur : ' + (err.message || 'envoi impossible.'), 'err');
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = original;
+            }
+        });
+
+        // --- Chargement admin ---
+        async function loadAdminItems() {
+            if (!isAdmin) return;
+            adminList.innerHTML = '<div class="loader">Chargement…</div>';
+            hideStatus(adminStatus);
+
+            try {
+                const q = query(collection(db, COL), orderBy('createdAt', 'desc'));
+                const snap = await getDocs(q);
+                allItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderAdminList();
+            } catch (err) {
+                console.error(err);
+                adminList.innerHTML = '<div class="empty">Erreur de chargement.</div>';
+            }
+        }
+
+        function renderAdminList() {
+            const fType = filterType.value;
+            const fStatus = filterStatus.value;
+
+            const filtered = allItems.filter(it => {
+                if (fType !== 'all' && it.type !== fType) return false;
+                if (fStatus !== 'all') {
+                    const s = it.status || 'pending';
+                    if (fStatus === 'pending' && s !== 'pending') return false;
+                    if (fStatus === 'done' && s !== 'done') return false;
+                }
+                return true;
+            });
+
+            adminCount.textContent = `${filtered.length} / ${allItems.length}`;
+
+            if (!filtered.length) {
+                adminList.innerHTML = '<div class="empty">Aucune contribution pour ces filtres.</div>';
+                return;
+            }
+
+            adminList.innerHTML = filtered.map(it => renderAdminItem(it)).join('');
+
+            adminList.querySelectorAll('[data-delete]').forEach(btn => {
+                btn.addEventListener('click', () => deleteItem(btn.dataset.delete));
+            });
+            adminList.querySelectorAll('[data-toggle-status]').forEach(btn => {
+                btn.addEventListener('click', () => toggleStatus(btn.dataset.toggleStatus));
+            });
+        }
+
+        function renderAdminItem(it) {
+            const type = it.type === 'question' ? 'question' : 'projet';
+            const status = it.status || 'pending';
+            const created = formatDate(it.createdAt);
+
+            const metaParts = [
+                `${esc(it.authorName || 'Utilisateur')}`,
+                it.authorClasse ? esc(it.authorClasse) : null,
+                it.authorEmail ? esc(it.authorEmail) : null,
+                created ? `📅 ${created}` : null
+            ].filter(Boolean);
+
+            return `
+                <div class="item type-${type}">
+                    <div class="item-head">
+                        <div class="item-title">${esc(it.title || '(sans titre)')}</div>
+                        <span class="item-badge ${type}">${TYPE_LABELS[type]}</span>
+                    </div>
+                    <div class="item-body">${esc(it.description || '')}</div>
+                    <div class="item-meta">
+                        ${metaParts.map(p => `<span>${p}</span>`).join('')}
+                        <span>${status === 'done' ? '✅ Traité' : '⏳ En attente'}</span>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn secondary" data-toggle-status="${esc(it.id)}">
+                            ${status === 'done' ? 'Remettre en attente' : 'Marquer comme traité'}
+                        </button>
+                        <button class="btn danger" data-delete="${esc(it.id)}">Supprimer</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function deleteItem(id) {
+            if (!isAdmin) return;
+            if (!confirm('Supprimer définitivement cette contribution ?')) return;
+
+            try {
+                await deleteDoc(doc(db, COL, id));
+                allItems = allItems.filter(i => i.id !== id);
+                renderAdminList();
+                showStatus(adminStatus, 'Contribution supprimée.', 'ok');
+            } catch (err) {
+                console.error(err);
+                showStatus(adminStatus, 'Erreur : ' + (err.message || 'suppression impossible.'), 'err');
+            }
+        }
+
+        async function toggleStatus(id) {
+            if (!isAdmin) return;
+            const item = allItems.find(i => i.id === id);
+            if (!item) return;
+            const newStatus = (item.status || 'pending') === 'done' ? 'pending' : 'done';
+
+            try {
+                await updateDoc(doc(db, COL, id), {
+                    status: newStatus,
+                    updatedAt: serverTimestamp()
+                });
+                item.status = newStatus;
+                renderAdminList();
+            } catch (err) {
+                console.error(err);
+                showStatus(adminStatus, 'Erreur : ' + (err.message || 'mise à jour impossible.'), 'err');
+            }
+        }
+
+        filterType.addEventListener('change', renderAdminList);
+        filterStatus.addEventListener('change', renderAdminList);
+        btnRefresh.addEventListener('click', loadAdminItems);
+
+        // --- Déconnexion ---
+        logoutBtn.addEventListener('click', async () => {
+            logoutBtn.disabled = true;
+            logoutBtn.textContent = 'Déconnexion…';
+            try {
+                await signOut(auth);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                window.location.replace(LOGIN_URL);
+            }
+        });
+
+        // --- Utilitaires ---
+        function showStatus(el, msg, kind) {
+            el.textContent = msg;
+            el.className = 'status-msg visible ' + (kind === 'ok' ? 'ok' : 'err');
+        }
+        function hideStatus(el) {
+            el.className = 'status-msg';
+            el.textContent = '';
+        }
+        function formatDate(ts) {
+            if (!ts) return '';
+            try {
+                const d = ts.toDate ? ts.toDate() : new Date(ts);
+                return d.toLocaleDateString('fr-FR', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            } catch { return ''; }
+        }
+        function esc(str) {
+            return String(str ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;',
+                '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+    </script>
+</body>
+</html>

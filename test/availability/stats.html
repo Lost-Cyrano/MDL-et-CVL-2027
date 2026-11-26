@@ -7,203 +7,311 @@
 <title>Statistiques — Administration</title>
 <link rel="stylesheet" href="./style.css">
 <style>
-  /* ===== Layout admin ===== */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-    gap: 0.75rem;
-  }
-  .stat-card {
+  .stats-panel {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 1rem 1.1rem;
-    display: flex; flex-direction: column; gap: 0.35rem;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
-  .stat-card .lbl {
+  .stats-panel h3 {
+    font-size: 1em; font-weight: 700;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .stats-panel .hint { font-size: 0.85em; color: var(--text-muted); }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+  }
+  .kpi {
+    background: var(--card-hover);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.85rem 1rem;
+  }
+  .kpi-label {
     font-size: 0.72em; color: var(--text-muted);
     text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
   }
-  .stat-card .val {
-    font-size: 1.7em; font-weight: 700; line-height: 1.1;
+  .kpi-value {
+    font-size: 1.75em; font-weight: 700;
+    margin-top: 0.2rem; color: var(--text);
+    line-height: 1.15;
   }
-  .stat-card .sub {
-    font-size: 0.78em; color: var(--text-muted);
-  }
-  .stat-card.tone-success .val { color: var(--success); }
-  .stat-card.tone-warning .val { color: var(--warning); }
-  .stat-card.tone-error .val { color: var(--error); }
+  .kpi-sub { font-size: 0.75em; color: var(--text-muted); margin-top: 0.2rem; }
+  .kpi.accent { border-left: 4px solid var(--accent); }
+  .kpi.warn { border-left: 4px solid var(--warning); }
+  .kpi.danger { border-left: 4px solid var(--error); }
+  .kpi.success { border-left: 4px solid var(--success); }
 
-  /* ===== Panels ===== */
-  .panel {
-    background: var(--card);
+  .section-title {
+    font-size: 0.85em; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin: 0.5rem 0 0.25rem;
+  }
+
+  .list-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    background: var(--card-hover);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.1rem 1.25rem;
-    display: flex; flex-direction: column; gap: 0.85rem;
+    border-radius: 0.5rem;
+    border-left-width: 4px;
   }
-  .panel h3 {
-    font-size: 1em; font-weight: 700;
-    display: flex; align-items: center; gap: 0.5rem;
-    flex-wrap: wrap;
+  .list-item + .list-item { margin-top: 0.5rem; }
+  .list-item .item-main { flex: 1; min-width: 0; }
+  .list-item .item-title {
+    font-weight: 600; font-size: 0.92em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .panel .hint { font-size: 0.85em; color: var(--text-muted); }
+  .list-item .item-meta {
+    font-size: 0.78em; color: var(--text-muted);
+    display: flex; gap: 0.65rem; flex-wrap: wrap; margin-top: 0.15rem;
+  }
+  .list-item .item-badge {
+    font-size: 0.75em; font-weight: 700;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .badge-danger { background: color-mix(in srgb, var(--error) 18%, transparent); color: var(--error); }
+  .badge-warn { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+  .badge-ok { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+  .badge-muted { background: var(--field); color: var(--text-muted); }
 
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-  @media (max-width: 900px) {
-    .two-col { grid-template-columns: 1fr; }
+  .empty {
+    text-align: center; padding: 1.5rem 1rem;
+    color: var(--text-muted); font-size: 0.9em;
   }
 
-  /* ===== Barres horizontales ===== */
-  .bar-row {
-    display: flex; flex-direction: column; gap: 0.3rem;
-    margin-bottom: 0.6rem;
+  /* Barres horizontales (top utilisateurs, jours, heures) */
+  .bar-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .bar-row { display: flex; align-items: center; gap: 0.75rem; }
+  .bar-label {
+    width: 130px; flex-shrink: 0;
+    font-size: 0.85em; font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .bar-row:last-child { margin-bottom: 0; }
-  .bar-head {
-    display: flex; justify-content: space-between;
-    font-size: 0.82em; gap: 0.5rem; flex-wrap: wrap;
-  }
-  .bar-head .name { font-weight: 600; }
-  .bar-head .count { color: var(--text-muted); font-variant-numeric: tabular-nums; }
   .bar-track {
-    height: 10px; background: var(--field); border-radius: 5px; overflow: hidden;
+    flex: 1; height: 22px;
+    background: var(--field);
+    border-radius: 4px; overflow: hidden;
+    position: relative;
     border: 1px solid var(--border);
   }
   .bar-fill {
-    height: 100%; border-radius: 4px;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 70%, var(--success)));
+    border-radius: 4px;
     transition: width 0.3s;
   }
+  .bar-value {
+    min-width: 70px; text-align: right;
+    font-size: 0.82em; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
 
-  /* ===== Graphique hebdo (SVG-like avec colonnes) ===== */
-  .weekly-chart {
+  /* Heatmap horaire (0h → 23h) */
+  .heatmap {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 0.4rem;
-    align-items: end;
-    height: 160px;
-    padding-top: 0.5rem;
-    border-bottom: 1px solid var(--border);
+    grid-template-columns: repeat(24, 1fr);
+    gap: 2px;
+    margin-top: 0.5rem;
   }
-  .weekly-bar {
-    display: flex; flex-direction: column; justify-content: flex-end;
-    align-items: center; gap: 0.25rem; height: 100%;
+  .hm-cell {
+    aspect-ratio: 1;
+    border-radius: 3px;
     position: relative;
+    cursor: default;
+    min-height: 22px;
   }
-  .weekly-bar .stack {
-    width: 100%; display: flex; flex-direction: column;
-    justify-content: flex-end; gap: 1px;
-  }
-  .weekly-bar .seg { border-radius: 2px; }
-  .weekly-bar .lbl {
-    font-size: 0.7em; color: var(--text-muted); font-weight: 600;
+  .hm-labels {
+    display: grid;
+    grid-template-columns: repeat(24, 1fr);
+    gap: 2px;
+    margin-top: 0.35rem;
+    font-size: 0.65em;
+    color: var(--text-muted);
     text-align: center;
   }
-  .weekly-bar .total {
-    position: absolute; top: -0.2rem;
-    font-size: 0.68em; color: var(--text-muted);
-    font-weight: 600;
+  .hm-labels span {
+    font-variant-numeric: tabular-nums;
   }
 
-  /* ===== Tables ===== */
-  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table.tbl {
-    width: 100%; border-collapse: collapse; font-size: 0.85em;
-    min-width: 480px;
+  /* Heatmap calendrier (type GitHub) */
+  .calendar-heatmap {
+    display: flex; gap: 3px;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
   }
-  table.tbl th, table.tbl td {
-    text-align: left; padding: 0.5rem 0.6rem;
-    border-bottom: 1px solid var(--border);
+  .ch-week {
+    display: flex; flex-direction: column; gap: 3px;
   }
-  table.tbl th {
-    font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.04em;
-    color: var(--text-muted); font-weight: 700; background: var(--field);
+  .ch-day {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    background: var(--field);
+    border: 1px solid var(--border);
+    position: relative;
   }
-  table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  table.tbl tr:hover td { background: var(--card-hover); }
+  .ch-legend {
+    display: flex; gap: 0.35rem; align-items: center;
+    font-size: 0.72em; color: var(--text-muted);
+    margin-top: 0.5rem;
+  }
+  .ch-legend .ch-day { width: 12px; height: 12px; }
 
-  .pill {
-    display: inline-flex; align-items: center; gap: 0.25rem;
-    font-size: 0.72em; font-weight: 700;
-    padding: 0.15rem 0.5rem; border-radius: 999px;
+  /* Recherche utilisateur */
+  .search-bar {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
   }
-  .pill.full { background: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); }
-  .pill.partial { background: color-mix(in srgb, var(--warning) 20%, transparent); color: var(--warning); }
-  .pill.empty { background: color-mix(in srgb, var(--error) 20%, transparent); color: var(--error); }
-  .pill.muted { background: var(--field); color: var(--text-muted); }
+  .search-bar input {
+    flex: 1; min-width: 200px;
+    font-family: inherit; font-size: 1em;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--field); color: var(--text);
+    outline: none;
+  }
+  .search-bar input:focus { border-color: var(--accent); }
 
-  .loader { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); }
-  .empty { text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: 0.9em; }
+  .user-picker {
+    display: flex; gap: 0.4rem; flex-wrap: wrap;
+  }
+  .user-chip {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    background: var(--card-hover);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.82em;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .user-chip:hover { border-color: var(--text); }
+  .user-chip.active {
+    background: var(--accent); color: var(--accent-text);
+    border-color: var(--accent);
+  }
+  .user-chip .avatar {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-text);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.75em; font-weight: 700;
+  }
+  .user-chip.active .avatar {
+    background: var(--accent-text); color: var(--accent);
+  }
 
-  .filters {
+  /* Planning perso d'un user */
+  .user-planning-list {
+    display: flex; flex-direction: column; gap: 0.6rem;
+    margin-top: 0.75rem;
+  }
+  .user-shift {
+    display: flex; gap: 0.75rem;
+    padding: 0.6rem 0.85rem;
+    background: var(--card-hover);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    border-left-width: 4px;
+    align-items: flex-start;
+  }
+  .user-shift .shift-date {
+    min-width: 100px;
+    font-size: 0.82em; font-weight: 700;
+    color: var(--text);
+  }
+  .user-shift .shift-mission {
+    font-weight: 600; font-size: 0.88em;
+  }
+  .user-shift .shift-time {
+    font-size: 0.82em; color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .loader {
+    text-align: center; padding: 3rem 1rem;
+    color: var(--text-muted); font-size: 0.9em;
+  }
+
+  .filters-row {
     display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;
-    margin-bottom: 0.25rem;
   }
-  .filters select, .filters input[type="date"] {
+  .filters-row select {
     font-family: inherit; font-size: 0.85em;
-    padding: 0.45rem 0.65rem;
+    padding: 0.45rem 0.75rem;
     border: 1px solid var(--border);
     border-radius: 0.5rem;
     background: var(--field); color: var(--text);
   }
-  .filters label {
-    font-size: 0.82em; color: var(--text-muted);
-    display: inline-flex; align-items: center; gap: 0.35rem;
-  }
 
-  /* Heatmap mois */
-  .heatmap {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 3px;
-    max-width: 100%;
-  }
-  .heatmap .hm-dow {
-    font-size: 0.68em; text-align: center;
-    color: var(--text-muted); font-weight: 700;
-    text-transform: uppercase; padding-bottom: 2px;
-  }
-  .heatmap .hm-cell {
-    aspect-ratio: 1/1;
-    border-radius: 3px;
-    background: var(--field);
-    border: 1px solid transparent;
-    position: relative;
-    cursor: default;
-    min-height: 22px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.6em; color: var(--text-muted);
-  }
-  .heatmap .hm-cell.today { border-color: var(--accent); }
-  .heatmap .hm-cell.other { opacity: 0.25; }
-  .heatmap-legend {
-    display: flex; gap: 0.4rem; align-items: center;
-    font-size: 0.72em; color: var(--text-muted);
-    margin-top: 0.4rem; flex-wrap: wrap;
-  }
-  .heatmap-legend .sw {
-    width: 12px; height: 12px; border-radius: 2px;
-    display: inline-block;
-  }
-
-  .kpi-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 0.5rem;
-  }
-  .mini-kpi {
-    background: var(--field);
+  .toggle-group {
+    display: inline-flex;
     border: 1px solid var(--border);
     border-radius: 0.5rem;
-    padding: 0.55rem 0.7rem;
-    display: flex; flex-direction: column; gap: 0.15rem;
+    overflow: hidden;
+    background: var(--card-hover);
   }
-  .mini-kpi .lbl { font-size: 0.7em; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
-  .mini-kpi .val { font-size: 1.15em; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .toggle-group button {
+    font-size: 0.82em; font-weight: 600;
+    padding: 0.45rem 0.85rem;
+    background: transparent; color: var(--text-muted);
+    border: none; cursor: pointer;
+  }
+  .toggle-group button.active {
+    background: var(--accent); color: var(--accent-text);
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+  }
+  table.stats-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.85em;
+    min-width: 500px;
+  }
+  table.stats-table th {
+    background: var(--card-hover);
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    font-weight: 700; font-size: 0.85em;
+    color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.03em;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  table.stats-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  table.stats-table tr:last-child td { border-bottom: none; }
+  table.stats-table tr:hover td { background: var(--card-hover); }
+  table.stats-table td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  @media (max-width: 640px) {
+    .bar-label { width: 90px; font-size: 0.78em; }
+    .bar-value { min-width: 55px; font-size: 0.75em; }
+    .kpi-value { font-size: 1.4em; }
+    .heatmap { grid-template-columns: repeat(12, 1fr); }
+    .hm-labels { grid-template-columns: repeat(12, 1fr); }
+  }
 </style>
 </head>
 <body>
@@ -211,138 +319,16 @@
 <header>
   <div class="header-left">
     <a href="https://account.honore-romane.fr/account/" class="back-link">← Accueil</a>
-    <span class="page-title">Tableau de bord — Administrateur</span>
+    <span class="page-title">Tableau de bord — Statistiques</span>
   </div>
   <div class="header-actions">
-    <button class="text-btn" id="btn-refresh">↻ Rafraîchir</button>
+    <button class="text-btn" id="btn-refresh">🔄 Actualiser</button>
     <button class="text-btn" id="logout-btn">Déconnexion</button>
   </div>
 </header>
 
-<main>
-
-  <!-- ======== VUE D'ENSEMBLE ======== -->
-  <div class="panel" id="panel-overview">
-    <h3>📊 Vue d'ensemble</h3>
-    <div class="stats-grid" id="overview-grid">
-      <div class="stat-card"><div class="lbl">Chargement</div><div class="val">…</div></div>
-    </div>
-  </div>
-
-  <!-- ======== COUVERTURE GLOBALE ======== -->
-  <div class="panel">
-    <h3>🎯 Couverture des gardes</h3>
-    <p class="hint">Basé sur l'intégralité des disponibilités connues (Firestore + archive).</p>
-    <div class="kpi-row" id="coverage-kpis">
-      <div class="mini-kpi"><div class="lbl">Calcul…</div><div class="val">—</div></div>
-    </div>
-  </div>
-
-  <!-- ======== CHARGE HEBDOMADAIRE ======== -->
-  <div class="panel">
-    <h3>📅 Charge par jour de la semaine</h3>
-    <p class="hint">Répartition des shifts sur l'ensemble des jours couverts.</p>
-    <div class="weekly-chart" id="weekly-chart"></div>
-    <div class="heatmap-legend" id="weekly-legend"></div>
-  </div>
-
-  <!-- ======== HEATMAP MOIS ======== -->
-  <div class="panel">
-    <h3>🔥 Heatmap du mois courant</h3>
-    <p class="hint">Nombre de shifts sur chaque jour du mois (plus foncé = plus chargé).</p>
-    <div class="filters">
-      <label>Mois : <input type="month" id="heatmap-month"></label>
-    </div>
-    <div class="heatmap" id="heatmap"></div>
-    <div class="heatmap-legend" id="heatmap-legend"></div>
-  </div>
-
-  <!-- ======== TOP ÉVÉNEMENTS & MISSIONS ======== -->
-  <div class="two-col">
-    <div class="panel">
-      <h3>🏆 Top événements</h3>
-      <p class="hint">Par nombre total de shifts enregistrés.</p>
-      <div id="top-events"></div>
-    </div>
-    <div class="panel">
-      <h3>🎖️ Top missions</h3>
-      <p class="hint">Par nombre total de shifts enregistrés.</p>
-      <div id="top-missions"></div>
-    </div>
-  </div>
-
-  <!-- ======== TOP BÉNÉVOLES ======== -->
-  <div class="panel">
-    <h3>👥 Bénévoles les plus actifs</h3>
-    <p class="hint">Basé sur les shifts pointant vers un utilisateur connu.</p>
-    <div class="tbl-wrap">
-      <table class="tbl" id="users-tbl">
-        <thead>
-          <tr>
-            <th>Utilisateur</th>
-            <th class="num">Shifts</th>
-            <th class="num">Heures</th>
-            <th class="num">Événements</th>
-            <th class="num">Dernière garde</th>
-          </tr>
-        </thead>
-        <tbody id="users-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ======== STATUT PAR JOUR ======== -->
-  <div class="panel">
-    <h3>📋 Statut des prochains jours</h3>
-    <p class="hint">Du plus récent au plus ancien. "—" = aucun événement prévu.</p>
-    <div class="filters">
-      <label>Événement :
-        <select id="filter-event"><option value="">Tous</option></select>
-      </label>
-      <label>Statut :
-        <select id="filter-status">
-          <option value="">Tous</option>
-          <option value="full">Complet</option>
-          <option value="partial">Partiel</option>
-          <option value="empty">Vide</option>
-        </select>
-      </label>
-    </div>
-    <div class="tbl-wrap">
-      <table class="tbl" id="days-tbl">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Événement / Mission</th>
-            <th class="num">Shifts</th>
-            <th class="num">Couverture</th>
-            <th>Statut</th>
-          </tr>
-        </thead>
-        <tbody id="days-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ======== ALERTES ======== -->
-  <div class="panel">
-    <h3>⚠️ Alertes & anomalies</h3>
-    <p class="hint">Situations qui méritent une vérification manuelle.</p>
-    <div id="alerts"></div>
-  </div>
-
-  <!-- ======== INFOS ARCHIVE ======== -->
-  <div class="panel">
-    <h3>🗄️ Informations techniques</h3>
-    <div class="tbl-wrap">
-      <table class="tbl" id="tech-tbl">
-        <tbody id="tech-tbody">
-          <tr><td>Chargement…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
+<main id="content">
+  <div class="loader">Chargement des données…</div>
 </main>
 
 <footer class="footer">
@@ -352,18 +338,15 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
 import {
-  getAuth,
-  onAuthStateChanged,
-  signOut
+  getAuth, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import {
-  getFirestore,
-  doc,
-  getDoc,
-  getDocs,
-  collection
+  getFirestore, doc, getDoc, getDocs, collection
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
+/* =====================================================================
+   FIREBASE
+   ===================================================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyBulM5-30n3SoH7zT7nxDBvB42Pu4c3qSs",
   authDomain: "mdl-et-cvl-2027.firebaseapp.com",
@@ -380,183 +363,60 @@ const db = getFirestore(app);
 const LOGIN_URL = 'https://account.honore-romane.fr/login/';
 const CURRENT_URL = 'https://account.honore-romane.fr/tools/planning/stats/';
 const COLLECTION = 'plannings_gardes';
+
 const DAY_LABELS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
 
 /* =====================================================================
-   STATE GLOBAL
+   STATE
    ===================================================================== */
 let ME = null;
 let EVENTS = [];
-let ARCHIVE = {};              // { dateStr: { missionId: [[id,uid,s,e],...] } }
-let FIRESTORE = {};            // idem
-let MERGED = {};               // fusion (Firestore prioritaire)
-let USERS_MAP = {};            // uid → { name, role, isAdmin, status }
+let ARCHIVE = {};                       // gardes.json
+let FIRESTORE_DATA = {};                // dateStr → { missionId: [[id,uid,start,end],...] }
+const MERGED = {};                      // dateStr → { missionId: [...] } (fusionné)
+const USERS = {};                       // uid → { uid, name, email, ... }
+let selectedUserId = null;
 
 /* =====================================================================
-   HELPERS
+   UTILITAIRES
    ===================================================================== */
-const $ = id => document.getElementById(id);
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[c]));
+
 function fmtDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function parseDate(s) { return new Date(s + 'T00:00:00'); }
 function todayStr() { return fmtDate(new Date()); }
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+function jsDayToOur(d) { const j = d.getDay(); return j === 0 ? 7 : j; }
+function isLocked(dateStr) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  return (parseDate(dateStr) - t) / 86400000 <= 1;
+}
+function fmtHM(min) {
+  const h = Math.floor(min/60); const m = min % 60;
+  return `${String(h).padStart(2,'0')}h${m ? String(m).padStart(2,'0') : ''}`;
+}
 function fmtHMfull(min) {
   return `${String(Math.floor(min/60)).padStart(2,'0')}:${String(min%60).padStart(2,'0')}`;
 }
-function jsDayToOur(d) { const j = d.getDay(); return j === 0 ? 7 : j; }
-function escapeHTML(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
+function fmtDuration(minutes) {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`;
 }
-function shadeHex(hex, factor) {
-  hex = (hex || '#3498db').replace('#','');
-  if (hex.length === 3) hex = hex.split('').map(c => c+c).join('');
-  const r = parseInt(hex.substr(0,2),16);
-  const g = parseInt(hex.substr(2,2),16);
-  const b = parseInt(hex.substr(4,2),16);
-  const nr = Math.round(r*factor + 255*(1-factor));
-  const ng = Math.round(g*factor + 255*(1-factor));
-  const nb = Math.round(b*factor + 255*(1-factor));
-  return '#' + [nr,ng,nb].map(v => v.toString(16).padStart(2,'0')).join('');
+function fmtDateLong(dateStr) {
+  return parseDate(dateStr).toLocaleDateString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
 }
 
 /* =====================================================================
-   AUTH
-   ===================================================================== */
-const goToLogin = () => {
-  window.location.replace(LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL));
-};
-
-onAuthStateChanged(auth, async (user) => {
-  if (!user) { goToLogin(); return; }
-  try {
-    const snap = await getDoc(doc(db, 'users', user.uid));
-    if (!snap.exists() || snap.data().status !== 'active') {
-      await signOut(auth);
-      goToLogin();
-      return;
-    }
-    const data = snap.data();
-    if (data.isAdmin !== true) {
-      await signOut(auth);
-      goToLogin();
-      return;
-    }
-    ME = { uid: user.uid, name: data.name || user.email, ...data };
-    loadAll();
-  } catch (err) {
-    console.error(err);
-    await signOut(auth).catch(() => {});
-    goToLogin();
-  }
-});
-
-/* =====================================================================
-   CHARGEMENT DES DONNÉES
-   ===================================================================== */
-async function loadAll() {
-  try {
-    await Promise.all([
-      loadEvents(),
-      loadArchive(),
-      loadFirestore(),
-      loadUsers()
-    ]);
-    mergeAll();
-    renderAll();
-  } catch (err) {
-    console.error(err);
-    $('overview-grid').innerHTML =
-      `<div class="stat-card"><div class="lbl">Erreur</div><div class="val" style="font-size:1em;color:var(--error)">${escapeHTML(err.message)}</div></div>`;
-  }
-}
-
-async function loadEvents() {
-  try {
-    const r = await fetch('./events.json', { cache: 'no-cache' });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    EVENTS = (await r.json()).events || [];
-  } catch (e) {
-    console.info('events.json absent', e.message);
-    EVENTS = [];
-  }
-}
-
-async function loadArchive() {
-  try {
-    const r = await fetch('./gardes.json', { cache: 'no-cache' });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const d = await r.json();
-    ARCHIVE = (d && typeof d === 'object' && !Array.isArray(d)) ? d : {};
-  } catch (e) {
-    console.info('gardes.json absent', e.message);
-    ARCHIVE = {};
-  }
-}
-
-async function loadFirestore() {
-  FIRESTORE = {};
-  try {
-    const snap = await getDocs(collection(db, COLLECTION));
-    for (const d of snap.docs) {
-      const data = d.data();
-      const s = data.s;
-      if (!s || typeof s !== 'object') continue;
-      const missions = {};
-      for (const [mid, arr] of Object.entries(s)) {
-        if (!Array.isArray(arr)) continue;
-        missions[mid] = arr.map(row => {
-          if (!Array.isArray(row) || row.length < 4) return null;
-          return [String(row[0]||''), String(row[1]||''), Number(row[2])||0, Number(row[3])||0];
-        }).filter(Boolean);
-      }
-      FIRESTORE[d.id] = missions;
-    }
-  } catch (e) {
-    console.error('Firestore', e);
-    throw new Error('Impossible de charger Firestore : ' + e.message);
-  }
-}
-
-async function loadUsers() {
-  USERS_MAP = {};
-  try {
-    const snap = await getDocs(collection(db, 'users'));
-    for (const d of snap.docs) {
-      const u = d.data();
-      USERS_MAP[d.id] = {
-        uid: d.id,
-        name: u.name || u.displayName || u.email || d.id,
-        role: u.role || '',
-        isAdmin: u.isAdmin === true,
-        status: u.status || ''
-      };
-    }
-  } catch (e) {
-    console.warn('users', e);
-  }
-}
-
-function mergeAll() {
-  MERGED = {};
-  for (const [k, v] of Object.entries(ARCHIVE)) {
-    MERGED[k] = {};
-    for (const [mid, arr] of Object.entries(v || {})) {
-      if (Array.isArray(arr)) MERGED[k][mid] = arr.map(s => [...s]);
-    }
-  }
-  for (const [dateStr, missions] of Object.entries(FIRESTORE)) {
-    if (!MERGED[dateStr]) MERGED[dateStr] = {};
-    for (const [mid, arr] of Object.entries(missions)) {
-      MERGED[dateStr][mid] = arr.map(s => [...s]);
-    }
-  }
-}
-
-/* =====================================================================
-   LOGIQUE ÉVÉNEMENTS
+   LOGIQUE EVENTS
    ===================================================================== */
 function eventsForDate(dateStr) {
   const d = parseDate(dateStr);
@@ -585,25 +445,24 @@ function missionRangesForDate(mission, dateStr) {
   return merged;
 }
 
-function findMission(missionId) {
-  for (const ev of EVENTS) {
-    for (const m of ev.missions || []) {
-      if (m.id === missionId) return { ev, mission: m };
-    }
-  }
-  return null;
+function getShifts(dateStr, missionId) {
+  const day = MERGED[dateStr];
+  if (!day) return [];
+  return day[missionId] || [];
 }
 
 function coverAt(dateStr, missionId, minute) {
-  const arr = (MERGED[dateStr] && MERGED[dateStr][missionId]) || [];
   let total = 0;
-  for (const s of arr) if (minute >= s[2] && minute < s[3]) total++;
+  for (const s of getShifts(dateStr, missionId)) {
+    if (minute >= s[2] && minute < s[3]) total++;
+  }
   return total;
 }
 
-function missionDayCoverage(dateStr, mission) {
+/* Statut mission sur la journée : 'full' | 'partial' | 'empty' */
+function missionDayStatus(dateStr, mission) {
   const ranges = missionRangesForDate(mission, dateStr);
-  if (!ranges.length) return { totalMinutes: 0, coveredMinutes: 0, ratio: 0 };
+  if (ranges.length === 0) return 'empty';
   let totalMin = 0, coveredMin = 0;
   ranges.forEach(r => {
     for (let m = r.start; m < r.end; m++) {
@@ -611,570 +470,639 @@ function missionDayCoverage(dateStr, mission) {
       if (coverAt(dateStr, mission.id, m) >= mission.quota) coveredMin++;
     }
   });
-  return {
-    totalMinutes: totalMin,
-    coveredMinutes: coveredMin,
-    ratio: totalMin ? coveredMin / totalMin : 0
-  };
-}
-
-function missionDayStatus(dateStr, mission) {
-  const c = missionDayCoverage(dateStr, mission);
-  if (!c.totalMinutes) return 'empty';
-  if (c.coveredMinutes === 0) return 'empty';
-  if (c.coveredMinutes === c.totalMinutes) return 'full';
+  if (coveredMin === 0) return 'empty';
+  if (coveredMin === totalMin) return 'full';
   return 'partial';
 }
 
-function eventDayStatus(dateStr, ev) {
-  const statuses = (ev.missions || []).map(m => missionDayStatus(dateStr, m)).filter(s => s !== 'empty');
-  if (!statuses.length) return 'empty';
-  if (statuses.every(s => s === 'full')) return 'full';
-  return 'partial';
+/* Renvoie le nombre de minutes non couvertes (0 si complet) */
+function missionMissingMinutes(dateStr, mission) {
+  const ranges = missionRangesForDate(mission, dateStr);
+  let missing = 0;
+  let totalMin = 0;
+  ranges.forEach(r => {
+    for (let m = r.start; m < r.end; m++) {
+      totalMin++;
+      const cover = coverAt(dateStr, mission.id, m);
+      if (cover < mission.quota) missing += (mission.quota - cover);
+    }
+  });
+  return { missing, totalMin };
 }
 
 /* =====================================================================
-   AGRÉGATIONS
+   CHARGEMENT
    ===================================================================== */
-function computeStats() {
-  const stat = {
-    totalShifts: 0,
-    totalMinutes: 0,
-    totalEvents: EVENTS.length,
-    totalMissions: EVENTS.reduce((a, ev) => a + (ev.missions||[]).length, 0),
-    totalUsers: Object.keys(USERS_MAP).length,
-    activeUsers: Object.values(USERS_MAP).filter(u => u.status === 'active').length,
-    daysWithData: 0,
-    daysArchived: 0,
-    daysFirestore: 0,
-    // par jour de semaine
-    byWeekday: Array.from({ length: 7 }, () => ({ shifts: 0, minutes: 0 })),
-    // par événement
-    byEvent: {},
-    // par mission
-    byMission: {},
-    // par utilisateur
-    byUser: {},
-    // par statut
-    statusCounts: { full: 0, partial: 0, empty: 0 },
-    // par date
-    byDate: {},       // { dateStr: { shifts, minutes } }
-    unknownUsers: 0,
-    orphanShifts: 0,
-    // anomalies
-    conflictingShifts: 0,
-    outOfRangeShifts: 0,
-    zeroDurationShifts: 0
-  };
+async function loadStaticFiles() {
+  // events.json
+  try {
+    const res = await fetch('./events.json', { cache: 'no-cache' });
+    if (res.ok) EVENTS = (await res.json()).events || [];
+  } catch (e) { console.info('events.json absent', e.message); }
 
-  // Init par utilisateur connu
-  for (const uid of Object.keys(USERS_MAP)) {
-    stat.byUser[uid] = { name: USERS_MAP[uid].name, role: USERS_MAP[uid].role, shifts: 0, minutes: 0, events: new Set(), lastDate: '' };
-  }
+  // gardes.json
+  try {
+    const res = await fetch('./gardes.json', { cache: 'no-cache' });
+    if (res.ok) {
+      const data = await res.json();
+      ARCHIVE = (data && typeof data === 'object' && !Array.isArray(data)) ? data : {};
+    }
+  } catch (e) { console.info('gardes.json absent', e.message); }
+}
 
-  const allDates = Object.keys(MERGED).sort();
-  stat.daysWithData = allDates.filter(d => Object.keys(MERGED[d]).length > 0).length;
-  stat.daysArchived = Object.keys(ARCHIVE).length;
-  stat.daysFirestore = Object.keys(FIRESTORE).length;
-
-  // Parcours de toutes les entrées
-  for (const dateStr of allDates) {
-    const missions = MERGED[dateStr];
-    const dayNum = jsDayToOur(parseDate(dateStr));
-    if (!stat.byDate[dateStr]) stat.byDate[dateStr] = { shifts: 0, minutes: 0 };
-
-    // Conflits : map uid → liste shifts (toutes missions confondues)
-    const perUserShifts = {};
-
-    for (const [mid, arr] of Object.entries(missions)) {
-      const found = findMission(mid);
-      if (!found) {
-        stat.orphanShifts += arr.length;
-        continue;
-      }
-      const { ev, mission } = found;
-
-      // Statistiques par événement / mission
-      if (!stat.byEvent[ev.id]) stat.byEvent[ev.id] = { name: ev.name, color: ev.color || '#3498db', shifts: 0, minutes: 0, missions: {} };
-      stat.byEvent[ev.id].shifts += arr.length;
-      if (!stat.byMission[mid]) stat.byMission[mid] = { name: mission.name, color: mission.color || ev.color, eventName: ev.name, shifts: 0, minutes: 0, quota: mission.quota };
-      stat.byMission[mid].shifts += arr.length;
-
-      // Vérif shifts hors plages
-      const ranges = missionRangesForDate(mission, dateStr);
-      const inRange = (start, end) => ranges.some(r => start >= r.start && end <= r.end);
-
-      for (const s of arr) {
-        const [sid, uid, start, end] = s;
-        const dur = end - start;
-        if (dur <= 0) { stat.zeroDurationShifts++; continue; }
-
-        // Plages
-        if (!inRange(start, end)) stat.outOfRangeShifts++;
-
-        stat.totalShifts++;
-        stat.totalMinutes += dur;
-        stat.byWeekday[dayNum - 1].shifts++;
-        stat.byWeekday[dayNum - 1].minutes += dur;
-        stat.byEvent[ev.id].minutes += dur;
-        stat.byMission[mid].minutes += dur;
-        stat.byDate[dateStr].shifts++;
-        stat.byDate[dateStr].minutes += dur;
-
-        // Utilisateur
-        if (USERS_MAP[uid]) {
-          const u = stat.byUser[uid];
-          u.shifts++;
-          u.minutes += dur;
-          u.events.add(ev.id);
-          if (!u.lastDate || dateStr > u.lastDate) u.lastDate = dateStr;
-        } else {
-          stat.unknownUsers++;
+async function loadFirestore() {
+  try {
+    const snap = await getDocs(collection(db, COLLECTION));
+    FIRESTORE_DATA = {};
+    snap.forEach(d => {
+      const data = d.data();
+      if (data && data.s && typeof data.s === 'object') {
+        const missions = {};
+        for (const [missionId, arr] of Object.entries(data.s)) {
+          if (Array.isArray(arr)) {
+            missions[missionId] = arr
+              .filter(row => Array.isArray(row) && row.length >= 4)
+              .map(row => [String(row[0]||''), String(row[1]||''), Number(row[2])||0, Number(row[3])||0]);
+          }
         }
-
-        // Conflit detection
-        if (!perUserShifts[uid]) perUserShifts[uid] = [];
-        perUserShifts[uid].push({ start, end, mission: mid });
+        FIRESTORE_DATA[d.id] = missions;
       }
-    }
-
-    // Conflit = même uid, 2 shifts qui se chevauchent sur des missions différentes
-    for (const uid of Object.keys(perUserShifts)) {
-      const sh = perUserShifts[uid];
-      for (let i = 0; i < sh.length; i++) {
-        for (let j = i+1; j < sh.length; j++) {
-          if (sh[i].mission === sh[j].mission) continue;
-          const a = sh[i], b = sh[j];
-          if (!(b.end <= a.start || b.start >= a.end)) stat.conflictingShifts++;
-        }
-      }
-    }
-  }
-
-  // Statut par jour & par événement
-  for (const dateStr of allDates) {
-    for (const ev of eventsForDate(dateStr)) {
-      if (!ev.missions || !ev.missions.length) continue;
-      const st = eventDayStatus(dateStr, ev);
-      stat.statusCounts[st]++;
-    }
-  }
-
-  return stat;
-}
-
-/* =====================================================================
-   RENDU — VUE D'ENSEMBLE
-   ===================================================================== */
-function renderOverview(stat) {
-  const hrs = Math.round(stat.totalMinutes / 60);
-  const avgShift = stat.totalShifts ? Math.round(stat.totalMinutes / stat.totalShifts) : 0;
-
-  const cards = [
-    { lbl: 'Shifts enregistrés', val: stat.totalShifts.toLocaleString('fr-FR'), sub: 'toutes sources' },
-    { lbl: 'Heures bénévoles', val: hrs.toLocaleString('fr-FR') + ' h', sub: `${avgShift} min / shift en moyenne` },
-    { lbl: 'Événements', val: stat.totalEvents, sub: `${stat.totalMissions} mission(s)` },
-    { lbl: 'Utilisateurs', val: stat.totalUsers, sub: `${stat.activeUsers} actif(s)` },
-    { lbl: 'Jours avec données', val: stat.daysWithData, sub: `${stat.daysArchived} archivés · ${stat.daysFirestore} Firestore` },
-  ];
-
-  $('overview-grid').innerHTML = cards.map(c => `
-    <div class="stat-card">
-      <div class="lbl">${escapeHTML(c.lbl)}</div>
-      <div class="val">${c.val}</div>
-      <div class="sub">${escapeHTML(c.sub)}</div>
-    </div>
-  `).join('');
-}
-
-/* =====================================================================
-   RENDU — COUVERTURE
-   ===================================================================== */
-function renderCoverage(stat) {
-  const total = stat.statusCounts.full + stat.statusCounts.partial + stat.statusCounts.empty;
-  const pct = n => total ? Math.round(n / total * 100) : 0;
-
-  const kpis = [
-    { lbl: 'Jours-événements complets', val: `${stat.statusCounts.full}`, pct: pct(stat.statusCounts.full), color: 'var(--success)' },
-    { lbl: 'Partiels', val: `${stat.statusCounts.partial}`, pct: pct(stat.statusCounts.partial), color: 'var(--warning)' },
-    { lbl: 'Vides', val: `${stat.statusCounts.empty}`, pct: pct(stat.statusCounts.empty), color: 'var(--error)' }
-  ];
-
-  $('coverage-kpis').innerHTML = kpis.map(k => `
-    <div class="mini-kpi">
-      <div class="lbl">${escapeHTML(k.lbl)}</div>
-      <div class="val" style="color:${k.color}">${k.val} <span style="font-size:0.7em;font-weight:500;color:var(--text-muted)">(${k.pct}%)</span></div>
-    </div>
-  `).join('') + `
-    <div class="mini-kpi">
-      <div class="lbl">Total analysé</div>
-      <div class="val">${total}</div>
-    </div>
-  `;
-}
-
-/* =====================================================================
-   RENDU — CHARGE HEBDOMADAIRE
-   ===================================================================== */
-function renderWeekly(stat) {
-  const el = $('weekly-chart');
-  const maxShifts = Math.max(1, ...stat.byWeekday.map(d => d.shifts));
-
-  // Couleurs par jour
-  const colors = ['#3498db','#9b59b6','#e67e22','#16a085','#c0392b','#8e44ad','#2980b9'];
-
-  el.innerHTML = stat.byWeekday.map((d, i) => {
-    const h = Math.max(6, Math.round((d.shifts / maxShifts) * 100));
-    return `
-      <div class="weekly-bar">
-        <div class="total">${d.shifts}</div>
-        <div class="stack" style="height:${h}%">
-          <div class="seg" style="background:${colors[i]};height:100%"></div>
-        </div>
-        <div class="lbl">${DAY_LABELS[i]}</div>
-      </div>
-    `;
-  }).join('');
-
-  // Légende minutes
-  $('weekly-legend').innerHTML = stat.byWeekday.map((d, i) => `
-    <span style="display:inline-flex;align-items:center;gap:0.3rem">
-      <span style="width:10px;height:10px;border-radius:2px;background:${colors[i]}"></span>
-      ${DAY_LABELS[i]} : ${Math.round(d.minutes/60)}h
-    </span>
-  `).join('');
-}
-
-/* =====================================================================
-   RENDU — HEATMAP
-   ===================================================================== */
-function renderHeatmap(stat) {
-  const input = $('heatmap-month');
-  if (!input.value) {
-    const now = new Date();
-    input.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  }
-  const [y, m] = input.value.split('-').map(Number);
-
-  const first = new Date(y, m - 1, 1);
-  const last = new Date(y, m, 0);
-  const startOffset = (first.getDay() + 6) % 7;
-  const totalCells = Math.ceil((startOffset + last.getDate()) / 7) * 7;
-
-  // Max shifts sur le mois
-  let maxSh = 1;
-  for (let d = 1; d <= last.getDate(); d++) {
-    const ds = fmtDate(new Date(y, m-1, d));
-    const v = (stat.byDate[ds] || {}).shifts || 0;
-    if (v > maxSh) maxSh = v;
-  }
-
-  const html = [];
-  for (const lbl of DAY_LABELS) html.push(`<div class="hm-dow">${lbl}</div>`);
-
-  const todayK = todayStr();
-  for (let i = 0; i < totalCells; i++) {
-    const dayNum = i - startOffset + 1;
-    if (dayNum < 1 || dayNum > last.getDate()) {
-      html.push(`<div class="hm-cell other"></div>`);
-      continue;
-    }
-    const ds = fmtDate(new Date(y, m-1, dayNum));
-    const v = (stat.byDate[ds] || {}).shifts || 0;
-    const intensity = v / maxSh;
-    const bg = v === 0
-      ? 'var(--field)'
-      : `color-mix(in srgb, var(--accent) ${Math.round(intensity * 70 + 20)}%, transparent)`;
-    html.push(`<div class="hm-cell ${ds === todayK ? 'today' : ''}" style="background:${bg};" title="${ds} — ${v} shift(s)">${dayNum}</div>`);
-  }
-  $('heatmap').innerHTML = html.join('');
-
-  // Légende
-  $('heatmap-legend').innerHTML = `
-    <span>Moins</span>
-    ${[0, 0.25, 0.5, 0.75, 1].map(v => `
-      <span class="sw" style="background:${v === 0 ? 'var(--field)' : `color-mix(in srgb, var(--accent) ${Math.round(v*70+20)}%, transparent)`}"></span>
-    `).join('')}
-    <span>Plus (max ${maxSh} shifts/jour)</span>
-  `;
-}
-
-/* =====================================================================
-   RENDU — TOP ÉVÉNEMENTS / MISSIONS
-   ===================================================================== */
-function renderBars(targetId, items, valueKey, nameKey, colorKey) {
-  const el = $(targetId);
-  if (!items.length) { el.innerHTML = '<div class="empty">Aucune donnée.</div>'; return; }
-  const max = Math.max(1, ...items.map(i => i[valueKey]));
-  el.innerHTML = items.slice(0, 10).map(i => {
-    const pct = Math.round((i[valueKey] / max) * 100);
-    const col = i[colorKey] || 'var(--accent)';
-    return `
-      <div class="bar-row">
-        <div class="bar-head">
-          <span class="name">${escapeHTML(i[nameKey])}</span>
-          <span class="count">${i[valueKey]}</span>
-        </div>
-        <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div>
-      </div>
-    `;
-  }).join('');
-}
-
-function renderTop(stat) {
-  const evts = Object.values(stat.byEvent).sort((a,b) => b.shifts - a.shifts);
-  renderBars('top-events', evts, 'shifts', 'name', 'color');
-
-  const missions = Object.values(stat.byMission).sort((a,b) => b.shifts - a.shifts);
-  renderBars('top-missions', missions, 'shifts', 'name', 'color');
-}
-
-/* =====================================================================
-   RENDU — TOP BÉNÉVOLES
-   ===================================================================== */
-function renderUsers(stat) {
-  const rows = Object.entries(stat.byUser)
-    .map(([uid, u]) => ({
-      uid,
-      name: u.name,
-      role: u.role,
-      shifts: u.shifts,
-      minutes: u.minutes,
-      events: u.events.size,
-      lastDate: u.lastDate
-    }))
-    .filter(u => u.shifts > 0)
-    .sort((a,b) => b.minutes - a.minutes || b.shifts - a.shifts)
-    .slice(0, 25);
-
-  if (!rows.length) {
-    $('users-tbody').innerHTML = '<tr><td colspan="5" class="empty">Aucun shift utilisateur.</td></tr>';
-    return;
-  }
-
-  $('users-tbody').innerHTML = rows.map(r => `
-    <tr>
-      <td>
-        <div style="font-weight:600">${escapeHTML(r.name)}</div>
-        <div style="font-size:0.78em;color:var(--text-muted)">
-          ${r.role ? escapeHTML(r.role) : '—'}
-        </div>
-      </td>
-      <td class="num">${r.shifts}</td>
-      <td class="num">${Math.round(r.minutes/60)} h ${r.minutes%60 ? `${r.minutes%60}min` : ''}</td>
-      <td class="num">${r.events}</td>
-      <td class="num">${r.lastDate ? r.lastDate.split('-').reverse().join('/') : '—'}</td>
-    </tr>
-  `).join('');
-}
-
-/* =====================================================================
-   RENDU — STATUT DES PROCHAINS JOURS
-   ===================================================================== */
-function renderDaysTable(stat) {
-  // Peupler le select événements
-  const selEvent = $('filter-event');
-  if (selEvent.options.length <= 1) {
-    EVENTS.forEach(ev => {
-      const o = document.createElement('option');
-      o.value = ev.id;
-      o.textContent = ev.name;
-      selEvent.appendChild(o);
     });
+  } catch (e) {
+    console.error('Firestore load error', e);
   }
+}
 
-  // Construire la liste des jours futurs (aujourd'hui + 60) + passés récents (30)
-  const today = new Date(); today.setHours(0,0,0,0);
-  const dates = [];
-  for (let i = -30; i <= 60; i++) {
-    const d = new Date(today); d.setDate(d.getDate()+i);
-    dates.push(fmtDate(d));
+async function loadUsers() {
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    snap.forEach(d => {
+      const data = d.data();
+      USERS[d.id] = {
+        uid: d.id,
+        name: data.name || data.displayName || data.email || d.id.slice(0, 8),
+        email: data.email || '',
+        status: data.status || '',
+        role: data.role || '',
+        isAdmin: data.isAdmin === true
+      };
+    });
+  } catch (e) {
+    console.error('Users load error', e);
   }
+}
 
-  const evFilter = selEvent.value;
-  const statusFilter = $('filter-status').value;
+/* Fusion archive + firestore (Firestore prioritaire) */
+function buildMerged() {
+  Object.keys(MERGED).forEach(k => delete MERGED[k]);
+  for (const [dateStr, missions] of Object.entries(ARCHIVE)) {
+    if (!missions || typeof missions !== 'object') continue;
+    MERGED[dateStr] = {};
+    for (const [mid, arr] of Object.entries(missions)) {
+      if (Array.isArray(arr)) MERGED[dateStr][mid] = arr.map(s => [...s]);
+    }
+  }
+  for (const [dateStr, missions] of Object.entries(FIRESTORE_DATA)) {
+    if (!MERGED[dateStr]) MERGED[dateStr] = {};
+    for (const [mid, arr] of Object.entries(missions)) {
+      MERGED[dateStr][mid] = arr.map(s => [...s]);
+    }
+  }
+}
 
-  const rows = [];
-  for (const dateStr of dates) {
+/* =====================================================================
+   CALCUL STATS
+   ===================================================================== */
+function getUserName(uid) {
+  if (USERS[uid]) return USERS[uid].name;
+  if (uid === ME.uid) return ME.name;
+  return uid.slice(0, 8);
+}
+
+/* Toutes les dates connues (union archive + firestore), triées */
+function allKnownDates() {
+  return Object.keys(MERGED).sort();
+}
+
+/* Toutes les missions rencontrées (uniques par id) */
+function allMissions() {
+  const map = new Map();
+  EVENTS.forEach(ev => ev.missions.forEach(m => {
+    if (!map.has(m.id)) map.set(m.id, { mission: m, event: ev });
+  }));
+  return map;
+}
+
+/* Total minutes par utilisateur (sur toutes les dates connues) */
+function computeUserTotals() {
+  const totals = {};    // uid → { minutes, shifts, missions, events: Set, dates: Set }
+  for (const dateStr of allKnownDates()) {
+    const day = MERGED[dateStr];
+    if (!day) continue;
+    for (const [missionId, arr] of Object.entries(day)) {
+      for (const s of arr) {
+        const uid = s[1];
+        if (!uid) continue;
+        const dur = s[3] - s[2];
+        if (dur <= 0) continue;
+        if (!totals[uid]) totals[uid] = {
+          minutes: 0, shifts: 0,
+          events: new Set(), missions: new Set(), dates: new Set()
+        };
+        totals[uid].minutes += dur;
+        totals[uid].shifts++;
+        totals[uid].dates.add(dateStr);
+        totals[uid].missions.add(missionId);
+        // trouver l'event
+        const found = allMissions().get(missionId);
+        if (found) totals[uid].events.add(found.event.id);
+      }
+    }
+  }
+  return totals;
+}
+
+/* Répartition par heure (heatmap) */
+function computeHourlyCoverage() {
+  const hours = new Array(24).fill(0);
+  for (const dateStr of allKnownDates()) {
+    const day = MERGED[dateStr];
+    if (!day) continue;
+    for (const arr of Object.values(day)) {
+      for (const s of arr) {
+        const startH = Math.floor(s[2] / 60);
+        const endH = Math.ceil(s[3] / 60);
+        for (let h = startH; h < endH; h++) hours[h]++;
+      }
+    }
+  }
+  return hours;
+}
+
+/* Activité par jour (heatmap calendrier) */
+function computeDailyActivity() {
+  const activity = {};
+  for (const dateStr of allKnownDates()) {
+    const day = MERGED[dateStr];
+    if (!day) { activity[dateStr] = 0; continue; }
+    let count = 0;
+    for (const arr of Object.values(day)) count += arr.length;
+    activity[dateStr] = count;
+  }
+  return activity;
+}
+
+/* Prochains événements avec places manquantes */
+function computeUpcomingGaps(daysAhead = 14) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  const out = [];
+  for (let i = 0; i < daysAhead; i++) {
+    const d = addDays(t, i);
+    const dateStr = fmtDate(d);
     const evs = eventsForDate(dateStr);
     for (const ev of evs) {
-      if (evFilter && ev.id !== evFilter) continue;
-      const evStatus = eventDayStatus(dateStr, ev);
+      for (const m of ev.missions) {
+        const { missing, totalMin } = missionMissingMinutes(dateStr, m);
+        if (missing > 0) {
+          out.push({
+            dateStr, dayOffset: i, event: ev, mission: m,
+            missingMinutes: missing, totalMinutes: totalMin,
+            pctMissing: Math.round((missing / (totalMin * m.quota)) * 100)
+          });
+        }
+      }
+    }
+  }
+  return out.sort((a,b) => a.dateStr.localeCompare(b.dateStr) || a.event.name.localeCompare(b.event.name));
+}
 
-      // Une ligne par mission pour plus de détail
-      for (const mission of ev.missions || []) {
-        const cov = missionDayCoverage(dateStr, mission);
-        if (!cov.totalMinutes) continue;
-        const st = missionDayStatus(dateStr, mission);
-        if (statusFilter && st !== statusFilter) continue;
-        const shiftCount = ((MERGED[dateStr]||{})[mission.id]||[]).length;
-        rows.push({
-          dateStr, ev, mission, st, cov, shiftCount
+/* Taux de remplissage global (sur dates futures et passées) */
+function computeFillRate() {
+  const dates = allKnownDates();
+  let totalSlots = 0, filledSlots = 0;
+  let totalMinutes = 0, missingMinutes = 0;
+  for (const dateStr of dates) {
+    for (const ev of eventsForDate(dateStr)) {
+      for (const m of ev.missions) {
+        const ranges = missionRangesForDate(m, dateStr);
+        ranges.forEach(r => {
+          for (let minute = r.start; minute < r.end; minute++) {
+            totalSlots += m.quota;
+            totalMinutes += 1;
+            const cover = coverAt(dateStr, m.id, minute);
+            filledSlots += Math.min(cover, m.quota);
+            if (cover < m.quota) missingMinutes += (m.quota - cover);
+          }
         });
       }
     }
   }
-
-  if (!rows.length) {
-    $('days-tbody').innerHTML = '<tr><td colspan="5" class="empty">Aucun résultat avec ces filtres.</td></tr>';
-    return;
-  }
-
-  const pillClass = st => st === 'full' ? 'pill full' : st === 'partial' ? 'pill partial' : 'pill empty';
-  const pillLabel = st => st === 'full' ? '✓ Complet' : st === 'partial' ? '⏳ Partiel' : '✗ Vide';
-
-  $('days-tbody').innerHTML = rows.map(r => {
-    const d = parseDate(r.dateStr);
-    const dateLabel = d.toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
-    const pctCov = Math.round(r.cov.ratio * 100);
-    return `
-      <tr>
-        <td style="white-space:nowrap">${dateLabel}</td>
-        <td>
-          <div style="font-weight:600;font-size:0.92em">${escapeHTML(r.ev.name)}</div>
-          <div style="font-size:0.8em;color:var(--text-muted)">
-            ${escapeHTML(r.mission.name)} (quota ${r.mission.quota})
-          </div>
-        </td>
-        <td class="num">${r.shiftCount}</td>
-        <td class="num">${pctCov}%</td>
-        <td><span class="${pillClass(r.st)}">${pillLabel(r.st)}</span></td>
-      </tr>
-    `;
-  }).join('');
+  return {
+    fillRate: totalSlots ? Math.round((filledSlots / totalSlots) * 100) : 0,
+    totalSlots, filledSlots, missingMinutes, totalMinutes
+  };
 }
 
-/* =====================================================================
-   RENDU — ALERTES
-   ===================================================================== */
-function renderAlerts(stat) {
-  const alerts = [];
-
-  if (stat.orphanShifts > 0) {
-    alerts.push({
-      tone: 'warning',
-      title: `${stat.orphanShifts} shift(s) orphelin(s)`,
-      desc: 'Des shifts pointent vers des missions qui ne sont plus définies dans events.json. Vérifiez les identifiants.'
-    });
-  }
-  if (stat.conflictingShifts > 0) {
-    alerts.push({
-      tone: 'error',
-      title: `${stat.conflictingShifts} conflit(s) horaire(s)`,
-      desc: 'Le même utilisateur a des shifts qui se chevauchent sur des missions différentes.'
-    });
-  }
-  if (stat.outOfRangeShifts > 0) {
-    alerts.push({
-      tone: 'warning',
-      title: `${stat.outOfRangeShifts} shift(s) hors plage`,
-      desc: 'Ces shifts sont hors des plages horaires autorisées pour leur mission.'
-    });
-  }
-  if (stat.zeroDurationShifts > 0) {
-    alerts.push({
-      tone: 'error',
-      title: `${stat.zeroDurationShifts} shift(s) invalide(s)`,
-      desc: 'Shifts avec une heure de fin ≤ heure de début.'
-    });
-  }
-  if (stat.unknownUsers > 0) {
-    alerts.push({
-      tone: 'muted',
-      title: `${stat.unknownUsers} shift(s) d'utilisateurs inconnus`,
-      desc: 'Des uid ne correspondent à aucun utilisateur Firestore (compte supprimé ?).'
-    });
-  }
-
-  // Jours futurs sans couverture complète
-  const today = new Date(); today.setHours(0,0,0,0);
-  let upcomingEmpty = 0;
-  for (let i = 1; i <= 14; i++) {
-    const ds = fmtDate(new Date(today.getTime() + i*86400000));
-    const evs = eventsForDate(ds);
-    for (const ev of evs) {
-      if (eventDayStatus(ds, ev) === 'empty') upcomingEmpty++;
+/* Planning personnel d'un utilisateur */
+function getUserShifts(uid) {
+  const out = [];
+  for (const dateStr of allKnownDates()) {
+    const day = MERGED[dateStr];
+    if (!day) continue;
+    for (const [missionId, arr] of Object.entries(day)) {
+      for (const s of arr) {
+        if (s[1] !== uid) continue;
+        const found = allMissions().get(missionId);
+        out.push({
+          dateStr, shift: s,
+          mission: found ? found.mission : { id: missionId, name: missionId },
+          event: found ? found.event : { id: missionId, name: missionId, color: '#7f8c8d' }
+        });
+      }
     }
   }
-  if (upcomingEmpty > 0) {
-    alerts.push({
-      tone: 'warning',
-      title: `${upcomingEmpty} événement(s) sans aucune inscription dans les 14 jours`,
-      desc: 'Ces événements vont avoir lieu mais ne sont pas couverts du tout.'
-    });
+  return out.sort((a,b) => a.dateStr.localeCompare(b.dateStr) || a.shift[2] - b.shift[2]);
+}
+
+/* Liste des users ayant au moins un shift */
+function usersWithShifts() {
+  const totals = computeUserTotals();
+  return Object.keys(totals).sort((a,b) => totals[b].minutes - totals[a].minutes);
+}
+
+/* Mission la plus/moins demandée : minutes totales couvertes par mission */
+function computeMissionTotals() {
+  const map = new Map();
+  for (const dateStr of allKnownDates()) {
+    for (const ev of eventsForDate(dateStr)) {
+      for (const m of ev.missions) {
+        const ranges = missionRangesForDate(m, dateStr);
+        let covered = 0;
+        let required = 0;
+        ranges.forEach(r => {
+          for (let minute = r.start; minute < r.end; minute++) {
+            const cover = coverAt(dateStr, m.id, minute);
+            covered += Math.min(cover, m.quota);
+            required += m.quota;
+          }
+        });
+        const key = m.id;
+        if (!map.has(key)) map.set(key, {
+          mission: m, event: ev, covered: 0, required: 0
+        });
+        const o = map.get(key);
+        o.covered += covered;
+        o.required += required;
+      }
+    }
+  }
+  return [...map.values()].map(o => ({
+    ...o,
+    fillRate: o.required ? Math.round((o.covered / o.required) * 100) : 0
+  })).sort((a,b) => b.required - a.required);
+}
+
+/* =====================================================================
+   RENDU PRINCIPAL
+   ===================================================================== */
+function render() {
+  const content = $('content');
+  content.innerHTML = '';
+
+  // ---- KPI globaux ----
+  const totals = computeUserTotals();
+  const userUids = Object.keys(totals);
+  const totalUserMinutes = userUids.reduce((s, u) => s + totals[u].minutes, 0);
+  const totalUserShifts = userUids.reduce((s, u) => s + totals[u].shifts, 0);
+  const fill = computeFillRate();
+  const allDates = allKnownDates();
+  const futureDates = allDates.filter(d => d >= todayStr());
+  const pastDates = allDates.filter(d => d < todayStr());
+  const totalCapacityMinutes = fill.totalSlots * 1; // déjà en minutes-personnes
+
+  // ---- Section KPI ----
+  content.appendChild(panel('📊 Vue d\'ensemble', `
+    <div class="kpi-grid">
+      ${kpiCard('Jours enregistrés', allDates.length, `${pastDates.length} passé(s) · ${futureDates.length} à venir`, 'accent')}
+      ${kpiCard('Utilisateurs actifs', userUids.length, `sur ${Object.keys(USERS).length} comptes`, '')}
+      ${kpiCard('Gardes totales', totalUserShifts, 'toutes périodes', '')}
+      ${kpiCard('Heures données', fmtDuration(totalUserMinutes), 'cumul de tous les utilisateurs', 'success')}
+      ${kpiCard('Taux de remplissage', fill.fillRate + '%', `${fmtDuration(fill.missingMinutes)} à combler`, fill.fillRate >= 80 ? 'success' : fill.fillRate >= 50 ? 'warn' : 'danger')}
+      ${kpiCard('Créneaux manquants', fmtDuration(fill.missingMinutes), 'personnes·minutes', 'warn')}
+    </div>
+  `));
+
+  // ---- Prochains événements à combler ----
+  const gaps = computeUpcomingGaps(14);
+  const gapsHTML = gaps.length === 0
+    ? '<div class="empty">✓ Tous les événements des 14 prochains jours sont complets.</div>'
+    : gaps.slice(0, 15).map(g => {
+      const dayLabel = g.dayOffset === 0 ? "Aujourd'hui" :
+                       g.dayOffset === 1 ? 'Demain' :
+                       parseDate(g.dateStr).toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
+      const badge = g.pctMissing >= 80 ? 'badge-danger' :
+                    g.pctMissing >= 40 ? 'badge-warn' : 'badge-ok';
+      return `<div class="list-item" style="border-left-color:${g.event.color || '#3498db'}">
+        <div class="item-main">
+          <div class="item-title">${esc(g.event.name)} · ${esc(g.mission.name)}</div>
+          <div class="item-meta">
+            <span>📅 ${esc(dayLabel)} (${g.dateStr})</span>
+            <span>⏱ ${fmtDuration(g.missingMinutes)} à combler</span>
+            <span>👥 ${g.mission.quota} pers.</span>
+          </div>
+        </div>
+        <span class="item-badge ${badge}">${g.pctMissing}% vide</span>
+      </div>`;
+    }).join('');
+
+  content.appendChild(panel('🚨 Prochains créneaux à combler (14 jours)', gapsHTML,
+    `${gaps.length} créneau(x) à pourvoir`));
+
+  // ---- Top utilisateurs ----
+  const topUsers = userUids.slice(0, 10);
+  const maxMin = topUsers.length ? totals[topUsers[0]].minutes : 1;
+  const usersHTML = topUsers.length === 0
+    ? '<div class="empty">Aucune donnée utilisateur.</div>'
+    : `<div class="bar-list">${topUsers.map(uid => {
+        const t = totals[uid];
+        const pct = Math.round((t.minutes / maxMin) * 100);
+        return `<div class="bar-row">
+          <div class="bar-label" title="${esc(getUserName(uid))}">${esc(getUserName(uid))}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+          <div class="bar-value">${fmtDuration(t.minutes)}</div>
+        </div>`;
+      }).join('')}</div>`;
+
+  content.appendChild(panel('🏆 Top utilisateurs (heures données)', usersHTML,
+    `${userUids.length} utilisateur(s) avec au moins une garde`));
+
+  // ---- Répartition horaire ----
+  const hourly = computeHourlyCoverage();
+  const maxHour = Math.max(...hourly, 1);
+  const heatHTML = hourly.map((count, h) => {
+    const intensity = count / maxHour;
+    const bg = `color-mix(in srgb, var(--accent) ${Math.round(intensity * 100)}%, var(--field))`;
+    return `<div class="hm-cell" style="background:${bg}" title="${h}h — ${count} shift(s)"></div>`;
+  }).join('');
+  const labelsHTML = hourly.map((_, h) => `<span>${h}h</span>`).join('');
+
+  content.appendChild(panel('🕐 Répartition horaire des gardes', `
+    <div class="heatmap">${heatHTML}</div>
+    <div class="hm-labels">${labelsHTML}</div>
+    <div class="hint" style="margin-top:0.5rem;">Nombre total de shifts commençant ou couvrant chaque heure (toutes dates).</div>
+  `));
+
+  // ---- Heatmap calendrier (type GitHub, 6 derniers mois) ----
+  const activity = computeDailyActivity();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const startHM = new Date(today);
+  startHM.setMonth(startHM.getMonth() - 5);
+  startHM.setDate(1);
+  // aligner au lundi
+  const startOffset = (startHM.getDay() + 6) % 7;
+  startHM.setDate(startHM.getDate() - startOffset);
+
+  const weeks = [];
+  let curWeek = [];
+  let cur = new Date(startHM);
+  while (cur <= today || curWeek.length > 0) {
+    curWeek.push({ date: new Date(cur), dateStr: fmtDate(cur) });
+    if (cur.getDay() === 0) { // dimanche
+      weeks.push(curWeek);
+      curWeek = [];
+    }
+    cur.setDate(cur.getDate() + 1);
+    if (cur > today && curWeek.length === 0) break;
+    if (cur > addDays(today, 7)) break;
+  }
+  if (curWeek.length) weeks.push(curWeek);
+
+  const maxAct = Math.max(...Object.values(activity), 1);
+  const calHTML = weeks.map(week => {
+    const daysHTML = week.map(({ date, dateStr }) => {
+      const val = activity[dateStr] || 0;
+      const intensity = val / maxAct;
+      const bg = val === 0
+        ? 'var(--field)'
+        : `color-mix(in srgb, var(--success) ${Math.round(intensity * 90 + 10)}%, var(--field))`;
+      return `<div class="ch-day" style="background:${bg}" title="${dateStr} — ${val} shift(s)"></div>`;
+    }).join('');
+    return `<div class="ch-week">${daysHTML}</div>`;
+  }).join('');
+
+  content.appendChild(panel('📅 Activité sur 6 mois', `
+    <div class="calendar-heatmap">${calHTML}</div>
+    <div class="ch-legend">
+      <span>Moins</span>
+      <div class="ch-day" style="background:var(--field);"></div>
+      <div class="ch-day" style="background:color-mix(in srgb, var(--success) 30%, var(--field));"></div>
+      <div class="ch-day" style="background:color-mix(in srgb, var(--success) 60%, var(--field));"></div>
+      <div class="ch-day" style="background:color-mix(in srgb, var(--success) 90%, var(--field));"></div>
+      <span>Plus</span>
+    </div>
+  `));
+
+  // ---- Missions : taux de remplissage ----
+  const missionTotals = computeMissionTotals();
+  const missionsHTML = missionTotals.length === 0
+    ? '<div class="empty">Aucune mission.</div>'
+    : `<div class="table-wrapper"><table class="stats-table">
+        <thead><tr>
+          <th>Mission</th><th>Événement</th>
+          <th style="text-align:right">Requis</th>
+          <th style="text-align:right">Couvert</th>
+          <th style="text-align:right">Remplissage</th>
+        </tr></thead><tbody>
+        ${missionTotals.map(m => `
+          <tr>
+            <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${m.mission.color || m.event.color || '#3498db'};margin-right:0.4rem;"></span>${esc(m.mission.name)}</td>
+            <td>${esc(m.event.name)}</td>
+            <td class="num">${m.required} min</td>
+            <td class="num">${m.covered} min</td>
+            <td class="num" style="color:${m.fillRate >= 80 ? 'var(--success)' : m.fillRate >= 50 ? 'var(--warning)' : 'var(--error)'}">${m.fillRate}%</td>
+          </tr>
+        `).join('')}
+        </tbody></table></div>`;
+
+  content.appendChild(panel('🎯 Missions par taux de remplissage', missionsHTML));
+
+  // ---- Sélecteur utilisateur + planning ----
+  const pickerHTML = `
+    <div class="search-bar">
+      <input type="text" id="user-search" placeholder="Rechercher un utilisateur…">
+    </div>
+    <div class="user-picker" id="user-picker"></div>
+    <div id="user-planning"></div>
+  `;
+  content.appendChild(panel('👤 Planning d\'un utilisateur', pickerHTML,
+    'Cliquez sur un utilisateur pour voir son planning complet'));
+
+  // Remplir le picker
+  renderUserPicker();
+}
+
+function renderUserPicker() {
+  const picker = $('user-picker');
+  if (!picker) return;
+  const searchEl = $('user-search');
+  const search = (searchEl?.value || '').toLowerCase().trim();
+
+  const allUids = Object.keys(USERS).sort((a,b) => {
+    const na = USERS[a].name.toLowerCase();
+    const nb = USERS[b].name.toLowerCase();
+    return na.localeCompare(nb);
+  });
+  const filtered = search
+    ? allUids.filter(uid => USERS[uid].name.toLowerCase().includes(search) || uid.includes(search))
+    : allUids;
+
+  picker.innerHTML = filtered.length === 0
+    ? '<div class="empty" style="padding:0.75rem;font-size:0.85em;">Aucun utilisateur.</div>'
+    : filtered.slice(0, 30).map(uid => {
+        const u = USERS[uid];
+        const initial = (u.name || '?')[0].toUpperCase();
+        return `<button class="user-chip ${selectedUserId === uid ? 'active' : ''}" data-uid="${esc(uid)}">
+          <span class="avatar">${initial}</span>
+          ${esc(u.name)}
+        </button>`;
+      }).join('');
+
+  picker.querySelectorAll('[data-uid]').forEach(btn => {
+    btn.onclick = () => {
+      selectedUserId = btn.dataset.uid;
+      renderUserPicker();
+      renderUserPlanning();
+    };
+  });
+
+  if (searchEl && !searchEl._bound) {
+    searchEl._bound = true;
+    searchEl.addEventListener('input', () => renderUserPicker());
   }
 
-  if (!alerts.length) {
-    $('alerts').innerHTML = '<div class="empty">✓ Aucune anomalie détectée.</div>';
+  renderUserPlanning();
+}
+
+function renderUserPlanning() {
+  const el = $('user-planning');
+  if (!el) return;
+
+  if (!selectedUserId) {
+    el.innerHTML = '<div class="empty">Sélectionnez un utilisateur ci-dessus.</div>';
     return;
   }
 
-  $('alerts').innerHTML = alerts.map(a => {
-    const color = a.tone === 'error' ? 'var(--error)' : a.tone === 'warning' ? 'var(--warning)' : 'var(--text-muted)';
-    return `
-      <div style="padding:0.75rem 1rem;border-radius:0.5rem;background:var(--field);border-left:4px solid ${color};margin-bottom:0.5rem">
-        <div style="font-weight:700;font-size:0.9em;color:${color}">${escapeHTML(a.title)}</div>
-        <div style="font-size:0.82em;color:var(--text-muted);margin-top:0.15rem">${escapeHTML(a.desc)}</div>
+  const u = USERS[selectedUserId] || { name: selectedUserId, uid: selectedUserId };
+  const shifts = getUserShifts(selectedUserId);
+  const totals = computeUserTotals()[selectedUserId] || {
+    minutes: 0, shifts: 0, dates: new Set(), missions: new Set(), events: new Set()
+  };
+
+  if (shifts.length === 0) {
+    el.innerHTML = `
+      <div class="kpi-grid" style="margin-top:1rem;">
+        ${kpiCard('Total gardes', 0, u.name, '')}
+        ${kpiCard('Heures données', '0h', 'aucun engagement', '')}
       </div>
+      <div class="empty" style="margin-top:1rem;">Cet utilisateur n'a aucune garde enregistrée.</div>
     `;
-  }).join('');
-}
-
-/* =====================================================================
-   RENDU — INFOS TECHNIQUES
-   ===================================================================== */
-function renderTech(stat) {
-  const rows = [
-    ['Date du rapport', new Date().toLocaleString('fr-FR')],
-    ['Événements chargés', `${stat.totalEvents} (${stat.totalMissions} mission(s))`],
-    ['Jours dans gardes.json', stat.daysArchived],
-    ['Jours dans Firestore', stat.daysFirestore],
-    ['Jours dans la fusion', stat.daysWithData],
-    ['Utilisateurs Firestore', `${stat.totalUsers} (${stat.activeUsers} actifs)`],
-    ['Shifts totaux', stat.totalShifts],
-    ['Heures bénévoles cumulées', `${(stat.totalMinutes / 60).toFixed(1)} h`],
-    ['Moyenne par shift', stat.totalShifts ? `${Math.round(stat.totalMinutes / stat.totalShifts)} min` : '—'],
-    ['Shifts orphelins', stat.orphanShifts],
-    ['Conflits détectés', stat.conflictingShifts],
-  ];
-  $('tech-tbody').innerHTML = rows.map(([k, v]) => `
-    <tr>
-      <td style="font-weight:600;width:55%;font-size:0.85em">${escapeHTML(k)}</td>
-      <td class="num">${escapeHTML(String(v))}</td>
-    </tr>
-  `).join('');
-}
-
-/* =====================================================================
-   RENDU GLOBAL
-   ===================================================================== */
-function renderAll() {
-  const stat = computeStats();
-  renderOverview(stat);
-  renderCoverage(stat);
-  renderWeekly(stat);
-  renderHeatmap(stat);
-  renderTop(stat);
-  renderUsers(stat);
-  renderDaysTable(stat);
-  renderAlerts(stat);
-  renderTech(stat);
-
-  // Bind filtres (une seule fois)
-  if (!$('filter-event').dataset.bound) {
-    $('filter-event').addEventListener('change', () => renderDaysTable(stat));
-    $('filter-status').addEventListener('change', () => renderDaysTable(stat));
-    $('heatmap-month').addEventListener('change', () => renderHeatmap(stat));
-    $('filter-event').dataset.bound = '1';
+    return;
   }
+
+  const grouped = {};
+  shifts.forEach(s => {
+    if (!grouped[s.dateStr]) grouped[s.dateStr] = [];
+    grouped[s.dateStr].push(s);
+  });
+
+  const now = todayStr();
+  const shiftsHTML = Object.keys(grouped).sort().map(dateStr => {
+    const isPast = dateStr < now;
+    const isToday = dateStr === now;
+    const dayLabel = isToday ? "Aujourd'hui" :
+                     parseDate(dateStr).toLocaleDateString('fr-FR', {
+                       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                     });
+    const style = isPast
+      ? 'color:var(--text-muted);'
+      : isToday ? 'color:var(--warning);' : 'color:var(--text);';
+    const items = grouped[dateStr].map(s => {
+      const dur = s.shift[3] - s.shift[2];
+      return `<div class="user-shift" style="border-left-color:${s.mission.color || s.event.color || '#3498db'}">
+        <div class="shift-date" style="${style}"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="shift-mission">${esc(s.event.name)} · ${esc(s.mission.name)}</div>
+          <div class="shift-time">${fmtHMfull(s.shift[2])} → ${fmtHMfull(s.shift[3])} (${fmtDuration(dur)})</div>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="margin-top:1rem;">
+      <div class="section-title" style="${style}">${esc(dayLabel)} ${isPast ? '· passé' : ''}</div>
+      ${items}
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="kpi-grid" style="margin-top:1rem;">
+      ${kpiCard('Total gardes', totals.shifts, u.name, '')}
+      ${kpiCard('Heures données', fmtDuration(totals.minutes), `${totals.dates.size} jour(s) différent(s)`, 'success')}
+      ${kpiCard('Événements', totals.events.size, `${totals.missions.size} mission(s) différente(s)`, '')}
+    </div>
+    <div class="user-planning-list">${shiftsHTML}</div>
+  `;
+}
+
+function kpiCard(label, value, sub, cls = '') {
+  return `<div class="kpi ${cls}">
+    <div class="kpi-label">${esc(label)}</div>
+    <div class="kpi-value">${esc(value)}</div>
+    ${sub ? `<div class="kpi-sub">${esc(sub)}</div>` : ''}
+  </div>`;
+}
+
+function panel(title, contentHTML, subtitle = '') {
+  const section = document.createElement('section');
+  section.className = 'stats-panel';
+  section.innerHTML = `
+    <h3>${title}</h3>
+    ${subtitle ? `<div class="hint">${esc(subtitle)}</div>` : ''}
+    ${contentHTML}
+  `;
+  return section;
 }
 
 /* =====================================================================
-   UI
+   INIT
    ===================================================================== */
-$('btn-refresh').addEventListener('click', () => {
-  $('overview-grid').innerHTML = '<div class="stat-card"><div class="lbl">Chargement</div><div class="val">…</div></div>';
-  loadAll();
+const goToLogin = () => {
+  window.location.replace(LOGIN_URL + '?redirect=' + encodeURIComponent(CURRENT_URL));
+};
+
+async function loadAll() {
+  const content = $('content');
+  content.innerHTML = '<div class="loader">Chargement des données…</div>';
+
+  await Promise.all([loadStaticFiles(), loadFirestore(), loadUsers()]);
+  buildMerged();
+  render();
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { goToLogin(); return; }
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (!snap.exists() || snap.data().status !== 'active') {
+      await signOut(auth);
+      goToLogin();
+      return;
+    }
+    ME = { uid: user.uid, name: snap.data().name || user.email || 'Vous' };
+    await loadAll();
+  } catch (err) {
+    console.error(err);
+    await signOut(auth).catch(() => {});
+    goToLogin();
+  }
 });
 
 $('logout-btn').addEventListener('click', async (e) => {
@@ -1185,6 +1113,8 @@ $('logout-btn').addEventListener('click', async (e) => {
   catch (err) { console.error(err); }
   finally { window.location.replace(LOGIN_URL); }
 });
+
+$('btn-refresh').addEventListener('click', () => loadAll());
 </script>
 </body>
 </html>

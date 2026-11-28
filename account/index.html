@@ -54,6 +54,28 @@
             display: flex;
             flex-direction: column;
             min-height: 100dvh;
+            position: relative;
+            isolation: isolate;
+        }
+
+        /* ---- Arrière-plan sapin_entier.html (image en fond) ---- */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image: url("backgrounds/sapin_entier.html");
+            background-repeat: no-repeat;
+            background-position: center bottom;
+            background-size: cover;
+            opacity: 0.18;
+            pointer-events: none;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body::before {
+                opacity: 0.12;
+            }
         }
 
         header {
@@ -295,17 +317,17 @@
                 </a>
 
                 <a class="card" href="https://account.honore-romane.fr/admin/mail/">
-    <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-            <polyline points="22,6 12,13 2,6"/>
-        </svg>
-    </div>
-    <div>
-        <div class="card-title">Envoi de mails</div>
-        <div class="card-desc">Rédiger et envoyer des mails aux membres.</div>
-    </div>
-</a>
+                    <div class="card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="card-title">Envoi de mails</div>
+                        <div class="card-desc">Rédiger et envoyer des mails aux membres.</div>
+                    </div>
+                </a>
 
             </div>
         </section>
@@ -327,19 +349,19 @@
                     </div>
                 </a>
 
-                        <!-- NOUVEL ONGLET ÉMARGEMENT -->
-        <a class="card" href="https://account.honore-romane.fr/tools/emargement/">
-            <div class="card-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                    <path d="M9 11l3 3L22 4"/>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                </svg>
-            </div>
-            <div>
-                <div class="card-title">Émargement</div>
-                <div class="card-desc">Signer la feuille de présence d'une réunion ou d'un vote.</div>
-            </div>
-        </a>
+                <!-- NOUVEL ONGLET ÉMARGEMENT -->
+                <a class="card" href="https://account.honore-romane.fr/tools/emargement/">
+                    <div class="card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="card-title">Émargement</div>
+                        <div class="card-desc">Signer la feuille de présence d'une réunion ou d'un vote.</div>
+                    </div>
+                </a>
 
                 <a class="card" href="https://account.honore-romane.fr/tools/calendar/">
                     <div class="card-icon" aria-hidden="true">
@@ -403,19 +425,19 @@
                 </a>
 
                 <a class="card" href="https://account.honore-romane.fr/project/ideabox/">
-    <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-            <path d="M9 18h6"/>
-            <path d="M10 21h4"/>
-            <path d="M12 3a6 6 0 0 0-3.6 10.8c.5.4.8 1 .9 1.6l.2 1.6h5l.2-1.6c.1-.6.4-1.2.9-1.6A6 6 0 0 0 12 3z"/>
-            <path d="M12 3v2"/>
-        </svg>
-    </div>
-    <div>
-        <div class="card-title">Boîte à idées</div>
-        <div class="card-desc">Proposer un projet ou poser une question : tout sera étudié ou voté à la prochaine réunion.</div>
-    </div>
-</a>
+                    <div class="card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M9 18h6"/>
+                            <path d="M10 21h4"/>
+                            <path d="M12 3a6 6 0 0 0-3.6 10.8c.5.4.8 1 .9 1.6l.2 1.6h5l.2-1.6c.1-.6.4-1.2.9-1.6A6 6 0 0 0 12 3z"/>
+                            <path d="M12 3v2"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="card-title">Boîte à idées</div>
+                        <div class="card-desc">Proposer un projet ou poser une question : tout sera étudié ou voté à la prochaine réunion.</div>
+                    </div>
+                </a>
 
                 <a class="card" href="https://account.honore-romane.fr/project/buvettes/caisses/">
                     <div class="card-icon" aria-hidden="true">
@@ -432,21 +454,21 @@
                 </a>
 
                 <a class="card" href="https://progression.honore-romane.fr">
-    <div class="card-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-            <path d="M3 3v18h18"/>
-            <path d="M7 14l4-4 3 3 5-6"/>
-            <circle cx="7" cy="14" r="1.2"/>
-            <circle cx="11" cy="10" r="1.2"/>
-            <circle cx="14" cy="13" r="1.2"/>
-            <circle cx="19" cy="7" r="1.2"/>
-        </svg>
-    </div>
-    <div>
-        <div class="card-title">Progression annuelle</div>
-        <div class="card-desc">Visualiser l'avancée de l'année et les dates officielles (épreuves du bac, etc.).</div>
-    </div>
-</a>
+                    <div class="card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M3 3v18h18"/>
+                            <path d="M7 14l4-4 3 3 5-6"/>
+                            <circle cx="7" cy="14" r="1.2"/>
+                            <circle cx="11" cy="10" r="1.2"/>
+                            <circle cx="14" cy="13" r="1.2"/>
+                            <circle cx="19" cy="7" r="1.2"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="card-title">Progression annuelle</div>
+                        <div class="card-desc">Visualiser l'avancée de l'année et les dates officielles (épreuves du bac, etc.).</div>
+                    </div>
+                </a>
 
             </div>
         </section>
